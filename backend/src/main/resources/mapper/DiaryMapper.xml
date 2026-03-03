@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.mapper.DiaryMapper">
+
+    <sql id="search">
+        <where>
+            <if test="startYmd != null and startYmd != ''">
+                AND ymd &gt;= #{startYmd}
+            </if>
+            <if test="endYmd != null and endYmd != ''">
+                AND ymd &lt;= #{endYmd}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (content LIKE CONCAT('%', #{keyword}, '%') OR summary LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <insert id="insertDiary" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO cms.diary (ymd, content, summary)
+        VALUES (#{ymd}, #{content}, #{summary})
+    </insert>
+
+    <select id="selectDiaryById" resultType="kr.co.kalpa.pcms.domain.Diary">
+        SELECT id, ymd, content, summary, created_at as createdAt, updated_at as updatedAt
+        FROM cms.diary
+        WHERE id = #{id}
+    </select>
+
+    <update id="updateDiary">
+        UPDATE cms.diary
+        SET ymd = #{ymd},
+            content = #{content},
+            summary = #{summary},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteDiary">
+        DELETE FROM cms.diary WHERE id = #{id}
+    </delete>
+
+    <select id="selectDiaryList" resultType="kr.co.kalpa.pcms.domain.Diary">
+        SELECT id, ymd, content, summary, created_at as createdAt, updated_at as updatedAt
+        FROM cms.diary
+        <include refid="search"></include>
+        ORDER BY ymd DESC, id DESC
+        LIMIT #{size} OFFSET #{skip}
+    </select>
+
+    <select id="selectDiaryCount" resultType="int">
+        SELECT count(*)
+        FROM cms.diary
+        <include refid="search"></include>
+    </select>
+
+</mapper>

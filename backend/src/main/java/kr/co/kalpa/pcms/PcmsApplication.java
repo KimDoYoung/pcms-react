@@ -1,0 +1,13 @@
+package kr.co.kalpa.pcms;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class PcmsApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(PcmsApplication.class, args);
+	}
+
+}
