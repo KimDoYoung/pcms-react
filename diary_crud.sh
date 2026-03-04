@@ -29,7 +29,7 @@ pp() {
 # ── 명령 ───────────────────────────────────────────────
 
 cmd_login() {
-    local user="${1:-admin}" pw="${2:-admin}"
+    local user="kdy987" pw="1111"
     info "POST /auth/login  (userId=$user)"
 
     RESP=$(curl -sS -X POST "$BASE_URL/auth/login" \

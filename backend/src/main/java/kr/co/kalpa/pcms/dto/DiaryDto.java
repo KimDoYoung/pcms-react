@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Data
@@ -21,8 +21,8 @@ public class DiaryDto {
 
     private String content;
     private String summary;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
 
     /** 수정 시 삭제할 첨부파일 fileId 목록 */
     private List<Long> deletedAttachmentIds;
