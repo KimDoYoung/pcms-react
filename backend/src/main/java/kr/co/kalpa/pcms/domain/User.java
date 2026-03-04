@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @Builder
@@ -16,5 +16,5 @@ public class User {
     private String userId;
     private String userPw;
     private String userNm;
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 }

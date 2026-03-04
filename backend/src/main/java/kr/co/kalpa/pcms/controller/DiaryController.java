@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/pcms/diary")
+@RequestMapping("/diary")
 @Slf4j
 @RequiredArgsConstructor
 public class DiaryController {

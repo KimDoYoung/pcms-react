@@ -158,8 +158,8 @@ do_build() {
 }
 
 do_log() {
-    local log_dir="${HOME}/data//logs"
-    local log_file="$log_dir/.log"
+    local log_dir="$BACKEND_DIR/pcms-data/logs"
+    local log_file="$log_dir/pcms.log"
     header "Log - 애플리케이션 로그 보기"
     if [[ ! -f "$log_file" ]]; then
         warn "로그 파일이 아직 없습니다: $log_file"
@@ -214,7 +214,7 @@ ${BOLD}프로파일 설정:${NC}
 ${BOLD}참고:${NC}
   - 환경변수는 .env.\${_PROFILE} 파일에서 자동 로드됩니다.
   - Java 21 이상이 필요합니다.
-  - 로그 파일 위치: ~/data//logs/.log
+  - 로그 파일 위치: backend/pcms-data/logs/pcms.log
 "
 }
 
