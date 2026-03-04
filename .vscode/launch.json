@@ -24,17 +24,20 @@
         },
         {
             "type": "java",
-            "name": "Home",
+            "name": "home",
             "request": "launch",
-            "mainClass": "kr.co.kalpa.api.KalpaApplication",
+            "mainClass": "kr.co.kalpa.pcms.PcmsApplication",
             "args": "--spring.profiles.active=home",
             "console": "integratedTerminal",
-            "preLaunchTask": "gradle: build",
+            // "preLaunchTask": "gradle: build",
             "env": {
                 "DB_URL":"jdbc:postgresql://jskn.iptime.org:5432/kdy987_db",
                 "DB_USERNAME":"kdy987",
                 "DB_PASSWORD":"kalpa987!",
-                "JWT_SECRET":"MyVeryLongAndSecureJWTSecretKeyFor2026WithMinimum32Chars!@#$%"
+                "JWT_SECRET":"MyVeryLongAndSecureJWTSecretKeyFor2026WithMinimum32Chars!@#$%",
+                "REDIS_HOST":"jskn.iptime.org",
+                "REDIS_PORT":"6379",
+                "REDIS_PASSWORD":"kalpa987!"
             }
         },
     ]
