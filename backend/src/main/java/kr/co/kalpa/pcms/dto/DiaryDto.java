@@ -24,6 +24,9 @@ public class DiaryDto {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 
+    /** 목록 조회 시 첨부파일 개수 */
+    private Integer attachmentCount;
+
     /** 수정 시 삭제할 첨부파일 fileId 목록 */
     private List<Long> deletedAttachmentIds;
 

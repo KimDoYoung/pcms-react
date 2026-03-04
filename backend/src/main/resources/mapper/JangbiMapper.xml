@@ -48,8 +48,11 @@
     </delete>
 
     <select id="selectJangbiList" resultType="kr.co.kalpa.pcms.domain.Jangbi">
-        SELECT id, ymd, item, location, cost, spec, lvl, modify_dt as modifyDt
-        FROM cms.jangbi
+        SELECT id, ymd, item, location, cost, spec, lvl, modify_dt as modifyDt,
+               (SELECT count(*) FROM cms.file_match fm
+                WHERE fm.table_name = 'jangbi' AND fm.target_id = j.id
+                  AND fm.file_type = 'attachment') as attachmentCount
+        FROM cms.jangbi j
         <include refid="search"/>
         ORDER BY ymd DESC, id DESC
         LIMIT #{size} OFFSET #{skip}

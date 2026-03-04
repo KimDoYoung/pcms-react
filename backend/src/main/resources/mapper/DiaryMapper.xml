@@ -43,8 +43,11 @@
     </delete>
 
     <select id="selectDiaryList" resultType="kr.co.kalpa.pcms.domain.Diary">
-        SELECT id, ymd, content, summary, created_at as createdAt, updated_at as updatedAt
-        FROM cms.diary
+        SELECT id, ymd, content, summary, created_at as createdAt, updated_at as updatedAt,
+               (SELECT count(*) FROM cms.file_match fm
+                WHERE fm.table_name = 'diary' AND fm.target_id = d.id
+                  AND fm.file_type = 'attachment') as attachmentCount
+        FROM cms.diary d
         <include refid="search"></include>
         ORDER BY ymd DESC, id DESC
         LIMIT #{size} OFFSET #{skip}

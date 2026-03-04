@@ -11,14 +11,8 @@ import java.time.OffsetDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Jangbi {
+public class Todo {
     private Long id;
-    private String ymd;
-    private String item;
-    private String location;
-    private Integer cost;
-    private String spec;
-    private String lvl;
-    private OffsetDateTime modifyDt;
-    private Integer attachmentCount;
+    private String content;
+    private OffsetDateTime createdAt;
 }

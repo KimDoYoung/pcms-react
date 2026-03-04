@@ -157,6 +157,7 @@ public class PostServiceImpl implements PostService {
                 .baseYmd(post.getBaseYmd())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
+                .attachmentCount(post.getAttachmentCount())
                 .build();
     }
 }

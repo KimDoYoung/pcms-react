@@ -21,4 +21,5 @@ public class Post {
     private String baseYmd;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Integer attachmentCount;
 }

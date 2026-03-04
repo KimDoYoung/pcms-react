@@ -126,6 +126,7 @@ public class DiaryServiceImpl implements DiaryService {
                 .summary(diary.getSummary())
                 .createdAt(diary.getCreatedAt())
                 .updatedAt(diary.getUpdatedAt())
+                .attachmentCount(diary.getAttachmentCount())
                 .build()
         ).collect(Collectors.toList());
 

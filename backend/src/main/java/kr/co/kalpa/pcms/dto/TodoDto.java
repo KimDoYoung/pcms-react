@@ -1,22 +1,22 @@
-package kr.co.kalpa.pcms.domain;
+package kr.co.kalpa.pcms.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
 
-@Getter
+@Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class Diary {
+@AllArgsConstructor
+public class TodoDto {
     private Long id;
-    private String ymd;
+
+    @NotBlank(message = "내용을 입력해 주세요.")
     private String content;
-    private String summary;
+
     private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
-    private Integer attachmentCount;
 }

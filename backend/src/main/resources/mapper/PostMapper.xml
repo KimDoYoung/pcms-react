@@ -55,8 +55,11 @@
     </update>
 
     <select id="selectPostList" resultType="kr.co.kalpa.pcms.domain.Post">
-        SELECT <include refid="columns"/>
-        FROM cms.posts
+        SELECT <include refid="columns"/>,
+               (SELECT count(*) FROM cms.file_match fm
+                WHERE fm.table_name = 'posts' AND fm.target_id = p.id
+                  AND fm.file_type = 'attachment') as attachmentCount
+        FROM cms.posts p
         <include refid="search"/>
         ORDER BY id DESC
         LIMIT #{size} OFFSET #{skip}

@@ -128,6 +128,7 @@ public class JangbiServiceImpl implements JangbiService {
                 .spec(jangbi.getSpec())
                 .lvl(jangbi.getLvl())
                 .modifyDt(jangbi.getModifyDt())
+                .attachmentCount(jangbi.getAttachmentCount())
                 .build();
     }
 
