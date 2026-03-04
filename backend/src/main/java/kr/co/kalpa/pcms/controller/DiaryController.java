@@ -7,9 +7,12 @@ import kr.co.kalpa.pcms.service.DiaryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,24 +23,27 @@ public class DiaryController {
 
     private final DiaryService diaryService;
 
-    @PostMapping
-    public ResponseEntity<Map<String, Long>> register(@Valid @RequestBody DiaryDto diaryDto) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, Long>> register(
+            @RequestPart("diary") @Valid DiaryDto diaryDto,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         log.info("register diary: {}", diaryDto);
-        Long id = diaryService.register(diaryDto);
+        Long id = diaryService.register(diaryDto, files);
         return ResponseEntity.ok(Map.of("id", id));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<DiaryDto> get(@PathVariable("id") Long id) {
         log.info("get diary: {}", id);
-        DiaryDto diaryDto = diaryService.get(id);
-        return ResponseEntity.ok(diaryDto);
+        return ResponseEntity.ok(diaryService.get(id));
     }
 
-    @PutMapping
-    public ResponseEntity<Map<String, String>> modify(@Valid @RequestBody DiaryDto diaryDto) {
+    @PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, String>> modify(
+            @RequestPart("diary") @Valid DiaryDto diaryDto,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         log.info("modify diary: {}", diaryDto);
-        diaryService.modify(diaryDto);
+        diaryService.modify(diaryDto, files);
         return ResponseEntity.ok(Map.of("result", "success"));
     }
 
@@ -51,7 +57,6 @@ public class DiaryController {
     @GetMapping
     public ResponseEntity<PageResponseDto<DiaryDto>> getList(DiarySearchDto searchDto) {
         log.info("getList diary: {}", searchDto);
-        PageResponseDto<DiaryDto> response = diaryService.getList(searchDto);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(diaryService.getList(searchDto));
     }
 }

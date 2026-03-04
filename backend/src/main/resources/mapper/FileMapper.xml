@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.mapper.FileMapper">
+
+    <insert id="insertFile" useGeneratedKeys="true" keyProperty="fileId">
+        INSERT INTO cms.files (saved_folder, org_file_name, physical_file_name, file_size, mime_type)
+        VALUES (#{savedFolder}, #{orgFileName}, #{physicalFileName}, #{fileSize}, #{mimeType})
+    </insert>
+
+    <insert id="insertFileMatch">
+        INSERT INTO cms.file_match (table_name, target_id, file_id, file_type)
+        VALUES (#{tableName}, #{targetId}, #{fileId}, #{fileType})
+    </insert>
+
+    <select id="selectFileMatchByTarget" resultType="kr.co.kalpa.pcms.domain.FileMatch">
+        SELECT id, table_name as tableName, target_id as targetId,
+               file_id as fileId, file_type as fileType, created_at as createdAt
+        FROM cms.file_match
+        WHERE table_name = #{tableName}
+          AND target_id = #{targetId}
+          AND file_type = #{fileType}
+    </select>
+
+    <delete id="deleteFileMatchByTarget">
+        DELETE FROM cms.file_match
+        WHERE table_name = #{tableName}
+          AND target_id = #{targetId}
+          AND file_type = #{fileType}
+    </delete>
+
+</mapper>

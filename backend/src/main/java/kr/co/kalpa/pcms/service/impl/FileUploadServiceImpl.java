@@ -1,0 +1,147 @@
+package kr.co.kalpa.pcms.service.impl;
+
+import kr.co.kalpa.pcms.config.FileProperties;
+import kr.co.kalpa.pcms.domain.CmsFile;
+import kr.co.kalpa.pcms.domain.FileMatch;
+import kr.co.kalpa.pcms.mapper.FileMapper;
+import kr.co.kalpa.pcms.service.FileUploadService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class FileUploadServiceImpl implements FileUploadService {
+
+    // src="data:image/TYPE;base64,DATA" 패턴
+    private static final Pattern BASE64_IMG_PATTERN =
+            Pattern.compile("src=\"(data:([^;\"]+);base64,([^\"]+))\"");
+
+    private final FileProperties fileProperties;
+    private final FileMapper fileMapper;
+
+    @Override
+    public ProcessResult processEditorImages(String content) {
+        if (content == null || content.isBlank()) {
+            return new ProcessResult(content, Collections.emptyList());
+        }
+
+        List<Long> fileIds = new ArrayList<>();
+        StringBuffer sb = new StringBuffer();
+        Matcher matcher = BASE64_IMG_PATTERN.matcher(content);
+
+        while (matcher.find()) {
+            String mimeType = matcher.group(2).trim();
+            String base64Data = matcher.group(3).replaceAll("\\s+", "");
+
+            String ext = mimeToExt(mimeType);
+            String physicalFileName = UUID.randomUUID() + "." + ext;
+            String folderPath = dailyFolderPath();
+
+            try {
+                Path dir = Paths.get(fileProperties.getUpload().getEditorImagesDir(), folderPath);
+                Files.createDirectories(dir);
+                byte[] bytes = Base64.getDecoder().decode(base64Data);
+                Files.write(dir.resolve(physicalFileName), bytes);
+
+                CmsFile cmsFile = CmsFile.builder()
+                        .savedFolder(folderPath)
+                        .orgFileName("editor-image." + ext)
+                        .physicalFileName(physicalFileName)
+                        .fileSize(bytes.length)
+                        .mimeType(mimeType)
+                        .build();
+                fileMapper.insertFile(cmsFile);
+                fileIds.add(cmsFile.getFileId());
+
+                String url = buildImageUrl(folderPath, physicalFileName);
+                matcher.appendReplacement(sb, Matcher.quoteReplacement("src=\"" + url + "\""));
+                log.debug("editor image saved: {}/{}", folderPath, physicalFileName);
+            } catch (IOException e) {
+                throw new UncheckedIOException("에디터 이미지 저장 실패: " + physicalFileName, e);
+            }
+        }
+        matcher.appendTail(sb);
+
+        return new ProcessResult(sb.toString(), fileIds);
+    }
+
+    @Override
+    public Long saveAttachment(MultipartFile file) {
+        String orgName = StringUtils.hasText(file.getOriginalFilename())
+                ? file.getOriginalFilename() : "attachment";
+        String ext = StringUtils.getFilenameExtension(orgName);
+        String physicalFileName = UUID.randomUUID() + (ext != null ? "." + ext : "");
+        String folderPath = dailyFolderPath();
+
+        try {
+            Path dir = Paths.get(fileProperties.getUpload().getAttachFilesDir(), folderPath);
+            Files.createDirectories(dir);
+            file.transferTo(dir.resolve(physicalFileName));
+
+            CmsFile cmsFile = CmsFile.builder()
+                    .savedFolder(folderPath)
+                    .orgFileName(orgName)
+                    .physicalFileName(physicalFileName)
+                    .fileSize(file.getSize())
+                    .mimeType(file.getContentType())
+                    .build();
+            fileMapper.insertFile(cmsFile);
+            log.debug("attachment saved: {}/{}", folderPath, physicalFileName);
+            return cmsFile.getFileId();
+        } catch (IOException e) {
+            throw new UncheckedIOException("첨부파일 저장 실패: " + orgName, e);
+        }
+    }
+
+    @Override
+    public void linkFiles(String tableName, Long targetId, List<Long> fileIds, String fileType) {
+        for (Long fileId : fileIds) {
+            fileMapper.insertFileMatch(FileMatch.builder()
+                    .tableName(tableName)
+                    .targetId(targetId)
+                    .fileId(fileId)
+                    .fileType(fileType)
+                    .build());
+        }
+    }
+
+    private String dailyFolderPath() {
+        LocalDate now = LocalDate.now();
+        return String.format("%04d/%02d/%02d", now.getYear(), now.getMonthValue(), now.getDayOfMonth());
+    }
+
+    private String buildImageUrl(String folderPath, String physicalFileName) {
+        String baseUrl = fileProperties.getImage().getBaseUrl();
+        if (!baseUrl.endsWith("/")) baseUrl += "/";
+        return baseUrl + folderPath + "/" + physicalFileName;
+    }
+
+    private String mimeToExt(String mimeType) {
+        return switch (mimeType.toLowerCase()) {
+            case "image/jpeg" -> "jpg";
+            case "image/png"  -> "png";
+            case "image/gif"  -> "gif";
+            case "image/webp" -> "webp";
+            case "image/svg+xml" -> "svg";
+            default -> "bin";
+        };
+    }
+}
