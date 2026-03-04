@@ -1,5 +1,6 @@
 package kr.co.kalpa.pcms.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +14,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class DiaryDto {
     private Long id;
+
+    @NotBlank(message = "날짜를 입력해 주세요.")
     private String ymd;
+
     private String content;
     private String summary;
     private LocalDateTime createdAt;

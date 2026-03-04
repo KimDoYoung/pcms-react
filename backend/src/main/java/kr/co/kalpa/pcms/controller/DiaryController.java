@@ -1,9 +1,10 @@
 package kr.co.kalpa.pcms.controller;
 
 import kr.co.kalpa.pcms.dto.DiaryDto;
-import kr.co.kalpa.pcms.dto.PageRequestDto;
 import kr.co.kalpa.pcms.dto.PageResponseDto;
+import kr.co.kalpa.pcms.dto.diary.DiarySearchDto;
 import kr.co.kalpa.pcms.service.DiaryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,7 @@ public class DiaryController {
     private final DiaryService diaryService;
 
     @PostMapping
-    public ResponseEntity<Map<String, Long>> register(@RequestBody DiaryDto diaryDto) {
+    public ResponseEntity<Map<String, Long>> register(@Valid @RequestBody DiaryDto diaryDto) {
         log.info("register diary: {}", diaryDto);
         Long id = diaryService.register(diaryDto);
         return ResponseEntity.ok(Map.of("id", id));
@@ -34,7 +35,7 @@ public class DiaryController {
     }
 
     @PutMapping
-    public ResponseEntity<Map<String, String>> modify(@RequestBody DiaryDto diaryDto) {
+    public ResponseEntity<Map<String, String>> modify(@Valid @RequestBody DiaryDto diaryDto) {
         log.info("modify diary: {}", diaryDto);
         diaryService.modify(diaryDto);
         return ResponseEntity.ok(Map.of("result", "success"));
@@ -48,9 +49,9 @@ public class DiaryController {
     }
 
     @GetMapping
-    public ResponseEntity<PageResponseDto<DiaryDto>> getList(PageRequestDto pageRequestDto) {
-        log.info("getList diary: {}", pageRequestDto);
-        PageResponseDto<DiaryDto> response = diaryService.getList(pageRequestDto);
+    public ResponseEntity<PageResponseDto<DiaryDto>> getList(DiarySearchDto searchDto) {
+        log.info("getList diary: {}", searchDto);
+        PageResponseDto<DiaryDto> response = diaryService.getList(searchDto);
         return ResponseEntity.ok(response);
     }
 }

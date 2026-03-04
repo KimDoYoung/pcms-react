@@ -2,8 +2,8 @@ package kr.co.kalpa.pcms.service.impl;
 
 import kr.co.kalpa.pcms.domain.Diary;
 import kr.co.kalpa.pcms.dto.DiaryDto;
-import kr.co.kalpa.pcms.dto.PageRequestDto;
 import kr.co.kalpa.pcms.dto.PageResponseDto;
+import kr.co.kalpa.pcms.dto.diary.DiarySearchDto;
 import kr.co.kalpa.pcms.mapper.DiaryMapper;
 import kr.co.kalpa.pcms.service.DiaryService;
 import lombok.RequiredArgsConstructor;
@@ -65,9 +65,9 @@ public class DiaryServiceImpl implements DiaryService {
     }
 
     @Override
-    public PageResponseDto<DiaryDto> getList(PageRequestDto pageRequestDto) {
-        List<Diary> diaries = diaryMapper.selectDiaryList(pageRequestDto);
-        int total = diaryMapper.selectDiaryCount(pageRequestDto);
+    public PageResponseDto<DiaryDto> getList(DiarySearchDto searchDto) {
+        List<Diary> diaries = diaryMapper.selectDiaryList(searchDto);
+        int total = diaryMapper.selectDiaryCount(searchDto);
 
         List<DiaryDto> dtoList = diaries.stream().map(diary -> DiaryDto.builder()
                 .id(diary.getId())
@@ -82,7 +82,7 @@ public class DiaryServiceImpl implements DiaryService {
         return PageResponseDto.<DiaryDto>withAll()
                 .dtoList(dtoList)
                 .total(total)
-                .pageRequestDto(pageRequestDto)
+                .pageRequestDto(searchDto)
                 .build();
     }
 }

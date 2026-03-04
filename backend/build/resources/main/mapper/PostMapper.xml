@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.mapper.PostMapper">
+
+    <sql id="columns">
+        id, board_id as boardId, title, author, content,
+        view_count as viewCount, base_ymd as baseYmd,
+        created_at as createdAt, updated_at as updatedAt
+    </sql>
+
+    <sql id="search">
+        <where>
+            AND board_id = #{boardId}
+            <if test="startBaseYmd != null and startBaseYmd != ''">
+                AND base_ymd &gt;= #{startBaseYmd}
+            </if>
+            <if test="endBaseYmd != null and endBaseYmd != ''">
+                AND base_ymd &lt;= #{endBaseYmd}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (title LIKE CONCAT('%', #{keyword}, '%') OR content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <insert id="insertPost" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO cms.posts (board_id, title, author, content, base_ymd)
+        VALUES (#{boardId}, #{title}, #{author}, #{content}, #{baseYmd})
+    </insert>
+
+    <select id="selectPostById" resultType="kr.co.kalpa.pcms.domain.Post">
+        SELECT <include refid="columns"/>
+        FROM cms.posts
+        WHERE id = #{id}
+    </select>
+
+    <update id="updatePost">
+        UPDATE cms.posts
+        SET title      = #{title},
+            author     = #{author},
+            content    = #{content},
+            base_ymd   = #{baseYmd},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deletePost">
+        DELETE FROM cms.posts WHERE id = #{id}
+    </delete>
+
+    <update id="incrementViewCount">
+        UPDATE cms.posts SET view_count = view_count + 1 WHERE id = #{id}
+    </update>
+
+    <select id="selectPostList" resultType="kr.co.kalpa.pcms.domain.Post">
+        SELECT <include refid="columns"/>
+        FROM cms.posts
+        <include refid="search"/>
+        ORDER BY id DESC
+        LIMIT #{size} OFFSET #{skip}
+    </select>
+
+    <select id="selectPostCount" resultType="int">
+        SELECT count(*)
+        FROM cms.posts
+        <include refid="search"/>
+    </select>
+
+</mapper>

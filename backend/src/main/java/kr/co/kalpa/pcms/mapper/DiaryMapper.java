@@ -1,7 +1,7 @@
 package kr.co.kalpa.pcms.mapper;
 
 import kr.co.kalpa.pcms.domain.Diary;
-import kr.co.kalpa.pcms.dto.PageRequestDto;
+import kr.co.kalpa.pcms.dto.diary.DiarySearchDto;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -13,6 +13,6 @@ public interface DiaryMapper {
     Optional<Diary> selectDiaryById(Long id);
     void updateDiary(Diary diary);
     void deleteDiary(Long id);
-    List<Diary> selectDiaryList(PageRequestDto pageRequestDto);
-    int selectDiaryCount(PageRequestDto pageRequestDto);
+    List<Diary> selectDiaryList(DiarySearchDto searchDto);
+    int selectDiaryCount(DiarySearchDto searchDto);
 }

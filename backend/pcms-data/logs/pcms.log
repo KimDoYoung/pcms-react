@@ -154,3 +154,168 @@ This generated password is for development use only. Your security configuration
 2026-03-04 10:41:37.677 DEBUG [http-nio-8585-exec-7] k.c.k.p.m.DiaryMapper.selectDiaryCount   : ==> Parameters: 
 2026-03-04 10:41:37.696 DEBUG [http-nio-8585-exec-7] k.c.k.p.m.DiaryMapper.selectDiaryCount   : <==      Total: 1
 2026-03-04 10:42:24.799 INFO  [http-nio-8585-exec-9] k.c.k.pcms.service.impl.AuthServiceImpl  : logout success: kdy987
+2026-03-04 11:01:36.847 INFO  [File Watcher] rtingClassPathChangeChangedEventListener : Restarting due to 27 class path changes (0 additions, 27 deletions, 0 modifications)
+2026-03-04 11:01:36.853 INFO  [Thread-5] o.a.coyote.http11.Http11NioProtocol      : Stopping ProtocolHandler ["http-nio-8585"]
+2026-03-04 11:01:37.016 INFO  [Thread-5] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-03-04 11:01:37.018 INFO  [Thread-5] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-03-04 11:01:37.230 INFO  [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : Starting PcmsApplication using Java 21.0.9 with PID 1921441 (/home/kdy987/work/pcms-react/backend/build/classes/java/main started by kdy987 in /home/kdy987/work/pcms-react/backend)
+2026-03-04 11:01:37.231 DEBUG [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : Running with Spring Boot v3.3.0, Spring v6.1.8
+2026-03-04 11:01:37.231 INFO  [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : The following 1 profile is active: "fedora"
+2026-03-04 11:01:37.589 INFO  [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-03-04 11:01:37.589 INFO  [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-03-04 11:01:37.592 INFO  [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 0 ms. Found 0 Redis repository interfaces.
+2026-03-04 11:01:37.686 WARN  [restartedMain] o.m.s.mapper.ClassPathMapperScanner      : No MyBatis mapper was found in '[kr.co.kalpa.pcms]' package. Please check your configuration.
+2026-03-04 11:01:37.846 INFO  [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8585 (http)
+2026-03-04 11:01:37.849 INFO  [restartedMain] o.a.coyote.http11.Http11NioProtocol      : Initializing ProtocolHandler ["http-nio-8585"]
+2026-03-04 11:01:37.851 INFO  [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-03-04 11:01:37.852 INFO  [restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.24]
+2026-03-04 11:01:37.866 INFO  [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/pcms]   : Initializing Spring embedded WebApplicationContext
+2026-03-04 11:01:37.866 INFO  [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 627 ms
+2026-03-04 11:01:38.293 WARN  [restartedMain] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'sqlSessionFactory' defined in class path resource [org/mybatis/spring/boot/autoconfigure/MybatisAutoConfiguration.class]: Failed to instantiate [org.apache.ibatis.session.SqlSessionFactory]: Factory method 'sqlSessionFactory' threw exception with message: Failed to parse mapping resource: 'file [/home/kdy987/work/pcms-react/backend/build/resources/main/mapper/DiaryMapper.xml]'
+2026-03-04 11:01:38.295 INFO  [restartedMain] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
+2026-03-04 11:01:38.303 INFO  [restartedMain] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-03-04 11:01:38.319 ERROR [restartedMain] o.s.boot.SpringApplication               : Application run failed
+org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'sqlSessionFactory' defined in class path resource [org/mybatis/spring/boot/autoconfigure/MybatisAutoConfiguration.class]: Failed to instantiate [org.apache.ibatis.session.SqlSessionFactory]: Factory method 'sqlSessionFactory' threw exception with message: Failed to parse mapping resource: 'file [/home/kdy987/work/pcms-react/backend/build/resources/main/mapper/DiaryMapper.xml]'
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:648)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:636)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.instantiateUsingFactoryMethod(AbstractAutowireCapableBeanFactory.java:1337)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1167)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:562)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:522)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:335)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:200)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:975)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:962)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:624)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:754)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:456)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:335)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1363)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1352)
+	at kr.co.kalpa.pcms.PcmsApplication.main(PcmsApplication.java:10)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.boot.devtools.restart.RestartLauncher.run(RestartLauncher.java:50)
+Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.apache.ibatis.session.SqlSessionFactory]: Factory method 'sqlSessionFactory' threw exception with message: Failed to parse mapping resource: 'file [/home/kdy987/work/pcms-react/backend/build/resources/main/mapper/DiaryMapper.xml]'
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:177)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:644)
+	... 22 common frames omitted
+Caused by: java.io.IOException: Failed to parse mapping resource: 'file [/home/kdy987/work/pcms-react/backend/build/resources/main/mapper/DiaryMapper.xml]'
+	at org.mybatis.spring.SqlSessionFactoryBean.buildSqlSessionFactory(SqlSessionFactoryBean.java:700)
+	at org.mybatis.spring.SqlSessionFactoryBean.afterPropertiesSet(SqlSessionFactoryBean.java:577)
+	at org.mybatis.spring.SqlSessionFactoryBean.getObject(SqlSessionFactoryBean.java:720)
+	at org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration.sqlSessionFactory(MybatisAutoConfiguration.java:189)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:140)
+	... 23 common frames omitted
+Caused by: org.apache.ibatis.builder.BuilderException: Error parsing Mapper XML. The XML location is 'file [/home/kdy987/work/pcms-react/backend/build/resources/main/mapper/DiaryMapper.xml]'. Cause: org.apache.ibatis.builder.BuilderException: Error resolving class. Cause: org.apache.ibatis.type.TypeException: Could not resolve type alias 'kr.co.kalpa.pcms.domain.Diary'.  Cause: java.lang.ClassNotFoundException: Cannot find class: kr.co.kalpa.pcms.domain.Diary
+	at org.apache.ibatis.builder.xml.XMLMapperBuilder.configurationElement(XMLMapperBuilder.java:127)
+	at org.apache.ibatis.builder.xml.XMLMapperBuilder.parse(XMLMapperBuilder.java:100)
+	at org.mybatis.spring.SqlSessionFactoryBean.buildSqlSessionFactory(SqlSessionFactoryBean.java:698)
+	... 29 common frames omitted
+Caused by: org.apache.ibatis.builder.BuilderException: Error resolving class. Cause: org.apache.ibatis.type.TypeException: Could not resolve type alias 'kr.co.kalpa.pcms.domain.Diary'.  Cause: java.lang.ClassNotFoundException: Cannot find class: kr.co.kalpa.pcms.domain.Diary
+	at org.apache.ibatis.builder.BaseBuilder.resolveClass(BaseBuilder.java:103)
+	at org.apache.ibatis.builder.xml.XMLStatementBuilder.parseStatementNode(XMLStatementBuilder.java:105)
+	at org.apache.ibatis.builder.xml.XMLMapperBuilder.buildStatementFromContext(XMLMapperBuilder.java:143)
+	at org.apache.ibatis.builder.xml.XMLMapperBuilder.buildStatementFromContext(XMLMapperBuilder.java:135)
+	at org.apache.ibatis.builder.xml.XMLMapperBuilder.configurationElement(XMLMapperBuilder.java:125)
+	... 31 common frames omitted
+Caused by: org.apache.ibatis.type.TypeException: Could not resolve type alias 'kr.co.kalpa.pcms.domain.Diary'.  Cause: java.lang.ClassNotFoundException: Cannot find class: kr.co.kalpa.pcms.domain.Diary
+	at org.apache.ibatis.type.TypeAliasRegistry.resolveAlias(TypeAliasRegistry.java:128)
+	at org.apache.ibatis.builder.BaseBuilder.resolveAlias(BaseBuilder.java:132)
+	at org.apache.ibatis.builder.BaseBuilder.resolveClass(BaseBuilder.java:101)
+	... 35 common frames omitted
+Caused by: java.lang.ClassNotFoundException: Cannot find class: kr.co.kalpa.pcms.domain.Diary
+	at org.apache.ibatis.io.ClassLoaderWrapper.classForName(ClassLoaderWrapper.java:226)
+	at org.apache.ibatis.io.ClassLoaderWrapper.classForName(ClassLoaderWrapper.java:103)
+	at org.apache.ibatis.io.Resources.classForName(Resources.java:322)
+	at org.apache.ibatis.type.TypeAliasRegistry.resolveAlias(TypeAliasRegistry.java:124)
+	... 37 common frames omitted
+2026-03-04 11:01:39.770 INFO  [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : Starting PcmsApplication using Java 21.0.9 with PID 1921441 (/home/kdy987/work/pcms-react/backend/build/classes/java/main started by kdy987 in /home/kdy987/work/pcms-react/backend)
+2026-03-04 11:01:39.770 DEBUG [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : Running with Spring Boot v3.3.0, Spring v6.1.8
+2026-03-04 11:01:39.770 INFO  [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : The following 1 profile is active: "fedora"
+2026-03-04 11:01:40.038 INFO  [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-03-04 11:01:40.038 INFO  [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-03-04 11:01:40.044 INFO  [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 5 ms. Found 0 Redis repository interfaces.
+2026-03-04 11:01:40.184 INFO  [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8585 (http)
+2026-03-04 11:01:40.186 INFO  [restartedMain] o.a.coyote.http11.Http11NioProtocol      : Initializing ProtocolHandler ["http-nio-8585"]
+2026-03-04 11:01:40.186 INFO  [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-03-04 11:01:40.187 INFO  [restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.24]
+2026-03-04 11:01:40.196 INFO  [restartedMain] o.a.c.c.C.[.[localhost].[/pcms]          : Initializing Spring embedded WebApplicationContext
+2026-03-04 11:01:40.196 INFO  [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 424 ms
+2026-03-04 11:01:40.389 WARN  [restartedMain] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: 887bf546-41bc-4a69-ac5e-1b320cc150d3
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-03-04 11:01:40.390 INFO  [restartedMain] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-03-04 11:01:40.488 INFO  [restartedMain] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@24da3fb8, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@89f10bb, org.springframework.security.web.context.SecurityContextHolderFilter@40cf67c, org.springframework.security.web.header.HeaderWriterFilter@472b1650, org.springframework.web.filter.CorsFilter@7723b9c, org.springframework.security.web.authentication.logout.LogoutFilter@ddbf4b9, kr.co.kalpa.pcms.security.JwtFilter@425eb97a, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@29aa0e66, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@362c0495, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@378c7976, org.springframework.security.web.session.SessionManagementFilter@19782162, org.springframework.security.web.access.ExceptionTranslationFilter@2c102378, org.springframework.security.web.access.intercept.AuthorizationFilter@767663f3]
+2026-03-04 11:01:40.647 INFO  [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2026-03-04 11:01:40.660 INFO  [restartedMain] o.a.coyote.http11.Http11NioProtocol      : Starting ProtocolHandler ["http-nio-8585"]
+2026-03-04 11:01:40.661 INFO  [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8585 (http) with context path '/pcms'
+2026-03-04 11:01:40.668 INFO  [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : Started PcmsApplication in 0.936 seconds (process running for 1289.822)
+2026-03-04 11:01:40.670 INFO  [restartedMain] .ConditionEvaluationDeltaLoggingListener : Condition evaluation unchanged
+2026-03-04 11:10:52.444 INFO  [File Watcher] rtingClassPathChangeChangedEventListener : Restarting due to 27 class path changes (19 additions, 0 deletions, 8 modifications)
+2026-03-04 11:10:52.446 INFO  [Thread-7] o.a.coyote.http11.Http11NioProtocol      : Stopping ProtocolHandler ["http-nio-8585"]
+2026-03-04 11:10:52.643 INFO  [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : Starting PcmsApplication using Java 21.0.9 with PID 1921441 (/home/kdy987/work/pcms-react/backend/build/classes/java/main started by kdy987 in /home/kdy987/work/pcms-react/backend)
+2026-03-04 11:10:52.643 DEBUG [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : Running with Spring Boot v3.3.0, Spring v6.1.8
+2026-03-04 11:10:52.643 INFO  [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : The following 1 profile is active: "fedora"
+2026-03-04 11:10:52.897 INFO  [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-03-04 11:10:52.898 INFO  [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-03-04 11:10:52.904 INFO  [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 5 ms. Found 0 Redis repository interfaces.
+2026-03-04 11:10:53.052 INFO  [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8585 (http)
+2026-03-04 11:10:53.053 INFO  [restartedMain] o.a.coyote.http11.Http11NioProtocol      : Initializing ProtocolHandler ["http-nio-8585"]
+2026-03-04 11:10:53.053 INFO  [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-03-04 11:10:53.053 INFO  [restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.24]
+2026-03-04 11:10:53.062 INFO  [restartedMain] o.a.c.c.C.[.[localhost].[/pcms]          : Initializing Spring embedded WebApplicationContext
+2026-03-04 11:10:53.062 INFO  [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 417 ms
+2026-03-04 11:10:53.277 WARN  [restartedMain] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: fb9d733a-bee8-4830-a2b3-054f53240fea
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-03-04 11:10:53.280 INFO  [restartedMain] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-03-04 11:10:53.397 INFO  [restartedMain] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@1b967c85, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@2df369b3, org.springframework.security.web.context.SecurityContextHolderFilter@cdbfab0, org.springframework.security.web.header.HeaderWriterFilter@30edd269, org.springframework.web.filter.CorsFilter@6e6ec1c0, org.springframework.security.web.authentication.logout.LogoutFilter@4c3f5d91, kr.co.kalpa.pcms.security.JwtFilter@172dceb, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@4e2bb890, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@100b55a6, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@2928fa14, org.springframework.security.web.session.SessionManagementFilter@7dfe530b, org.springframework.security.web.access.ExceptionTranslationFilter@7b8a14a, org.springframework.security.web.access.intercept.AuthorizationFilter@152f4b85]
+2026-03-04 11:10:53.524 INFO  [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2026-03-04 11:10:53.533 INFO  [restartedMain] o.a.coyote.http11.Http11NioProtocol      : Starting ProtocolHandler ["http-nio-8585"]
+2026-03-04 11:10:53.534 INFO  [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8585 (http) with context path '/pcms'
+2026-03-04 11:10:53.541 INFO  [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : Started PcmsApplication in 0.932 seconds (process running for 1842.695)
+2026-03-04 11:10:53.543 INFO  [restartedMain] .ConditionEvaluationDeltaLoggingListener : Condition evaluation unchanged
+2026-03-04 11:11:47.351 INFO  [background-preinit] o.h.validator.internal.util.Version      : HV000001: Hibernate Validator 8.0.1.Final
+2026-03-04 11:11:47.388 INFO  [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : Starting PcmsApplication using Java 21.0.9 with PID 1944728 (/home/kdy987/work/pcms-react/backend/build/classes/java/main started by kdy987 in /home/kdy987/work/pcms-react/backend)
+2026-03-04 11:11:47.388 DEBUG [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : Running with Spring Boot v3.3.0, Spring v6.1.8
+2026-03-04 11:11:47.389 INFO  [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : The following 1 profile is active: "fedora"
+2026-03-04 11:11:47.431 INFO  [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-03-04 11:11:47.432 INFO  [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-03-04 11:11:48.298 INFO  [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-03-04 11:11:48.301 INFO  [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-03-04 11:11:48.326 INFO  [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 12 ms. Found 0 Redis repository interfaces.
+2026-03-04 11:11:49.031 INFO  [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8585 (http)
+2026-03-04 11:11:49.041 INFO  [restartedMain] o.a.coyote.http11.Http11NioProtocol      : Initializing ProtocolHandler ["http-nio-8585"]
+2026-03-04 11:11:49.043 INFO  [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-03-04 11:11:49.044 INFO  [restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.24]
+2026-03-04 11:11:49.084 INFO  [restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/pcms]   : Initializing Spring embedded WebApplicationContext
+2026-03-04 11:11:49.085 INFO  [restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1653 ms
+2026-03-04 11:11:49.869 WARN  [restartedMain] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: b4f38d0e-d5ed-498c-9dd6-91acc9b81950
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-03-04 11:11:49.887 INFO  [restartedMain] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-03-04 11:11:50.157 INFO  [restartedMain] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@7b73c8f, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@6697b4a4, org.springframework.security.web.context.SecurityContextHolderFilter@204163bc, org.springframework.security.web.header.HeaderWriterFilter@1a069959, org.springframework.web.filter.CorsFilter@37cea8ed, org.springframework.security.web.authentication.logout.LogoutFilter@7d21b9b8, kr.co.kalpa.pcms.security.JwtFilter@6f8634fa, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@78ad011a, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@425ecb1d, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@51eb2ec1, org.springframework.security.web.session.SessionManagementFilter@2c45842f, org.springframework.security.web.access.ExceptionTranslationFilter@6a476bc, org.springframework.security.web.access.intercept.AuthorizationFilter@a0d7984]
+2026-03-04 11:11:50.527 INFO  [restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2026-03-04 11:11:50.546 INFO  [restartedMain] o.a.coyote.http11.Http11NioProtocol      : Starting ProtocolHandler ["http-nio-8585"]
+2026-03-04 11:11:50.555 INFO  [restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8585 (http) with context path '/pcms'
+2026-03-04 11:11:50.567 INFO  [restartedMain] kr.co.kalpa.pcms.PcmsApplication         : Started PcmsApplication in 3.697 seconds (process running for 4.069)
+2026-03-04 11:13:11.520 INFO  [http-nio-8585-exec-5] o.a.c.c.C.[Tomcat].[localhost].[/pcms]   : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-03-04 11:13:11.521 INFO  [http-nio-8585-exec-5] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-03-04 11:13:11.523 INFO  [http-nio-8585-exec-5] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
