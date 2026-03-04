@@ -38,6 +38,12 @@ npm run preview   # 프로덕션 빌드 미리보기
 ./bm.sh run | build | war | test | compile | clean | status | log
 ```
 
+```bash
+psql ... # postgresql db접속 .env.fedora or .env.home 을 참조
+redis-cli # redis 접속 
+```
+
+
 ### 백엔드 환경 설정
 `_PROFILE` 환경변수로 프로필 지정 (예: `export _PROFILE=fedora`). 해당 프로필의 `application-<profile>.properties`를 로드하며, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` 정의가 필요함.
 

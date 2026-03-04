@@ -38,3 +38,37 @@
 4. **안전한 작업**:
    - 코드 변경 후에는 반드시 적절한 빌드/린트 명령어를 통해 문법적 오류가 없는지 확인하는 습관을 가져야 합니다.
    - 불필요한 주석은 지양하고, 복잡한 로직의 '이유(Why)'를 설명하는 주석만 제한적으로 추가하십시오.
+
+
+### 4. 명령어
+
+### 프론트엔드 (`cd frontend`)
+```bash
+npm run dev       # 개발 서버 실행 (포트 5173)
+npm run build     # 프로덕션 빌드
+npm run lint      # ESLint
+npm run preview   # 프로덕션 빌드 미리보기
+```
+
+루트에서 스크립트 사용:
+```bash
+./fm.sh dev | build | lint | clean | install
+```
+
+### 백엔드 (`cd backend`)
+```bash
+./gradlew bootRun         # 개발 서버 실행 (포트 8585)
+./gradlew clean build     # 전체 빌드 (테스트 포함)
+./gradlew test            # 테스트만 실행
+./gradlew bootWar         # 배포용 WAR 빌드
+```
+
+루트에서 스크립트 사용:
+```bash
+./bm.sh run | build | war | test | compile | clean | status | log
+```
+
+```bash
+psql ... # postgresql db접속 .env.fedora or .env.home 을 참조
+redis-cli # redis 접속 
+```
