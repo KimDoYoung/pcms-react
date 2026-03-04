@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.mapper.ApNodeMapper">
+
+    <!-- is_deleted → deleted 로 alias (Lombok boolean 필드명 맞춤) -->
+    <sql id="selectColumns">
+        id, node_type, parent_id, name, depth,
+        is_deleted as deleted, delete_dt, create_dt, modify_dt,
+        child_count, total_size, link_target_id
+    </sql>
+
+    <insert id="insertNode">
+        INSERT INTO cms.ap_node (id, node_type, parent_id, name, depth, link_target_id)
+        VALUES (
+            CAST(#{id} AS UUID),
+            #{nodeType},
+            CAST(#{parentId} AS UUID),
+            #{name},
+            #{depth},
+            CAST(#{linkTargetId} AS UUID)
+        )
+    </insert>
+
+    <select id="selectById" resultType="kr.co.kalpa.pcms.domain.ApNode">
+        SELECT <include refid="selectColumns"/>
+        FROM cms.ap_node
+        WHERE id = CAST(#{id} AS UUID)
+    </select>
+
+    <select id="selectRoots" resultType="kr.co.kalpa.pcms.domain.ApNode">
+        SELECT <include refid="selectColumns"/>
+        FROM cms.ap_node
+        WHERE parent_id IS NULL AND is_deleted = FALSE
+        ORDER BY node_type ASC, name ASC
+    </select>
+
+    <select id="selectChildren" resultType="kr.co.kalpa.pcms.domain.ApNode">
+        SELECT <include refid="selectColumns"/>
+        FROM cms.ap_node
+        WHERE parent_id = CAST(#{parentId} AS UUID) AND is_deleted = FALSE
+        ORDER BY node_type ASC, name ASC
+    </select>
+
+    <!-- 재귀 CTE로 루트까지의 조상을 depth 오름차순으로 반환 (breadcrumb용) -->
+    <select id="selectAncestors" resultType="kr.co.kalpa.pcms.domain.ApNode">
+        WITH RECURSIVE ancestors AS (
+            SELECT id, node_type, parent_id, name, depth,
+                   is_deleted, delete_dt, create_dt, modify_dt,
+                   child_count, total_size, link_target_id
+            FROM cms.ap_node
+            WHERE id = CAST(#{id} AS UUID)
+            UNION ALL
+            SELECT n.id, n.node_type, n.parent_id, n.name, n.depth,
+                   n.is_deleted, n.delete_dt, n.create_dt, n.modify_dt,
+                   n.child_count, n.total_size, n.link_target_id
+            FROM cms.ap_node n
+            JOIN ancestors a ON n.id = a.parent_id
+        )
+        SELECT id, node_type, parent_id, name, depth,
+               is_deleted as deleted, delete_dt, create_dt, modify_dt,
+               child_count, total_size, link_target_id
+        FROM ancestors
+        ORDER BY depth ASC
+    </select>
+
+    <update id="softDelete">
+        UPDATE cms.ap_node
+        SET is_deleted = TRUE, delete_dt = CURRENT_TIMESTAMP
+        WHERE id = CAST(#{id} AS UUID)
+    </update>
+
+    <update id="updateName">
+        UPDATE cms.ap_node
+        SET name = #{name}
+        WHERE id = CAST(#{id} AS UUID)
+    </update>
+
+    <update id="updateParent">
+        UPDATE cms.ap_node
+        SET parent_id = CAST(#{parentId} AS UUID), depth = #{depth}
+        WHERE id = CAST(#{id} AS UUID)
+    </update>
+
+    <update id="incrementChildCount">
+        UPDATE cms.ap_node
+        SET child_count = child_count + 1
+        WHERE id = CAST(#{parentId} AS UUID)
+    </update>
+
+    <update id="decrementChildCount">
+        UPDATE cms.ap_node
+        SET child_count = GREATEST(child_count - 1, 0)
+        WHERE id = CAST(#{parentId} AS UUID)
+    </update>
+
+    <update id="updateTotalSize">
+        UPDATE cms.ap_node
+        SET total_size = GREATEST(total_size + #{delta}, 0)
+        WHERE id = CAST(#{parentId} AS UUID)
+    </update>
+
+</mapper>

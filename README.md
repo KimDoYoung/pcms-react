@@ -10,6 +10,7 @@
 - backend port는 8585사용 , frontend port는 5173 사용
 
 - project명: pcms-react
+- [swagger로 테스트](http://localhost:8585/pcms/swagger-ui/index.html#/)
 
 ## 기술스택
 

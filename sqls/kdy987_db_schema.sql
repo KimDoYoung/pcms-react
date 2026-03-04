@@ -162,7 +162,7 @@ CREATE TABLE calendar_public (
 DROP TABLE IF EXISTS ap_node CASCADE;
 CREATE TABLE ap_node (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- PostgreSQL 표준 UUID 사용
-    node_type CHAR(1) NOT NULL CHECK (node_type IN ('F', 'D')), -- F:파일, D:디렉토리
+    node_type CHAR(1) NOT NULL CHECK (node_type IN ('F', 'D', 'L')), -- F:파일, D:디렉토리, L:링크
     parent_id UUID,
     name VARCHAR(255) NOT NULL,
     depth INT NOT NULL DEFAULT 0,
@@ -174,7 +174,10 @@ CREATE TABLE ap_node (
     -- 디렉토리 전용 필드 (캐시)
     child_count INT DEFAULT 0,
     total_size BIGINT DEFAULT 0,
-    
+
+    -- 링크 전용 필드 (L 타입일 때만 사용)
+    link_target_id UUID REFERENCES ap_node(id) ON DELETE SET NULL,
+
     -- 제약 조건
     CONSTRAINT fk_node_parent FOREIGN KEY (parent_id) REFERENCES ap_node(id) ON DELETE RESTRICT,
     CONSTRAINT chk_depth CHECK (depth >= 0 AND depth <= 20),
@@ -188,7 +191,7 @@ CREATE INDEX idx_ap_node_type_deleted ON ap_node(node_type, is_deleted);
 
 -- 코멘트
 COMMENT ON TABLE ap_node IS '파일/디렉토리 트리 노드';
-COMMENT ON COLUMN ap_node.node_type IS 'F:파일, D:디렉토리';
+COMMENT ON COLUMN ap_node.node_type IS 'F:파일, D:디렉토리, L:링크';
 
 -- 2. 파일 상세 정보 테이블
 DROP TABLE IF EXISTS ap_file CASCADE;
