@@ -3,6 +3,7 @@ package kr.co.kalpa.pcms.service.impl;
 import kr.co.kalpa.pcms.config.FileProperties;
 import kr.co.kalpa.pcms.domain.CmsFile;
 import kr.co.kalpa.pcms.domain.FileMatch;
+import kr.co.kalpa.pcms.dto.AttachmentDto;
 import kr.co.kalpa.pcms.mapper.FileMapper;
 import kr.co.kalpa.pcms.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
@@ -132,6 +133,49 @@ public class FileUploadServiceImpl implements FileUploadService {
         String baseUrl = fileProperties.getImage().getBaseUrl();
         if (!baseUrl.endsWith("/")) baseUrl += "/";
         return baseUrl + folderPath + "/" + physicalFileName;
+    }
+
+    @Override
+    public List<AttachmentDto> getAttachments(String tableName, Long targetId) {
+        List<FileMatch> matches = fileMapper.selectFileMatchByTarget(tableName, targetId, "attachment");
+        if (matches.isEmpty()) return List.of();
+
+        List<Long> fileIds = matches.stream().map(FileMatch::getFileId).toList();
+        return fileMapper.selectFilesByIds(fileIds).stream()
+                .map(f -> AttachmentDto.builder()
+                        .fileId(f.getFileId())
+                        .orgFileName(f.getOrgFileName())
+                        .fileSize(f.getFileSize())
+                        .mimeType(f.getMimeType())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public void deleteAttachments(List<Long> fileIds) {
+        if (fileIds == null || fileIds.isEmpty()) return;
+
+        // 물리 파일 경로 조회
+        List<CmsFile> files = fileMapper.selectFilesByIds(fileIds);
+
+        // file_match 먼저 삭제 (FK 제약)
+        fileMapper.deleteFileMatchByFileIds(fileIds);
+
+        // files 레코드 삭제
+        fileMapper.deleteFilesByIds(fileIds);
+
+        // 물리 파일 삭제
+        String attachDir = fileProperties.getUpload().getAttachFilesDir();
+        for (CmsFile file : files) {
+            Path filePath = Paths.get(attachDir, file.getSavedFolder(), file.getPhysicalFileName());
+            try {
+                Files.deleteIfExists(filePath);
+                log.debug("attachment deleted: {}", filePath);
+            } catch (IOException e) {
+                // 물리 파일 삭제 실패는 경고만 (DB는 이미 삭제됨)
+                log.warn("물리 파일 삭제 실패: {}", filePath, e);
+            }
+        }
     }
 
     private String mimeToExt(String mimeType) {

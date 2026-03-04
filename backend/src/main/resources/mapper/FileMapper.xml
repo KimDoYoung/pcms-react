@@ -23,11 +23,38 @@
           AND file_type = #{fileType}
     </select>
 
+    <select id="selectFilesByIds" resultType="kr.co.kalpa.pcms.domain.CmsFile">
+        SELECT file_id as fileId, saved_folder as savedFolder,
+               org_file_name as orgFileName, physical_file_name as physicalFileName,
+               file_size as fileSize, mime_type as mimeType
+        FROM cms.files
+        WHERE file_id IN
+        <foreach item="id" collection="fileIds" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
     <delete id="deleteFileMatchByTarget">
         DELETE FROM cms.file_match
         WHERE table_name = #{tableName}
           AND target_id = #{targetId}
           AND file_type = #{fileType}
+    </delete>
+
+    <delete id="deleteFileMatchByFileIds">
+        DELETE FROM cms.file_match
+        WHERE file_id IN
+        <foreach item="id" collection="fileIds" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteFilesByIds">
+        DELETE FROM cms.files
+        WHERE file_id IN
+        <foreach item="id" collection="fileIds" open="(" separator="," close=")">
+            #{id}
+        </foreach>
     </delete>
 
 </mapper>

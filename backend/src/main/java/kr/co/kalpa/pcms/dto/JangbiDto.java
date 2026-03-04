@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -26,4 +27,10 @@ public class JangbiDto {
     private String spec;
     private String lvl;
     private OffsetDateTime modifyDt;
+
+    /** 수정 시 삭제할 첨부파일 fileId 목록 */
+    private List<Long> deletedAttachmentIds;
+
+    /** 조회 시 첨부파일 목록 */
+    private List<AttachmentDto> attachments;
 }

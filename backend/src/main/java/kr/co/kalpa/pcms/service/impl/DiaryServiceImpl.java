@@ -71,16 +71,22 @@ public class DiaryServiceImpl implements DiaryService {
                 .summary(diary.getSummary())
                 .createdAt(diary.getCreatedAt())
                 .updatedAt(diary.getUpdatedAt())
+                .attachments(fileUploadService.getAttachments(TABLE_NAME, id))
                 .build();
     }
 
     @Override
     public void modify(DiaryDto diaryDto, List<MultipartFile> attachments) {
-        // 1. 에디터 이미지 추출 → 디스크 저장 + URL 치환 (새로 삽입된 base64만 처리)
+        // 1. 삭제 요청된 첨부파일 제거 (물리 파일 + files + file_match)
+        if (diaryDto.getDeletedAttachmentIds() != null && !diaryDto.getDeletedAttachmentIds().isEmpty()) {
+            fileUploadService.deleteAttachments(diaryDto.getDeletedAttachmentIds());
+        }
+
+        // 2. 에디터 이미지 추출 → 디스크 저장 + URL 치환 (새로 삽입된 base64만 처리)
         FileUploadService.ProcessResult imageResult =
                 fileUploadService.processEditorImages(diaryDto.getContent());
 
-        // 2. 다이어리 업데이트
+        // 3. 다이어리 업데이트
         Diary diary = Diary.builder()
                 .id(diaryDto.getId())
                 .ymd(diaryDto.getYmd())
@@ -89,12 +95,12 @@ public class DiaryServiceImpl implements DiaryService {
                 .build();
         diaryMapper.updateDiary(diary);
 
-        // 3. 새로 추가된 에디터 이미지 file_match 연결
+        // 4. 새로 추가된 에디터 이미지 file_match 연결
         if (!imageResult.fileIds().isEmpty()) {
             fileUploadService.linkFiles(TABLE_NAME, diaryDto.getId(), imageResult.fileIds(), FILE_TYPE_IMAGE);
         }
 
-        // 4. 새 첨부파일 저장 + file_match 연결
+        // 5. 새 첨부파일 저장 + file_match 연결
         List<Long> attachFileIds = saveAttachments(attachments);
         if (!attachFileIds.isEmpty()) {
             fileUploadService.linkFiles(TABLE_NAME, diaryDto.getId(), attachFileIds, FILE_TYPE_ATTACH);

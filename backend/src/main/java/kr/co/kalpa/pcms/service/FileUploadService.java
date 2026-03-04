@@ -1,5 +1,6 @@
 package kr.co.kalpa.pcms.service;
 
+import kr.co.kalpa.pcms.dto.AttachmentDto;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -21,6 +22,17 @@ public interface FileUploadService {
      * file_match 테이블에 파일 연결 정보를 기록한다.
      */
     void linkFiles(String tableName, Long targetId, List<Long> fileIds, String fileType);
+
+    /**
+     * 특정 레코드에 연결된 첨부파일 목록을 조회한다.
+     */
+    List<AttachmentDto> getAttachments(String tableName, Long targetId);
+
+    /**
+     * 첨부파일을 삭제한다: 물리 파일 + files + file_match 레코드 모두 제거.
+     * attachFilesDir 하위 파일만 대상으로 한다.
+     */
+    void deleteAttachments(List<Long> fileIds);
 
     record ProcessResult(String content, List<Long> fileIds) {}
 }

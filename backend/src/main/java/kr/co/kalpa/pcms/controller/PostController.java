@@ -7,9 +7,12 @@ import kr.co.kalpa.pcms.dto.board.PostSearchDto;
 import kr.co.kalpa.pcms.service.PostService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,13 +23,14 @@ public class PostController {
 
     private final PostService postService;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, Long>> register(
             @PathVariable Long boardId,
-            @Valid @RequestBody PostDto postDto) {
+            @RequestPart("post") @Valid PostDto postDto,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         log.info("register post: boardId={}, {}", boardId, postDto);
         postDto.setBoardId(boardId);
-        Long id = postService.register(postDto);
+        Long id = postService.register(postDto, files);
         return ResponseEntity.ok(Map.of("id", id));
     }
 
@@ -38,15 +42,16 @@ public class PostController {
         return ResponseEntity.ok(postService.get(postsId));
     }
 
-    @PutMapping("/{postsId}")
+    @PutMapping(value = "/{postsId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> modify(
             @PathVariable Long boardId,
             @PathVariable Long postsId,
-            @Valid @RequestBody PostDto postDto) {
+            @RequestPart("post") @Valid PostDto postDto,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         log.info("modify post: boardId={}, postsId={}", boardId, postsId);
         postDto.setBoardId(boardId);
         postDto.setId(postsId);
-        postService.modify(postDto);
+        postService.modify(postDto, files);
         return ResponseEntity.ok(Map.of("result", "success"));
     }
 

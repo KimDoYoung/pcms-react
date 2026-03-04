@@ -7,9 +7,12 @@ import kr.co.kalpa.pcms.dto.jangbi.JangbiSearchDto;
 import kr.co.kalpa.pcms.service.JangbiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,10 +23,12 @@ public class JangbiController {
 
     private final JangbiService jangbiService;
 
-    @PostMapping
-    public ResponseEntity<Map<String, Long>> register(@Valid @RequestBody JangbiDto jangbiDto) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, Long>> register(
+            @RequestPart("jangbi") @Valid JangbiDto jangbiDto,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         log.info("register jangbi: {}", jangbiDto);
-        Long id = jangbiService.register(jangbiDto);
+        Long id = jangbiService.register(jangbiDto, files);
         return ResponseEntity.ok(Map.of("id", id));
     }
 
@@ -33,10 +38,12 @@ public class JangbiController {
         return ResponseEntity.ok(jangbiService.get(id));
     }
 
-    @PutMapping
-    public ResponseEntity<Map<String, String>> modify(@Valid @RequestBody JangbiDto jangbiDto) {
+    @PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, String>> modify(
+            @RequestPart("jangbi") @Valid JangbiDto jangbiDto,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         log.info("modify jangbi: {}", jangbiDto);
-        jangbiService.modify(jangbiDto);
+        jangbiService.modify(jangbiDto, files);
         return ResponseEntity.ok(Map.of("result", "success"));
     }
 
