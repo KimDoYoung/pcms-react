@@ -11,6 +11,8 @@
 
 - project명: pcms-react
 - [swagger로 테스트](http://localhost:8585/pcms/swagger-ui/index.html#/)
+- React의 연습에 목적이 있음.
+- framework의 작성에 목적이 있음.
 
 ## 기술스택
 
