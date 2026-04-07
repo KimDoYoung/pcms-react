@@ -57,6 +57,7 @@
 - postgresql host : jskn.iptime.org, db : cms
 - id/pw는 환경변수 : PCMS_MODE의 값에 따라서 .env.{PCMS_MODE} 에 기술되어 있음.
 
+
 ## 실행
 - fm.sh
 - bm.sh

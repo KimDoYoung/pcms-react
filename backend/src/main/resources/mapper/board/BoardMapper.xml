@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.domain.board.BoardMapper">
+
+    <insert id="insertBoard" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO cms.boards (board_code, board_name_kor, content_type, description)
+        VALUES (#{boardCode}, #{boardNameKor}, #{contentType}, #{description})
+    </insert>
+
+    <select id="selectBoardById" resultType="kr.co.kalpa.pcms.domain.board.Board">
+        SELECT id, board_code as boardCode, board_name_kor as boardNameKor,
+               content_type as contentType, description,
+               created_at as createdAt, updated_at as updatedAt
+        FROM cms.boards
+        WHERE id = #{id}
+    </select>
+
+    <update id="updateBoard">
+        UPDATE cms.boards
+        SET board_code     = #{boardCode},
+            board_name_kor = #{boardNameKor},
+            content_type   = #{contentType},
+            description    = #{description},
+            updated_at     = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteBoard">
+        DELETE FROM cms.boards WHERE id = #{id}
+    </delete>
+
+    <select id="selectBoardList" resultType="kr.co.kalpa.pcms.domain.board.Board">
+        SELECT id, board_code as boardCode, board_name_kor as boardNameKor,
+               content_type as contentType, description,
+               created_at as createdAt, updated_at as updatedAt
+        FROM cms.boards
+        ORDER BY id ASC
+    </select>
+
+    <select id="selectPostCountByBoardId" resultType="int">
+        SELECT count(*) FROM cms.posts WHERE board_id = #{boardId}
+    </select>
+
+</mapper>
