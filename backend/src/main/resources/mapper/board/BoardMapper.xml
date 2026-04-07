@@ -2,14 +2,14 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="kr.co.kalpa.pcms.domain.board.BoardMapper">
+<mapper namespace="kr.co.kalpa.pcms.domain.board.service.BoardMapper">
 
     <insert id="insertBoard" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO cms.boards (board_code, board_name_kor, content_type, description)
         VALUES (#{boardCode}, #{boardNameKor}, #{contentType}, #{description})
     </insert>
 
-    <select id="selectBoardById" resultType="kr.co.kalpa.pcms.domain.board.Board">
+    <select id="selectBoardById" resultType="kr.co.kalpa.pcms.domain.board.entity.Board">
         SELECT id, board_code as boardCode, board_name_kor as boardNameKor,
                content_type as contentType, description,
                created_at as createdAt, updated_at as updatedAt
@@ -31,7 +31,7 @@
         DELETE FROM cms.boards WHERE id = #{id}
     </delete>
 
-    <select id="selectBoardList" resultType="kr.co.kalpa.pcms.domain.board.Board">
+    <select id="selectBoardList" resultType="kr.co.kalpa.pcms.domain.board.entity.Board">
         SELECT id, board_code as boardCode, board_name_kor as boardNameKor,
                content_type as contentType, description,
                created_at as createdAt, updated_at as updatedAt

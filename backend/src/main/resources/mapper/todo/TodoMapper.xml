@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="kr.co.kalpa.pcms.domain.todo.TodoMapper">
+<mapper namespace="kr.co.kalpa.pcms.domain.todo.service.TodoMapper">
 
     <insert id="insertTodo" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO cms.todo (content)
@@ -17,7 +17,7 @@
         </foreach>
     </insert>
 
-    <select id="selectTodoList" resultType="kr.co.kalpa.pcms.domain.todo.Todo">
+    <select id="selectTodoList" resultType="kr.co.kalpa.pcms.domain.todo.entity.Todo">
         SELECT id, content, created_at as createdAt
         FROM cms.todo
         ORDER BY id DESC

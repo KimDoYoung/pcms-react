@@ -2,9 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="kr.co.kalpa.pcms.domain.auth.UserMapper">
+<mapper namespace="kr.co.kalpa.pcms.domain.auth.service.UserMapper">
 
-    <select id="findByUserId" parameterType="string" resultType="kr.co.kalpa.pcms.domain.auth.User">
+    <select id="findByUserId" parameterType="string" resultType="kr.co.kalpa.pcms.domain.auth.entity.User">
         SELECT id, user_id, user_pw, user_nm, created_at
         FROM cms.users
         WHERE user_id = #{userId}

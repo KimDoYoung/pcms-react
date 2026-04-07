@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="kr.co.kalpa.pcms.domain.apnode.ApFileMapper">
+<mapper namespace="kr.co.kalpa.pcms.domain.apnode.service.ApFileMapper">
 
     <insert id="insertFile">
         INSERT INTO cms.ap_file (node_id, saved_path, original_name, file_size, content_type, sha256_hash, width, height, thumbnail_path)
@@ -19,7 +19,7 @@
         )
     </insert>
 
-    <select id="selectByNodeId" resultType="kr.co.kalpa.pcms.domain.apnode.ApFile">
+    <select id="selectByNodeId" resultType="kr.co.kalpa.pcms.domain.apnode.entity.ApFile">
         SELECT node_id, saved_path, original_name, file_size, content_type,
                sha256_hash, width, height, thumbnail_path, upload_dt
         FROM cms.ap_file

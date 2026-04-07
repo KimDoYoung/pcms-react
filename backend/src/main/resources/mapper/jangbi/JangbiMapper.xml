@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="kr.co.kalpa.pcms.domain.jangbi.JangbiMapper">
+<mapper namespace="kr.co.kalpa.pcms.domain.jangbi.service.JangbiMapper">
 
     <sql id="search">
         <where>
@@ -25,7 +25,7 @@
         VALUES (#{ymd}, #{item}, #{location}, #{cost}, #{spec}, #{lvl})
     </insert>
 
-    <select id="selectJangbiById" resultType="kr.co.kalpa.pcms.domain.jangbi.Jangbi">
+    <select id="selectJangbiById" resultType="kr.co.kalpa.pcms.domain.jangbi.entity.Jangbi">
         SELECT id, ymd, item, location, cost, spec, lvl, modify_dt as modifyDt
         FROM cms.jangbi
         WHERE id = #{id}
@@ -47,7 +47,7 @@
         DELETE FROM cms.jangbi WHERE id = #{id}
     </delete>
 
-    <select id="selectJangbiList" resultType="kr.co.kalpa.pcms.domain.jangbi.Jangbi">
+    <select id="selectJangbiList" resultType="kr.co.kalpa.pcms.domain.jangbi.entity.Jangbi">
         SELECT id, ymd, item, location, cost, spec, lvl, modify_dt as modifyDt,
                (SELECT count(*) FROM cms.file_match fm
                 WHERE fm.table_name = 'jangbi' AND fm.target_id = j.id

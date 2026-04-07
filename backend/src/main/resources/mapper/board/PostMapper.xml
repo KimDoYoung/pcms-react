@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="kr.co.kalpa.pcms.domain.board.PostMapper">
+<mapper namespace="kr.co.kalpa.pcms.domain.board.service.PostMapper">
 
     <sql id="columns">
         id, board_id as boardId, title, author, content,
@@ -30,7 +30,7 @@
         VALUES (#{boardId}, #{title}, #{author}, #{content}, #{baseYmd})
     </insert>
 
-    <select id="selectPostById" resultType="kr.co.kalpa.pcms.domain.board.Post">
+    <select id="selectPostById" resultType="kr.co.kalpa.pcms.domain.board.entity.Post">
         SELECT <include refid="columns"/>
         FROM cms.posts
         WHERE id = #{id}
@@ -54,7 +54,7 @@
         UPDATE cms.posts SET view_count = view_count + 1 WHERE id = #{id}
     </update>
 
-    <select id="selectPostList" resultType="kr.co.kalpa.pcms.domain.board.Post">
+    <select id="selectPostList" resultType="kr.co.kalpa.pcms.domain.board.entity.Post">
         SELECT <include refid="columns"/>,
                (SELECT count(*) FROM cms.file_match fm
                 WHERE fm.table_name = 'posts' AND fm.target_id = p.id

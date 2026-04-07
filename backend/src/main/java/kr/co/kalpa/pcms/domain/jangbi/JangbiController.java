@@ -1,4 +1,7 @@
 package kr.co.kalpa.pcms.domain.jangbi;
+import kr.co.kalpa.pcms.domain.jangbi.service.JangbiService;
+import kr.co.kalpa.pcms.domain.jangbi.dto.JangbiDto;
+import kr.co.kalpa.pcms.domain.jangbi.dto.JangbiSearchDto;
 
 import jakarta.validation.Valid;
 import kr.co.kalpa.pcms.common.dto.PageResponseDto;

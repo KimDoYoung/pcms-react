@@ -1,4 +1,6 @@
 package kr.co.kalpa.pcms.domain.board;
+import kr.co.kalpa.pcms.domain.board.service.BoardService;
+import kr.co.kalpa.pcms.domain.board.dto.BoardDto;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

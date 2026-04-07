@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="kr.co.kalpa.pcms.domain.apnode.ApNodeMapper">
+<mapper namespace="kr.co.kalpa.pcms.domain.apnode.service.ApNodeMapper">
 
     <!-- is_deleted → deleted 로 alias (Lombok boolean 필드명 맞춤) -->
     <sql id="selectColumns">
@@ -23,20 +23,20 @@
         )
     </insert>
 
-    <select id="selectById" resultType="kr.co.kalpa.pcms.domain.apnode.ApNode">
+    <select id="selectById" resultType="kr.co.kalpa.pcms.domain.apnode.entity.ApNode">
         SELECT <include refid="selectColumns"/>
         FROM cms.ap_node
         WHERE id = CAST(#{id} AS UUID)
     </select>
 
-    <select id="selectRoots" resultType="kr.co.kalpa.pcms.domain.apnode.ApNode">
+    <select id="selectRoots" resultType="kr.co.kalpa.pcms.domain.apnode.entity.ApNode">
         SELECT <include refid="selectColumns"/>
         FROM cms.ap_node
         WHERE parent_id IS NULL AND is_deleted = FALSE
         ORDER BY node_type ASC, name ASC
     </select>
 
-    <select id="selectChildren" resultType="kr.co.kalpa.pcms.domain.apnode.ApNode">
+    <select id="selectChildren" resultType="kr.co.kalpa.pcms.domain.apnode.entity.ApNode">
         SELECT <include refid="selectColumns"/>
         FROM cms.ap_node
         WHERE parent_id = CAST(#{parentId} AS UUID) AND is_deleted = FALSE
@@ -44,7 +44,7 @@
     </select>
 
     <!-- 재귀 CTE로 루트까지의 조상을 depth 오름차순으로 반환 (breadcrumb용) -->
-    <select id="selectAncestors" resultType="kr.co.kalpa.pcms.domain.apnode.ApNode">
+    <select id="selectAncestors" resultType="kr.co.kalpa.pcms.domain.apnode.entity.ApNode">
         WITH RECURSIVE ancestors AS (
             SELECT id, node_type, parent_id, name, depth,
                    is_deleted, delete_dt, create_dt, modify_dt,

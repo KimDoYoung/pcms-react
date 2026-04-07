@@ -1,4 +1,7 @@
 package kr.co.kalpa.pcms.domain.board;
+import kr.co.kalpa.pcms.domain.board.service.PostService;
+import kr.co.kalpa.pcms.domain.board.dto.PostDto;
+import kr.co.kalpa.pcms.domain.board.dto.PostSearchDto;
 
 import jakarta.validation.Valid;
 import kr.co.kalpa.pcms.common.dto.PageResponseDto;
