@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <springProperty name="APP_NAME" source="spring.application.name" defaultValue="pcms"/>
-    <springProperty name="BASE_DIR" source="kalpa.base-dir" defaultValue="./pcms-data"/>
+    <springProperty name="BASE_DIR" source="kalpa.pcms.base-dir" defaultValue="./pcms-data"/>
     <property name="LOG_DIR"  value="${BASE_DIR}/logs"/>
     <property name="LOG_FILE" value="${LOG_DIR}/${APP_NAME}.log"/>
 

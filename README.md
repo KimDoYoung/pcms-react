@@ -49,3 +49,9 @@
 | 6 | Redis             | 7.4.x (OSS)         | RSALv2/SSPLv1      | 인메모리 데이터 저장소. JWT 토큰 세션 관리, 캐싱, 멱등성 키 관리 |
 | 7 | JWT (jjwt)        | 0.12.x              | Apache-2.0         | JSON Web Token 인증. Access/Refresh Token 기반 사용자 인증 |
 | 8 | WebSocket (STOMP) | Spring 내장          | Apache-2.0         | 실시간 양방향 통신. KOSPI/KOSDAQ 시세, 체결 알림 실시간 전송 |
+
+## 개발 환경
+
+### DB서버
+- postgresql host : jskn.iptime.org, db : cms
+- id/pw는 환경변수 : PCMS_MODE의 값에 따라서 .env.{PCMS_MODE} 에 기술되어 있음.
