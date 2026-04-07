@@ -50,8 +50,14 @@
 | 7 | JWT (jjwt)        | 0.12.x              | Apache-2.0         | JSON Web Token 인증. Access/Refresh Token 기반 사용자 인증 |
 | 8 | WebSocket (STOMP) | Spring 내장          | Apache-2.0         | 실시간 양방향 통신. KOSPI/KOSDAQ 시세, 체결 알림 실시간 전송 |
 
+
 ## 개발 환경
 
 ### DB서버
 - postgresql host : jskn.iptime.org, db : cms
 - id/pw는 환경변수 : PCMS_MODE의 값에 따라서 .env.{PCMS_MODE} 에 기술되어 있음.
+
+## 실행
+- fm.sh
+- bm.sh
+
