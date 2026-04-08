@@ -10,42 +10,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 풀스택 모노레포 구조: React 프론트엔드 (포트 5173) + Spring Boot 백엔드 (포트 8585).
 
+## 목적
+
+- 이 프로젝트는 springboot + react framework를 만들려고 하는데 목적이 있음.
+- react study에 목적이 있음
+
 ## 명령어
 
-### 프론트엔드 (`cd frontend`)
+### project command
 ```bash
-npm run dev       # 개발 서버 실행 (포트 5173)
-npm run build     # 프로덕션 빌드
-npm run lint      # ESLint
-npm run preview   # 프로덕션 빌드 미리보기
+# frontend
+fm.sh
+# backend
+bm.sh
 ```
-
-루트에서 스크립트 사용:
-```bash
-./fm.sh dev | build | lint | clean | install
-```
-
-### 백엔드 (`cd backend`)
-```bash
-./gradlew bootRun         # 개발 서버 실행 (포트 8585)
-./gradlew clean build     # 전체 빌드 (테스트 포함)
-./gradlew test            # 테스트만 실행
-./gradlew bootWar         # 배포용 WAR 빌드
-```
-
-루트에서 스크립트 사용:
-```bash
-./bm.sh run | build | war | test | compile | clean | status | log
-```
-
+### utility command
 ```bash
 psql ... # postgresql db접속 .env.fedora or .env.home 을 참조
 redis-cli # redis 접속 
 ```
 
-
 ### 백엔드 환경 설정
-`_PROFILE` 환경변수로 프로필 지정 (예: `export _PROFILE=fedora`). 해당 프로필의 `application-<profile>.properties`를 로드하며, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` 정의가 필요함.
+- PCMS_MODE가 설정되어있어야 함. 개발시 development로 설정됨
+- 이 설정값에 의해서 application.properties, application-<PCMS_MODE value>.properties를 사용하게 됨
 
 ## 아키텍처
 
