@@ -28,6 +28,7 @@ bm.sh
 ```bash
 psql ... # postgresql db접속 .env.fedora or .env.home 을 참조
 redis-cli # redis 접속 
+redis-cli -h jskn.iptime.org -p 6379 -a "kalpa987!" 
 ```
 
 ### 백엔드 환경 설정
@@ -63,3 +64,4 @@ redis-cli # redis 접속
 - **백엔드 네이밍**: DB 컬럼은 snake_case, Java 필드는 camelCase. Lombok `@Getter`, `@Builder`, `@Slf4j` 사용이 표준.
 - **주석**: *왜(Why)* 를 설명하는 주석만 제한적으로 추가. 불필요한 주석 지양.
 - **설계 문서**: `docs/설계.md` (아키텍처 결정사항), `docs/frontend-init.md` (프론트엔드 초기 세팅 내역).
+- **디자인** : shadcn을 주로 사용하기로 함
