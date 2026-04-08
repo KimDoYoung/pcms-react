@@ -8,6 +8,7 @@
 
 set -euo pipefail
 
+VERSION="0.0.1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$SCRIPT_DIR/backend"
 GRADLEW="$BACKEND_DIR/gradlew"
@@ -17,7 +18,10 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
 BOLD='\033[1m'
+DIM='\033[2m'
 NC='\033[0m'
 
 # ── 유틸리티 함수 ─────────────────────────────────────────────────────────
@@ -26,9 +30,43 @@ warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 error()   { echo -e "${RED}[ERROR]${NC} $*"; }
 header()  { echo -e "\n${CYAN}${BOLD}══ $* ══${NC}\n"; }
 
+# 한글 등 멀티바이트(3byte/2col) 문자를 포함한 표시 너비 계산
+visual_width() {
+    local str="$1"
+    local bytes=${#str}
+    local chars
+    chars=$(printf '%s' "$str" | wc -m)
+    local cjk=$(( (bytes - chars) / 2 ))
+    echo $(( chars + cjk ))
+}
+
+# 지정한 표시 너비로 우측 공백 패딩
+pad_visual() {
+    local str="$1"
+    local width="$2"
+    local vw
+    vw=$(visual_width "$str")
+    local pad=$(( width - vw ))
+    [[ $pad -lt 0 ]] && pad=0
+    printf '%s%*s' "$str" "$pad" ""
+}
+
+print_banner() {
+    echo -e ""
+    echo -e "${CYAN}${BOLD}  ██████╗  ██████╗███╗   ███╗███████╗     ██████╗ ███╗   ███╗${NC}"
+    echo -e "${CYAN}${BOLD}  ██╔══██╗██╔════╝████╗ ████║██╔════╝     ██╔══██╗████╗ ████║${NC}"
+    echo -e "${CYAN}${BOLD}  ██████╔╝██║     ██╔████╔██║███████╗ ─── ██████╔╝██╔████╔██║${NC}"
+    echo -e "${CYAN}${BOLD}  ██╔═══╝ ██║     ██║╚██╔╝██║╚════██║     ██╔══██╗██║╚██╔╝██║${NC}"
+    echo -e "${CYAN}${BOLD}  ██║     ╚██████╗██║ ╚═╝ ██║███████║     ██████╔╝██║ ╚═╝ ██║${NC}"
+    echo -e "${CYAN}${BOLD}  ╚═╝      ╚═════╝╚═╝     ╚═╝╚══════╝     ╚═════╝ ╚═╝     ╚═╝${NC}"
+    echo -e ""
+    echo -e "  ${DIM}Backend Manager${NC}  ${BOLD}v${VERSION}${NC}  ${DIM}│${NC}  mode: ${YELLOW}${BOLD}${PCMS_MODE}${NC}"
+    echo -e "  ${DIM}──────────────────────────────────────────────────────────${NC}"
+    echo -e ""
+}
+
 resolve_mode() {
     if [[ -n "${PCMS_MODE:-}" ]]; then
-        info "모드: ${PCMS_MODE} (PCMS_MODE 환경변수)"
         return
     fi
 
@@ -168,7 +206,6 @@ do_log() {
 
 do_status() {
     header "Status - 애플리케이션 상태 확인"
-    # 추가적인 상태 확인 로직을 여기에 구현할 수 있습니다.
     info "현재 모드: ${PCMS_MODE}"
     if pgrep -f "bootRun" > /dev/null; then
         info "애플리케이션이 실행 중입니다."
@@ -177,22 +214,55 @@ do_status() {
     fi
 }
 
+print_menu() {
+    # cmd:desc 쌍 정의
+    local items=(
+        "run:개발 서버 실행"
+        "compile:소스 컴파일"
+        "build:전체 빌드"
+        "war:WAR 파일 생성"
+        "test:테스트 실행"
+        "clean:빌드 캐시 삭제"
+        "log:로그 보기"
+        "status:상태 확인"
+    )
+
+    echo -e "  ${BOLD}명령어${NC}"
+    echo -e "  ${DIM}┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄${NC}"
+
+    local total=${#items[@]}
+    for ((i=0; i<total; i+=3)); do
+        printf "  "
+        for ((j=0; j<3 && i+j<total; j++)); do
+            local idx=$((i+j))
+            local num=$((idx+1))
+            local cmd="${items[$idx]%%:*}"
+            local desc="${items[$idx]#*:}"
+            printf "${GREEN}${BOLD}%d)${NC} ${YELLOW}%-7s${NC} ${DIM}%s${NC}  " \
+                "$num" "$cmd" "$(pad_visual "$desc" 14)"
+        done
+        printf "\n"
+    done
+
+    echo -e ""
+    echo -e "  ${DIM}┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄${NC}"
+    echo -e "  ${YELLOW}q)${NC} 종료"
+    echo -e ""
+}
+
 # ── 메인 함수 ──────────────────────────────────────────────────────
 main() {
     check_java
     resolve_mode
 
     if [[ $# -eq 0 ]]; then
-        local cmds=("run" "compile" "build" "war" "test" "clean" "log" "status")
-        local descs=("개발 서버 실행" "소스 컴파일" "전체 빌드" "배포용 WAR 파일 생성" "전체 테스트 실행" "빌드 캐시 삭제" "애플리케이션 로그 보기" "애플리케이션 상태 확인")
+        print_banner
+        print_menu
 
-        echo -e "\n${BOLD}사용 가능한 명령어:${NC}"
-        for i in "${!cmds[@]}"; do
-            printf "  ${GREEN}%d)${NC} %-10s - %s\n" "$((i+1))" "${cmds[$i]}" "${descs[$i]}"
-        done
-        echo -e "  ${YELLOW}q)${NC} 종료"
+        local cmds=("run" "compile" "build" "war" "test" "clean" "log" "status")
+
+        read -rp "  번호를 입력하세요: " choice
         echo ""
-        read -rp "번호를 입력하세요: " choice
 
         if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
             info "종료합니다."
@@ -220,18 +290,8 @@ main() {
         log)     do_log ;;
         status)  do_status ;;
         help)
-            echo -e "\n${BOLD}사용법:${NC}"
-            echo -e "  ${GREEN}$0 [명령어]${NC}"
-            echo ""
-            echo -e "${BOLD}사용 가능한 명령어:${NC}"
-            echo -e "  ${GREEN}run${NC}     - 개발 서버 실행"
-            echo -e "  ${GREEN}compile${NC} - 소스 컴파일"
-            echo -e "  ${GREEN}build${NC}   - 전체 빌드"
-            echo -e "  ${GREEN}war${NC}     - 배포용 WAR 파일 생성"
-            echo -e "  ${GREEN}test${NC}    - 전체 테스트 실행"
-            echo -e "  ${GREEN}clean${NC}   - 빌드 캐시 삭제"
-            echo -e "  ${GREEN}log${NC}     - 애플리케이션 로그 보기"
-            echo -e "  ${GREEN}status${NC}  - 애플리케이션 상태 확인"
+            print_banner
+            print_menu
             ;;
         *)
             error "알 수 없는 명령어: $cmd"
