@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { apiClient } from '@/lib/apiClient'
+import wizardImg from '@/assets/wizard.png'
 
 interface MenuItem {
   label: string
@@ -94,7 +95,7 @@ function DropdownMenu({ group, isOpen, onToggle }: {
 function Toolbar() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const navigate = useNavigate()
-  const { accessToken, userId, clearAuth } = useAuthStore()
+  const { accessToken, userNm, clearAuth } = useAuthStore()
 
   const { data: health } = useQuery<{ version: string }>({
     queryKey: ['health'],
@@ -124,9 +125,7 @@ function Toolbar() {
         {/* 왼쪽: 로고 + 메뉴 */}
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-md group-hover:bg-blue-700 transition-colors">
-              P
-            </div>
+            <img src={wizardImg} alt="logo" className="w-9 h-9 rounded-full object-cover shadow-md" />
             <span className="text-xl font-bold text-gray-800 tracking-tight group-hover:text-blue-600 transition-colors">
               PCMS{health?.version && <span className="text-xs font-normal text-gray-400 ml-1">(ver:{health.version})</span>}
             </span>
@@ -151,10 +150,10 @@ function Toolbar() {
         <div className="flex items-center gap-4">
           {isLoggedIn ? (
             <div className="flex items-center gap-3 pl-6 border-l border-gray-100">
-              <span className="text-sm font-medium text-gray-600">{userId}</span>
+              <span className="text-sm font-medium text-gray-600">{userNm}</span>
               <button
                 onClick={handleLogout}
-                className="text-xs px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:text-red-500 hover:border-red-200 transition-colors"
+                className="text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-50 hover:text-red-600 hover:border-red-200 transition-colors"
               >
                 로그아웃
               </button>

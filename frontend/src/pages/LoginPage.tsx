@@ -24,11 +24,11 @@ function LoginPage() {
     if (password.length === 0) return
     setIsLoading(true)
     try {
-      const res = await apiClient.post<{ accessToken: string; refreshToken: string }>('/auth/login', {
+      const res = await apiClient.post<{ accessToken: string; refreshToken: string; userNm: string }>('/auth/login', {
         userId,
         userPw: password,
       })
-      setTokens(res.accessToken, res.refreshToken, userId)
+      setTokens(res.accessToken, res.refreshToken, userId, res.userNm)
       navigate('/')
     } catch {
       setLoginError('아이디 또는 비밀번호가 올바르지 않습니다.')

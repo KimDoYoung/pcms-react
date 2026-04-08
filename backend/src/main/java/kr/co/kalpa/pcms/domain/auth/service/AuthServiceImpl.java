@@ -46,7 +46,7 @@ public class AuthServiceImpl implements AuthService {
         );
 
         log.info("login success: {}", user.getUserId());
-        return new TokenResponseDto(accessToken, refreshToken);
+        return new TokenResponseDto(accessToken, refreshToken, user.getUserNm());
     }
 
     @Override
@@ -82,6 +82,6 @@ public class AuthServiceImpl implements AuthService {
 
         String newAccessToken = jwtUtil.generateAccessToken(userId);
         log.info("token refresh success: {}", userId);
-        return new TokenResponseDto(newAccessToken, refreshToken);
+        return new TokenResponseDto(newAccessToken, refreshToken, null);
     }
 }
