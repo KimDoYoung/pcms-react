@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { X } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/components/Toolbar'
+import { formatDate } from '@/lib/utils'
 
 interface Todo {
   id: number
@@ -69,6 +71,12 @@ function TodoAddModal({ onClose }: { onClose: () => void }) {
 
 function HomePage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const queryClient = useQueryClient()
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiClient.delete(`/todo/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+  })
 
   const { data: todos, isLoading, isError } = useQuery<Todo[]>({
     queryKey: ['todos'],
@@ -86,25 +94,31 @@ function HomePage() {
           <p className="text-gray-400 text-sm mb-4">Todo가 없습니다.</p>
         )}
 
-        <div className="flex flex-wrap justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-4" >
           {todos?.map((todo) => (
-            <div key={todo.id} className="bg-white rounded-lg shadow p-3 w-64 h-64 flex flex-col overflow-hidden">
-              <p className="text-sm text-gray-800 break-words line-clamp-3">{todo.content}</p>
-              <p className="text-xs text-gray-400">{todo.createdAt}</p>
+            <div key={todo.id} className="bg-yellow-100 rounded-lg shadow p-3 w-64 h-64 flex flex-col overflow-hidden relative">
+              <button
+                onClick={() => deleteMutation.mutate(todo.id)}
+                className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+              >
+                <X size={14} />
+              </button>
+              <p className="text-lg text-gray-800 break-words line-clamp-3 mt-3">{todo.content}</p>
+              <p className="text-xs text-gray-500 mt-auto">{formatDate(todo.createdAt)}</p>
             </div>
           ))}
 
         </div>
       </div>
 
-      {/* 하단 고정 바 */}
-      <div
+      {/* 하단 고정 버튼 */}
+      <button
+        type="button"
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-0 left-0 right-0 bg-blue-600 text-white text-center py-3 cursor-pointer hover:bg-blue-700 text-sm font-semibold"
+        className="fixed bottom-4 left-4 right-4 bg-blue-400 text-white text-center py-3 cursor-pointer hover:bg-blue-700 text-sm font-semibold rounded-lg shadow-md"
       >
         + Todo 추가
-      </div>
-
+      </button>
       {isModalOpen && <TodoAddModal onClose={() => setIsModalOpen(false)} />}
     </div>
   )
