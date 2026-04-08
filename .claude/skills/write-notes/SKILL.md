@@ -1,7 +1,9 @@
 ---
-description: React 관련 기술문서를 작성한다. 
+name: write-notes
+description: React 관련 기술문서를 작성한다.
+user-invocable: true
 allowed-tools: Read, Write, Edit, Grep, Glob
-argument-hint: Frontend 기술스택 (React 관련기술)에 대해서 초보자에게 설명하듯 markdown문서를 만들어서 공부할 수 있게 한다.
+argument-hint: "[파일명] - Frontend 기술스택에 대해 초보자용 마크다운 문서 작성"
 ---
 
 
