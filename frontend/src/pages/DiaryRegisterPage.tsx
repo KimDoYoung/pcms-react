@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Paperclip, X } from 'lucide-react'
 import Toolbar from '@/components/Toolbar'
 import { apiClient } from '@/lib/apiClient'
+import { Button } from '@/components/ui/button'
 
 const TEXT_COLORS = [
   { label: '기본', value: '' },
@@ -303,12 +304,6 @@ function DiaryRegisterPage() {
       <main className="container mx-auto px-4 py-6 max-w-3xl">
         <div className="mb-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-gray-800">✏️ 일지 등록/수정</h1>
-          <button
-            onClick={() => navigate('/diary')}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            ← 목록으로
-          </button>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
@@ -426,19 +421,15 @@ function DiaryRegisterPage() {
 
         {/* 저장 버튼 */}
         <div className="mt-4 flex justify-end gap-2">
-          <button
-            onClick={() => navigate('/diary')}
-            className="px-5 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-          >
+          <Button variant="outline" onClick={() => navigate('/diary')}>
             취소
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!title.trim()}
-            className="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
-          >
+          </Button>
+          <Button variant="default" onClick={handleSubmit} disabled={!title.trim()}>
             저장
-          </button>
+          </Button>
+          <Button variant="ghost" onClick={() => navigate('/diary')}>
+            목록으로
+          </Button>
         </div>
       </main>
     </div>
