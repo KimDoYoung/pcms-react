@@ -38,6 +38,17 @@ public class DiaryController {
         return ResponseEntity.ok(diaryService.get(id));
     }
 
+    @GetMapping("/date/{ymd}")
+    public ResponseEntity<DiaryDto> getByYmd(@PathVariable String ymd) {
+        log.info("get diary by ymd: {}", ymd);
+        DiaryDto diaryDto = diaryService.getByYmd(ymd);
+        if (diaryDto != null) {
+            return ResponseEntity.ok(diaryDto);
+        } else {
+            return ResponseEntity.noContent().build();
+        }
+    }
+
     @PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> modify(
             @RequestPart("diary") @Valid DiaryDto diaryDto,

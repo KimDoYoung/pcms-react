@@ -10,6 +10,7 @@ import java.util.List;
 public interface DiaryService {
     Long register(DiaryDto diaryDto, List<MultipartFile> attachments);
     DiaryDto get(Long id);
+    DiaryDto getByYmd(String ymd);
     void modify(DiaryDto diaryDto, List<MultipartFile> attachments);
     void remove(Long id);
     PageResponseDto<DiaryDto> getList(DiarySearchDto searchDto);

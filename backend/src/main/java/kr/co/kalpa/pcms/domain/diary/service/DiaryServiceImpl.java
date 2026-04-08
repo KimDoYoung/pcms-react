@@ -31,27 +31,37 @@ public class DiaryServiceImpl implements DiaryService {
 
     @Override
     public Long register(DiaryDto diaryDto, List<MultipartFile> attachments) {
-        FileUploadService.ProcessResult imageResult =
-                fileUploadService.processEditorImages(diaryDto.getContent());
+        log.info("register or update diary: {}", diaryDto);
+        return diaryMapper.selectDiaryByYmd(diaryDto.getYmd())
+                .map(existingDiary -> {
+                    log.info("Diary already exists for ymd: {}, updating instead.", diaryDto.getYmd());
+                    diaryDto.setId(existingDiary.getId());
+                    modify(diaryDto, attachments);
+                    return existingDiary.getId();
+                })
+                .orElseGet(() -> {
+                    FileUploadService.ProcessResult imageResult =
+                            fileUploadService.processEditorImages(diaryDto.getContent());
 
-        Diary diary = Diary.builder()
-                .ymd(diaryDto.getYmd())
-                .content(imageResult.content())
-                .summary(diaryDto.getSummary())
-                .build();
-        diaryMapper.insertDiary(diary);
-        Long diaryId = diary.getId();
+                    Diary diary = Diary.builder()
+                            .ymd(diaryDto.getYmd())
+                            .content(imageResult.content())
+                            .summary(diaryDto.getSummary())
+                            .build();
+                    diaryMapper.insertDiary(diary);
+                    Long diaryId = diary.getId();
 
-        if (!imageResult.fileIds().isEmpty()) {
-            fileUploadService.linkFiles(TABLE_NAME, diaryId, imageResult.fileIds(), FILE_TYPE_IMAGE);
-        }
+                    if (!imageResult.fileIds().isEmpty()) {
+                        fileUploadService.linkFiles(TABLE_NAME, diaryId, imageResult.fileIds(), FILE_TYPE_IMAGE);
+                    }
 
-        List<Long> attachFileIds = saveAttachments(attachments);
-        if (!attachFileIds.isEmpty()) {
-            fileUploadService.linkFiles(TABLE_NAME, diaryId, attachFileIds, FILE_TYPE_ATTACH);
-        }
+                    List<Long> attachFileIds = saveAttachments(attachments);
+                    if (!attachFileIds.isEmpty()) {
+                        fileUploadService.linkFiles(TABLE_NAME, diaryId, attachFileIds, FILE_TYPE_ATTACH);
+                    }
 
-        return diaryId;
+                    return diaryId;
+                });
     }
 
     @Override
@@ -68,6 +78,21 @@ public class DiaryServiceImpl implements DiaryService {
                 .updatedAt(diary.getUpdatedAt())
                 .attachments(fileUploadService.getAttachments(TABLE_NAME, id))
                 .build();
+    }
+
+    @Override
+    public DiaryDto getByYmd(String ymd) {
+        return diaryMapper.selectDiaryByYmd(ymd)
+                .map(diary -> DiaryDto.builder()
+                        .id(diary.getId())
+                        .ymd(diary.getYmd())
+                        .content(diary.getContent())
+                        .summary(diary.getSummary())
+                        .createdAt(diary.getCreatedAt())
+                        .updatedAt(diary.getUpdatedAt())
+                        .attachments(fileUploadService.getAttachments(TABLE_NAME, diary.getId()))
+                        .build())
+                .orElse(null);
     }
 
     @Override

@@ -11,6 +11,7 @@ import java.util.Optional;
 public interface DiaryMapper {
     void insertDiary(Diary diary);
     Optional<Diary> selectDiaryById(Long id);
+    Optional<Diary> selectDiaryByYmd(String ymd);
     void updateDiary(Diary diary);
     void deleteDiary(Long id);
     List<Diary> selectDiaryList(DiarySearchDto searchDto);

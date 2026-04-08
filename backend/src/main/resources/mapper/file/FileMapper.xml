@@ -4,6 +4,15 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="kr.co.kalpa.pcms.domain.file.service.FileMapper">
 
+    <resultMap id="fileMatchMap" type="kr.co.kalpa.pcms.domain.file.entity.FileMatch">
+        <id property="id" column="id"/>
+        <result property="tableName" column="table_name"/>
+        <result property="targetId" column="target_id"/>
+        <result property="fileId" column="file_id"/>
+        <result property="fileType" column="file_type"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
     <insert id="insertFile" useGeneratedKeys="true" keyProperty="fileId">
         INSERT INTO cms.files (saved_folder, org_file_name, physical_file_name, file_size, mime_type)
         VALUES (#{savedFolder}, #{orgFileName}, #{physicalFileName}, #{fileSize}, #{mimeType})
@@ -14,9 +23,8 @@
         VALUES (#{tableName}, #{targetId}, #{fileId}, #{fileType})
     </insert>
 
-    <select id="selectFileMatchByTarget" resultType="kr.co.kalpa.pcms.domain.file.entity.FileMatch">
-        SELECT id, table_name as tableName, target_id as targetId,
-               file_id as fileId, file_type as fileType, created_at as createdAt
+    <select id="selectFileMatchByTarget" resultMap="fileMatchMap">
+        SELECT id, table_name, target_id, file_id, file_type, created_at
         FROM cms.file_match
         WHERE table_name = #{tableName}
           AND target_id = #{targetId}

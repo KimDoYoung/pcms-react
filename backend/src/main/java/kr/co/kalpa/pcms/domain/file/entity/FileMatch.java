@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @Builder
@@ -17,5 +17,5 @@ public class FileMatch {
     private Long targetId;
     private Long fileId;
     private String fileType;
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 }

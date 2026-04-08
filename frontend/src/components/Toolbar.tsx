@@ -21,7 +21,7 @@ const menuGroups: MenuGroup[] = [
     key: 'diary',
     label: '📖 일지',
     items: [
-      { label: '✏️ 일지기록', to: '/diary/new' },
+      { label: '✏️ 일지기록', to: '/diary/register' },
       { label: '🔍 일지찾기', to: '/diary' },
       { label: '📅 달력', to: '/calendar' },
     ],
