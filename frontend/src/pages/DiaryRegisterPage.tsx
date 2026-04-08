@@ -5,11 +5,12 @@ import ResizableImage from 'tiptap-extension-resize-image'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Paperclip, X } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { ChevronLeft, ChevronRight, Paperclip, X, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import Toolbar from '@/components/Toolbar'
 import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/components/ui/button'
+import DiarySummaryList from '@/components/diary/DiarySummaryList'
 
 const TEXT_COLORS = [
   { label: '기본', value: '' },
@@ -32,7 +33,8 @@ function MenuBar({ editor }: { editor: ReturnType<typeof useEditor> }) {
     const reader = new FileReader()
     reader.onload = (e) => {
       const src = e.target?.result as string
-      editor?.chain().focus().setImage({ src }).run()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(editor?.chain().focus() as any).setImage({ src }).run()
     }
     reader.readAsDataURL(file)
   }
@@ -139,8 +141,10 @@ function MenuBar({ editor }: { editor: ReturnType<typeof useEditor> }) {
 
 function DiaryRegisterPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const today = new Date().toISOString().slice(0, 10)
-  const [diaryDate, setDiaryDate] = useState(today)
+  const [diaryDate, setDiaryDate] = useState(searchParams.get('date') ?? today)
+  const [showList, setShowList] = useState(true)
   const [title, setTitle] = useState('')
   const [diaryId, setDiaryId] = useState<number | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,6 +158,7 @@ function DiaryRegisterPage() {
     extensions: [
       StarterKit,
       Placeholder.configure({ placeholder: '오늘의 일지를 작성하세요...' }),
+      //@ts-ignore
       ResizableImage.configure({ inline: false, allowBase64: true }),
       TextStyle,
       Color,
@@ -174,7 +179,8 @@ function DiaryRegisterPage() {
             const reader = new FileReader()
             reader.onload = (e) => {
               const src = e.target?.result as string
-              editorRef.current?.chain().focus().setImage({ src }).run()
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ;(editorRef.current?.chain().focus() as any)?.setImage({ src }).run()
             }
             reader.readAsDataURL(file)
             return true
@@ -301,11 +307,22 @@ function DiaryRegisterPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
-      <main className="container mx-auto px-4 py-6 max-w-3xl">
-        <div className="mb-4 flex items-center justify-between">
+      <main className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className="mb-4 flex items-center gap-2">
           <h1 className="text-xl font-bold text-gray-800">✏️ 일지 등록/수정</h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowList((v) => !v)}
+            title={showList ? '목록 숨기기' : '목록 보기'}
+            className="text-gray-500"
+          >
+            {showList ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+          </Button>
         </div>
 
+        <div className="flex gap-4 items-start">
+        <div className="flex-1 min-w-0 flex flex-col">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
           {/* 날짜 네비게이션 및 제목 */}
           <div className="flex flex-col sm:flex-row items-center gap-3 px-4 py-3 border-b border-gray-200">
@@ -417,7 +434,7 @@ function DiaryRegisterPage() {
               ))}
             </div>
           </div>
-        </div>
+        </div>{/* editor card end */}
 
         {/* 저장 버튼 */}
         <div className="mt-4 flex justify-end gap-2">
@@ -431,6 +448,19 @@ function DiaryRegisterPage() {
             목록으로
           </Button>
         </div>
+
+        </div>{/* left col end */}
+
+        {/* 일지 목록 패널 */}
+        {showList && (
+          <div className="w-[432px] shrink-0 bg-white rounded-xl shadow-sm border border-gray-200 p-3 self-start sticky top-4">
+            <DiarySummaryList
+              onSelect={(ymd) => setDiaryDate(ymd)}
+            />
+          </div>
+        )}
+
+        </div>{/* flex row end */}
       </main>
     </div>
   )
