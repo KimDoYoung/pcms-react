@@ -1,0 +1,238 @@
+import { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
+import { apiClient } from '@/lib/apiClient'
+import Toolbar from '@/components/Toolbar'
+import { Button } from '@/components/ui/button'
+
+interface CalendarEvent {
+  id: string
+  type: 'HOLIDAY' | 'EVENT'
+  ymd: string
+  content: string
+  gubun?: string
+}
+
+interface CalendarDay {
+  ymd: string
+  day: number
+  isToday: boolean
+  isThisMonth: boolean
+  isHoliday: boolean
+  isSunday: boolean
+  isSaturday: boolean
+  holidays: CalendarEvent[]
+  events: CalendarEvent[]
+}
+
+function zeroPad(num: number): string {
+  return num < 10 ? '0' + num : num.toString()
+}
+
+function getStartEndYmd(year: number, month: number): [string, string] {
+  const firstDate = new Date(year, month - 1, 1)
+  const startYoil = firstDate.getDay() // 0=Sunday
+
+  const lastDate = new Date(year, month, 0)
+  const endYoil = lastDate.getDay()
+
+  const tempStart = new Date(firstDate)
+  tempStart.setDate(tempStart.getDate() - startYoil)
+  const startYmd = tempStart.getFullYear() + zeroPad(tempStart.getMonth() + 1) + zeroPad(tempStart.getDate())
+
+  const tempEnd = new Date(lastDate)
+  tempEnd.setDate(tempEnd.getDate() + (6 - endYoil))
+  const endYmd = tempEnd.getFullYear() + zeroPad(tempEnd.getMonth() + 1) + zeroPad(tempEnd.getDate())
+
+  return [startYmd, endYmd]
+}
+
+function Calendar1Page() {
+  const todayDate = new Date()
+  const [currentYear, setCurrentYear] = useState(todayDate.getFullYear())
+  const [currentMonth, setCurrentMonth] = useState(todayDate.getMonth() + 1)
+
+  const [startYmd, endYmd] = useMemo(() => getStartEndYmd(currentYear, currentMonth), [currentYear, currentMonth])
+
+  const { data: events = [] } = useQuery<CalendarEvent[]>({
+    queryKey: ['calendar-events', startYmd, endYmd],
+    queryFn: () => apiClient.get<CalendarEvent[]>(`/calendar/events?start=${startYmd}&end=${endYmd}`),
+  })
+
+  const days = useMemo(() => {
+    const result: CalendarDay[] = []
+    let currentDate = new Date(
+      parseInt(startYmd.substring(0, 4)),
+      parseInt(startYmd.substring(4, 6)) - 1,
+      parseInt(startYmd.substring(6, 8))
+    )
+    const endDt = new Date(
+      parseInt(endYmd.substring(0, 4)),
+      parseInt(endYmd.substring(4, 6)) - 1,
+      parseInt(endYmd.substring(6, 8))
+    )
+
+    const todayYmd = todayDate.getFullYear() + zeroPad(todayDate.getMonth() + 1) + zeroPad(todayDate.getDate())
+    const thisYm = currentYear + zeroPad(currentMonth)
+
+    let index = 0
+    while (currentDate <= endDt) {
+      const ymd = currentDate.getFullYear() + zeroPad(currentDate.getMonth() + 1) + zeroPad(currentDate.getDate())
+      
+      const dayEvents = events.filter(e => e.ymd === ymd)
+      const holidays = dayEvents.filter(e => e.type === 'HOLIDAY')
+      const normalEvents = dayEvents.filter(e => e.type !== 'HOLIDAY')
+
+      const isHoliday = holidays.length > 0
+      const isSunday = index % 7 === 0
+      const isSaturday = index % 7 === 6
+      const isThisMonth = ymd.startsWith(thisYm)
+      const isToday = ymd === todayYmd
+
+      result.push({
+        ymd,
+        day: currentDate.getDate(),
+        isToday,
+        isThisMonth,
+        isHoliday,
+        isSunday,
+        isSaturday,
+        holidays,
+        events: normalEvents
+      })
+
+      currentDate.setDate(currentDate.getDate() + 1)
+      index++
+    }
+    return result
+  }, [currentYear, currentMonth, startYmd, endYmd, events])
+
+  const prevMonth = () => {
+    if (currentMonth === 1) {
+      setCurrentYear(v => v - 1)
+      setCurrentMonth(12)
+    } else {
+      setCurrentMonth(v => v - 1)
+    }
+  }
+
+  const nextMonth = () => {
+    if (currentMonth === 12) {
+      setCurrentYear(v => v + 1)
+      setCurrentMonth(1)
+    } else {
+      setCurrentMonth(v => v + 1)
+    }
+  }
+
+  const goToday = () => {
+    const today = new Date()
+    setCurrentYear(today.getFullYear())
+    setCurrentMonth(today.getMonth() + 1)
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-10">
+      <Toolbar />
+      <main className="container mx-auto px-4 mt-6">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+          {/* Header - 연/월 부분 높이와 폰트 크기 확대 */}
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 text-white">
+            <div className="flex justify-center items-center gap-6">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={prevMonth}
+                className="text-white hover:bg-white/20 rounded-full h-9 w-9"
+                title="이전 달"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </Button>
+
+              <h1 className="text-2xl font-bold tracking-tight min-w-[160px] text-center">
+                {currentYear}년 {currentMonth}월
+              </h1>
+
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={nextMonth}
+                  className="text-white hover:bg-white/20 rounded-full h-9 w-9"
+                  title="다음 달"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </Button>
+
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  onClick={goToday}
+                  className="bg-white/20 border-white/30 text-white hover:bg-white/40 px-4 py-1.5 h-8 text-sm font-bold shadow-inner"
+                >
+                  오늘
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-0">
+            {/* Week Header - 요일 부분 높이 추가 확대 (py-2 -> py-3.5) */}
+            <div className="grid grid-cols-7 border-b border-gray-200">
+              {['일', '월', '화', '수', '목', '금', '토'].map((w, i) => (
+                <div 
+                  key={w} 
+                  className={`py-3.5 text-center font-bold text-sm bg-gray-50 border-r border-gray-100 last:border-0
+                    ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-600'}`}
+                >
+                  {w}
+                </div>
+              ))}
+            </div>
+
+            {/* Grid Body - 최소 높이 소폭 확대 (min-h-[105px] -> min-h-[125px]) */}
+            <div className="grid grid-cols-7 gap-px bg-gray-200 border-x border-b border-gray-200">
+              {days.map((day) => (
+                <div 
+                  key={day.ymd} 
+                  className={`min-h-[125px] bg-white p-2 transition-all duration-200 hover:bg-indigo-50/30 group relative
+                    ${day.isToday ? 'bg-yellow-50/50' : ''}`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full transition-colors
+                      ${!day.isThisMonth ? (day.isSunday || day.isHoliday ? 'text-red-200' : day.isSaturday ? 'text-blue-200' : 'text-gray-300') :
+                        (day.isSunday || day.isHoliday ? 'text-red-500' : day.isSaturday ? 'text-blue-500' : 'text-gray-700')}
+                      ${day.isToday ? 'bg-indigo-600 text-white shadow-md' : ''}`}
+                    >
+                      {day.day}
+                    </span>
+                  </div>
+
+                  {/* Holidays */}
+                  <div className="space-y-1">
+                    {day.holidays.map(h => (
+                      <div key={h.id} className="text-[12px] font-semibold bg-red-100 text-red-700 px-1.5 py-0.5 rounded truncate leading-tight">
+                        {h.content}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Events */}
+                  <div className="space-y-1 mt-1.5">
+                    {day.events.map(e => (
+                      <div key={e.id} className="text-[12px] font-medium bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded truncate border border-blue-100 leading-tight">
+                        {e.content}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+export default Calendar1Page

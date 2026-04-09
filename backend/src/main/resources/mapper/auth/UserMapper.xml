@@ -10,4 +10,10 @@
         WHERE user_id = #{userId}
     </select>
 
+    <update id="updatePassword">
+        UPDATE cms.users
+        SET user_pw = #{password}
+        WHERE user_id = #{userId}
+    </update>
+
 </mapper>

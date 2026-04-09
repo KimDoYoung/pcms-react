@@ -15,6 +15,7 @@ import PostEditPage from './pages/PostEditPage'
 import ApNodePage from './pages/ApNodePage'
 import UserInfoPage from './pages/UserInfoPage'
 import SettingsPage from './pages/SettingsPage'
+import Calendar1Page from './pages/Calendar1Page'
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/user-info" element={<UserInfoPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/calendar" element={<Calendar1Page />} />
         <Route path="/diary" element={<DiaryPage />} />
         <Route path="/diary/register" element={<DiaryRegisterPage />} />
         <Route path="/jangbi" element={<JangbiPage />} />

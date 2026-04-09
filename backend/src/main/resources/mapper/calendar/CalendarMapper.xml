@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.domain.calendar.service.CalendarMapper">
+
+    <select id="countAction" resultType="int">
+        SELECT COUNT(*) 
+        FROM cms.calendar_public 
+        WHERE data_type = #{dataType} 
+          AND ymd = #{ymd}
+    </select>
+
+    <delete id="deleteDataByYm">
+        DELETE FROM cms.calendar_public 
+        WHERE data_type = #{dataType} 
+          AND ymd LIKE CONCAT(#{ym}, '%')
+    </delete>
+
+    <insert id="insertCalendarPublic">
+        INSERT INTO cms.calendar_public (data_type, ymd, content)
+        VALUES (#{dataType}, #{ymd}, #{content})
+    </insert>
+
+    <select id="selectPublicDataByRange" resultType="kr.co.kalpa.pcms.domain.calendar.entity.CalendarPublic">
+        SELECT id, data_type, ymd, content, created_dt
+        FROM cms.calendar_public
+        WHERE data_type = 'Data'
+          AND ymd BETWEEN #{start} AND #{end}
+        ORDER BY ymd ASC
+    </select>
+
+</mapper>

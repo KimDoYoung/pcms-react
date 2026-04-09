@@ -10,8 +10,9 @@ function SettingsPage() {
     if (!confirm('공휴일 정보를 가져오시겠습니까?')) return
     
     setLoading(true)
+    const currentYear = new Date().getFullYear()
     try {
-      await apiClient.post('/system/holidays/fetch')
+      await apiClient.post(`/calendar/fetch-public-holiday/${currentYear}`)
       alert('공휴일 정보를 성공적으로 가져왔습니다.')
     } catch (error) {
       console.error('Failed to fetch holidays:', error)
