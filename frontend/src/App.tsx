@@ -13,6 +13,8 @@ import PostNewPage from './pages/PostNewPage'
 import PostViewPage from './pages/PostViewPage'
 import PostEditPage from './pages/PostEditPage'
 import ApNodePage from './pages/ApNodePage'
+import UserInfoPage from './pages/UserInfoPage'
+import SettingsPage from './pages/SettingsPage'
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/user-info" element={<UserInfoPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/diary" element={<DiaryPage />} />
         <Route path="/diary/register" element={<DiaryRegisterPage />} />
         <Route path="/jangbi" element={<JangbiPage />} />

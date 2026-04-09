@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { Settings } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { apiClient } from '@/lib/apiClient'
 import wizardImg from '@/assets/wizard.png'
@@ -150,7 +151,12 @@ function Toolbar() {
         <div className="flex items-center gap-4">
           {isLoggedIn ? (
             <div className="flex items-center gap-3 pl-6 border-l border-gray-100">
-              <span className="text-sm font-medium text-gray-600">{userNm}</span>
+              <Link to="/user-info" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
+                {userNm}
+              </Link>
+              <Link to="/settings" className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+                <Settings className="w-4 h-4" />
+              </Link>
               <button
                 onClick={handleLogout}
                 className="text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-50 hover:text-red-600 hover:border-red-200 transition-colors"
