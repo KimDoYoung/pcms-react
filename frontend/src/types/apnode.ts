@@ -16,6 +16,7 @@ export interface ApNode {
   brokenLink?: boolean
   // F / L(resolved) 공통
   fileUrl?: string
+  thumbnailUrl?: string
   originalName?: string
   fileSize?: number
   contentType?: string

@@ -49,7 +49,8 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/v3/api-docs/**"),
                     new AntPathRequestMatcher("/health"),
                     new AntPathRequestMatcher("/error"),
-                    new AntPathRequestMatcher("/editor-images/**")
+                    new AntPathRequestMatcher("/editor-images/**"),
+                    new AntPathRequestMatcher("/apnodes/**")
                 ).permitAll()
                 .anyRequest().authenticated()
             )

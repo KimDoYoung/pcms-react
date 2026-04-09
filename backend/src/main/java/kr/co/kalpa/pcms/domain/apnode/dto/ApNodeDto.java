@@ -27,6 +27,7 @@ public class ApNodeDto {
     private boolean brokenLink;
 
     private String fileUrl;
+    private String thumbnailUrl;
     private String originalName;
     private Long fileSize;
     private String contentType;

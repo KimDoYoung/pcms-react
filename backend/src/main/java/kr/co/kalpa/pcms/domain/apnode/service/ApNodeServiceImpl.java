@@ -149,15 +149,51 @@ public class ApNodeServiceImpl implements ApNodeService {
 
         Integer width = null;
         Integer height = null;
+        String thumbnailPath = null;
         if (file.getContentType() != null && file.getContentType().startsWith("image/")) {
             try {
                 BufferedImage img = ImageIO.read(savePath.toFile());
                 if (img != null) {
                     width = img.getWidth();
                     height = img.getHeight();
+
+                    // 썸네일 생성 (최대 200x200)
+                    int thumbWidth = 200;
+                    int thumbHeight = 200;
+                    double ratio = Math.min((double) thumbWidth / width, (double) thumbHeight / height);
+                    if (ratio < 1.0) {
+                        thumbWidth = (int) (width * ratio);
+                        thumbHeight = (int) (height * ratio);
+                    } else {
+                        thumbWidth = width;
+                        thumbHeight = height;
+                    }
+
+                    // 투명도를 유지하기 위해 TYPE_INT_ARGB 사용
+                    BufferedImage thumb = new BufferedImage(thumbWidth, thumbHeight, BufferedImage.TYPE_INT_ARGB);
+                    java.awt.Graphics2D g2d = thumb.createGraphics();
+                    g2d.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                    g2d.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2d.drawImage(img, 0, 0, thumbWidth, thumbHeight, null);
+                    g2d.dispose();
+
+                    String thumbPhysicalName = "thumb_" + physicalName;
+                    Path thumbSavePath = saveDir.resolve(thumbPhysicalName);
+                    
+                    // 확장자 결정 (기본값 png)
+                    String extName = getExtension(originalName).replace(".", "").toLowerCase();
+                    if (extName.isEmpty()) extName = "png";
+                    
+                    boolean success = javax.imageio.ImageIO.write(thumb, extName, thumbSavePath.toFile());
+                    if (success) {
+                        thumbnailPath = datePath + "/" + thumbPhysicalName;
+                        log.info("썸네일 생성 완료: {}", thumbnailPath);
+                    } else {
+                        log.warn("썸네일 생성 실패 (지원되지 않는 포맷): {}", extName);
+                    }
                 }
-            } catch (IOException e) {
-                log.warn("이미지 메타데이터 읽기 실패: {}", savePath);
+            } catch (Exception e) {
+                log.error("이미지 처리 중 예외 발생: {}", savePath, e);
             }
         }
 
@@ -182,6 +218,7 @@ public class ApNodeServiceImpl implements ApNodeService {
                 .sha256Hash(sha256)
                 .width(width)
                 .height(height)
+                .thumbnailPath(thumbnailPath)
                 .build();
         apFileMapper.insertFile(apFile);
 
@@ -383,6 +420,9 @@ public class ApNodeServiceImpl implements ApNodeService {
         dto.setWidth(f.getWidth());
         dto.setHeight(f.getHeight());
         dto.setFileUrl(apnodeBaseUrl + f.getSavedPath());
+        if (f.getThumbnailPath() != null) {
+            dto.setThumbnailUrl(apnodeBaseUrl + f.getThumbnailPath());
+        }
     }
 
     private String getExtension(String filename) {

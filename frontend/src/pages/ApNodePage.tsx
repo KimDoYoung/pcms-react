@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { Folder, File, ChevronRight, ChevronDown, Upload, FolderPlus, Download, Pencil, Trash2, X, List, Grid3X3, Link2, Copy, Scissors, ClipboardPaste } from 'lucide-react'
+import { Folder, FolderOpen, File, ChevronRight, ChevronDown, Upload, FolderPlus, Download, Pencil, Trash2, X, List, Grid3X3, Link2, Copy, Scissors, ClipboardPaste, FileText, FileImage, FileAudio, FileVideo, FileArchive, FileCode, FileSpreadsheet, FileJson, Presentation } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/components/Toolbar'
 import { Button } from '@/components/ui/button'
@@ -23,12 +23,58 @@ function formatDate(dt: string | null | undefined): string {
 }
 
 function isImage(node: ApNode): boolean {
-  return !!node.contentType?.startsWith('image/')
+  return !!node.contentType?.startsWith('image/') || !!node.name.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)
 }
 
 function getNodeIcon(node: ApNode) {
   if (node.nodeType === 'D') return <Folder className="w-8 h-8 text-yellow-400" />
   if (node.nodeType === 'L') return <Link2 className="w-8 h-8 text-blue-400" />
+  
+  // Content-Type 기반 판별
+  if (node.contentType) {
+    if (node.contentType.startsWith('image/')) return <FileImage className="w-8 h-8 text-purple-400" />
+    if (node.contentType.startsWith('video/')) return <FileVideo className="w-8 h-8 text-pink-400" />
+    if (node.contentType.startsWith('audio/')) return <FileAudio className="w-8 h-8 text-yellow-500" />
+    if (node.contentType.includes('json')) return <FileJson className="w-8 h-8 text-green-500" />
+    if (node.contentType.includes('pdf')) return <FileText className="w-8 h-8 text-red-500" />
+    if (node.contentType.includes('presentation') || node.contentType.includes('powerpoint')) return <Presentation className="w-8 h-8 text-orange-600" />
+    if (node.contentType.includes('zip') || node.contentType.includes('tar') || node.contentType.includes('compressed')) return <FileArchive className="w-8 h-8 text-orange-500" />
+    if (node.contentType.includes('spreadsheet') || node.contentType.includes('excel') || node.contentType.includes('csv')) return <FileSpreadsheet className="w-8 h-8 text-green-600" />
+    if (node.contentType.includes('text/')) return <FileText className="w-8 h-8 text-gray-500" />
+    if (node.contentType.includes('word') || node.contentType.includes('officedocument.wordprocessingml')) return <FileText className="w-8 h-8 text-blue-600" />
+  }
+
+  // 확장자 기반 판별 (Content-Type이 모호한 경우 대비)
+  const ext = node.name.split('.').pop()?.toLowerCase()
+  if (ext && node.name.includes('.')) {
+    switch (ext) {
+      case 'js': case 'ts': case 'jsx': case 'tsx': case 'html': case 'css': case 'java': case 'py': case 'cpp': case 'c': case 'h': case 'go': case 'rs': case 'rb': case 'php':
+        return <FileCode className="w-8 h-8 text-blue-500" />
+      case 'xls': case 'xlsx': case 'csv':
+        return <FileSpreadsheet className="w-8 h-8 text-green-600" />
+      case 'ppt': case 'pptx':
+        return <Presentation className="w-8 h-8 text-orange-600" />
+      case 'doc': case 'docx':
+        return <FileText className="w-8 h-8 text-blue-600" />
+      case 'hwp':
+        return <FileText className="w-8 h-8 text-sky-500" />
+      case 'zip': case 'tar': case 'gz': case 'rar': case '7z': case 'bz2':
+        return <FileArchive className="w-8 h-8 text-orange-500" />
+      case 'mp4': case 'mkv': case 'avi': case 'mov': case 'wmv':
+        return <FileVideo className="w-8 h-8 text-pink-400" />
+      case 'mp3': case 'wav': case 'ogg': case 'flac':
+        return <FileAudio className="w-8 h-8 text-yellow-500" />
+      case 'jpg': case 'jpeg': case 'png': case 'gif': case 'svg': case 'webp':
+        return <FileImage className="w-8 h-8 text-purple-400" />
+      case 'json':
+        return <FileJson className="w-8 h-8 text-green-500" />
+      case 'pdf':
+        return <FileText className="w-8 h-8 text-red-500" />
+      case 'txt': case 'md':
+        return <FileText className="w-8 h-8 text-gray-500" />
+    }
+  }
+
   return <File className="w-8 h-8 text-gray-400" />
 }
 
@@ -39,9 +85,10 @@ interface TreeNodeProps {
   currentFolderId: string | null
   onNavigate: (id: string) => void
   ancestorIds: string[]
+  onContextMenu: (e: React.MouseEvent, node: ApNode) => void
 }
 
-function TreeNode({ node, currentFolderId, onNavigate, ancestorIds }: TreeNodeProps) {
+function TreeNode({ node, currentFolderId, onNavigate, ancestorIds, onContextMenu }: TreeNodeProps) {
   const [expanded, setExpanded] = useState(false)
 
   // 조상 경로에 포함되어 있으면 자동 확장
@@ -60,6 +107,9 @@ function TreeNode({ node, currentFolderId, onNavigate, ancestorIds }: TreeNodePr
   const dirs = (children ?? []).filter((c) => c.nodeType === 'D')
   const isCurrent = currentFolderId === node.id
 
+  // 상태에 따른 아이콘 결정
+  const FolderIcon = expanded ? FolderOpen : Folder
+
   return (
     <div>
       <div
@@ -67,6 +117,7 @@ function TreeNode({ node, currentFolderId, onNavigate, ancestorIds }: TreeNodePr
           isCurrent ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-100'
         }`}
         onClick={() => onNavigate(node.id)}
+        onContextMenu={(e) => onContextMenu(e, node)}
       >
         {node.childCount > 0 ? (
           <button
@@ -78,13 +129,20 @@ function TreeNode({ node, currentFolderId, onNavigate, ancestorIds }: TreeNodePr
         ) : (
           <span className="w-5" />
         )}
-        <Folder className={`w-4 h-4 flex-shrink-0 ${isCurrent ? 'text-blue-500' : 'text-yellow-400'}`} />
+        <FolderIcon className={`w-4 h-4 flex-shrink-0 ${isCurrent ? 'text-blue-500' : 'text-yellow-400'}`} />
         <span className="truncate">{node.name}</span>
       </div>
       {expanded && dirs.length > 0 && (
         <div className="ml-4 border-l border-gray-100 pl-1">
           {dirs.map((child) => (
-            <TreeNode key={child.id} node={child} currentFolderId={currentFolderId} onNavigate={onNavigate} ancestorIds={ancestorIds} />
+            <TreeNode
+              key={child.id}
+              node={child}
+              currentFolderId={currentFolderId}
+              onNavigate={onNavigate}
+              ancestorIds={ancestorIds}
+              onContextMenu={onContextMenu}
+            />
           ))}
         </div>
       )}
@@ -117,6 +175,9 @@ export default function ApNodePage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [isDragging, setIsDragging] = useState(false)
   const dragCounter = useRef(0)
+
+  // 선택 상태
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   // 사이드바 너비 조절 상태
   const [sidebarWidth, setSidebarWidth] = useState(240)
@@ -256,7 +317,26 @@ export default function ApNodePage() {
   // ── 이벤트 핸들러 ──
   function navigate(id: string | null) {
     setCurrentFolderId(id)
+    setSelectedIds(new Set()) // 폴더 이동 시 선택 초기화
     setCtxMenu((m) => ({ ...m, show: false }))
+  }
+
+  function handleItemClick(e: React.MouseEvent, id: string) {
+    e.stopPropagation()
+    const isMulti = e.ctrlKey || e.metaKey || e.shiftKey
+    setSelectedIds((prev) => {
+      const next = new Set(isMulti ? prev : [])
+      if (next.has(id) && isMulti) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function handleSelectAll() {
+    setSelectedIds((prev) => {
+      if (prev.size === currentItems.length && currentItems.length > 0) return new Set()
+      return new Set(currentItems.map((item) => item.id))
+    })
   }
 
   function openRename(node: ApNode) {
@@ -272,10 +352,30 @@ export default function ApNodePage() {
     setCtxMenu((m) => ({ ...m, show: false }))
   }
 
-  function handleDownload(node: ApNode) {
-    const downloadUrl = `http://localhost:8585/pcms/apnode/${node.id}/download`
-    window.open(downloadUrl, '_blank')
-    setCtxMenu((m) => ({ ...m, show: false }))
+  async function handleDownload(node: ApNode) {
+    try {
+      // apiClient를 사용하여 blob 형태로 데이터 요청 (토큰 헤더 자동 포함됨)
+      const response = await (apiClient as any).get(`/apnode/${node.id}/download`, {
+        responseType: 'blob',
+      })
+
+      // 파일 다운로드를 위한 임시 URL 생성
+      const url = window.URL.createObjectURL(new Blob([response]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', node.name) // 다운로드될 파일명 설정
+      document.body.appendChild(link)
+      link.click()
+
+      // 정리
+      link.parentNode?.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Download failed:', error)
+      alert('다운로드에 실패했습니다.')
+    } finally {
+      setCtxMenu((m) => ({ ...m, show: false }))
+    }
   }
 
   function handlePaste() {
@@ -293,6 +393,7 @@ export default function ApNodePage() {
 
   function showCtxMenu(e: React.MouseEvent, node: ApNode | null) {
     e.preventDefault()
+    e.stopPropagation() // 이벤트 전파 차단 (배경 우클릭 방지)
     setCtxMenu({ show: true, x: e.clientX, y: e.clientY, node })
   }
 
@@ -476,6 +577,7 @@ export default function ApNodePage() {
                   currentFolderId={currentFolderId}
                   onNavigate={navigate}
                   ancestorIds={ancestorIds}
+                  onContextMenu={showCtxMenu}
                 />
               ))}
             </div>
@@ -521,50 +623,74 @@ export default function ApNodePage() {
               ) : viewMode === 'grid' ? (
                 // ── Grid View ──
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                  {currentItems.map((item) => (
-                    <div
-                      key={item.id}
-                      onDoubleClick={() => handleDblClick(item)}
-                      onContextMenu={(e) => showCtxMenu(e, item)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="group relative border border-gray-100 rounded-2xl p-4 cursor-pointer hover:shadow-md hover:border-gray-200 transition-all bg-white flex flex-col items-center gap-2 h-40"
-                    >
-                      {/* 삭제 버튼 */}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDelete(item) }}
-                        className="absolute top-1.5 right-1.5 p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 rounded-full hover:bg-red-50 transition-all"
+                  {currentItems.map((item) => {
+                    const isSelected = selectedIds.has(item.id)
+                    return (
+                      <div
+                        key={item.id}
+                        onDoubleClick={() => handleDblClick(item)}
+                        onContextMenu={(e) => showCtxMenu(e, item)}
+                        onClick={(e) => handleItemClick(e, item.id)}
+                        className={`group relative border rounded-2xl p-4 cursor-pointer hover:shadow-md transition-all flex flex-col items-center gap-2 h-40 ${
+                          isSelected ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200' : 'bg-white border-gray-100 hover:border-gray-200'
+                        }`}
                       >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                        {/* 액션 버튼 그룹 */}
+                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openRename(item) }}
+                            className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
+                            title="이름 변경"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          {(item.nodeType === 'F' || item.nodeType === 'L') && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDownload(item) }}
+                              className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-full transition-colors"
+                              title="다운로드"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(item) }}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                            title="삭제"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
 
-                      {/* 아이콘 / 썸네일 */}
-                      <div className="flex-1 flex items-center justify-center w-full">
-                        {item.fileUrl && isImage(item) ? (
-                          <img
-                            src={item.fileUrl}
-                            className="max-h-20 max-w-full object-contain rounded"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="scale-100 group-hover:scale-110 transition-transform duration-200">
-                            {getNodeIcon(item)}
-                          </div>
-                        )}
-                      </div>
+                        {/* 아이콘 / 썸네일 */}
+                        <div className="flex-1 flex items-center justify-center w-full">
+                          {item.thumbnailUrl || (item.fileUrl && isImage(item)) ? (
+                            <img
+                              src={item.thumbnailUrl || item.fileUrl}
+                              className="max-h-20 max-w-full object-contain rounded"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="scale-100 group-hover:scale-110 transition-transform duration-200">
+                              {getNodeIcon(item)}
+                            </div>
+                          )}
+                        </div>
 
-                      {/* 이름 */}
-                      <div className="w-full text-center">
-                        <p className="text-xs font-medium text-gray-700 truncate" title={item.name}>
-                          {item.name}
-                        </p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          {item.nodeType === 'D'
-                            ? `${item.childCount}개 항목`
-                            : formatSize(item.fileSize)}
-                        </p>
+                        {/* 이름 */}
+                        <div className="w-full text-center px-1">
+                          <p className="text-xs font-medium text-gray-700 truncate" title={item.name}>
+                            {item.name}
+                          </p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            {item.nodeType === 'D'
+                              ? `${item.childCount}개 항목`
+                              : formatSize(item.fileSize)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 // ── List View ──
@@ -572,69 +698,98 @@ export default function ApNodePage() {
                   <table className="w-full table-fixed text-sm">
                     <thead className="bg-gray-50 border-b border-gray-100">
                       <tr>
+                        <th className="p-3 w-10 text-center">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300"
+                            checked={currentItems.length > 0 && selectedIds.size === currentItems.length}
+                            onChange={handleSelectAll}
+                          />
+                        </th>
                         <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase w-7/12">이름</th>
                         <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase w-2/12">크기</th>
                         <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase w-3/12">수정일</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {currentItems.map((item) => (
-                        <tr
-                          key={item.id}
-                          onDoubleClick={() => handleDblClick(item)}
-                          onContextMenu={(e) => showCtxMenu(e, item)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors group"
-                        >
-                          <td className="p-2">
-                            <div className="flex items-center gap-2">
-                              <div className="flex-shrink-0">{getNodeIcon(item)}</div>
-                              <span className="font-medium text-gray-800 truncate">{item.name}</span>
-                              {/* 호버 액션 */}
-                              <div className="ml-auto hidden group-hover:flex items-center gap-1 pr-2">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); openRename(item) }}
-                                  className="p-1 text-gray-400 hover:text-blue-500 rounded"
-                                  title="이름 변경"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </button>
-                                {(item.nodeType === 'F' || item.nodeType === 'L') && (
+                      {currentItems.map((item) => {
+                        const isSelected = selectedIds.has(item.id)
+                        return (
+                          <tr
+                            key={item.id}
+                            onDoubleClick={() => handleDblClick(item)}
+                            onContextMenu={(e) => showCtxMenu(e, item)}
+                            onClick={(e) => handleItemClick(e, item.id)}
+                            className={`border-b transition-colors group cursor-pointer ${
+                              isSelected ? 'bg-blue-50 border-blue-100' : 'border-gray-50 hover:bg-gray-50'
+                            }`}
+                          >
+                            <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                className="rounded border-gray-300"
+                                checked={isSelected}
+                                onChange={(e) => handleItemClick(e as any, item.id)}
+                              />
+                            </td>
+                            <td className="p-2">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-shrink-0">{getNodeIcon(item)}</div>
+                                <span className="font-medium text-gray-800 truncate">{item.name}</span>
+                                {/* 호버 액션 */}
+                                <div className="ml-auto hidden group-hover:flex items-center gap-1 pr-2">
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); handleDownload(item) }}
-                                    className="p-1 text-gray-400 hover:text-green-500 rounded"
-                                    title="다운로드"
+                                    onClick={(e) => { e.stopPropagation(); openRename(item) }}
+                                    className="p-1 text-gray-400 hover:text-blue-500 rounded"
+                                    title="이름 변경"
                                   >
-                                    <Download className="w-3.5 h-3.5" />
+                                    <Pencil className="w-3.5 h-3.5" />
                                   </button>
-                                )}
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleDelete(item) }}
-                                  className="p-1 text-gray-400 hover:text-red-500 rounded"
-                                  title="삭제"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                  {(item.nodeType === 'F' || item.nodeType === 'L') && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDownload(item) }}
+                                      className="p-1 text-gray-400 hover:text-green-500 rounded"
+                                      title="다운로드"
+                                    >
+                                      <Download className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDelete(item) }}
+                                    className="p-1 text-gray-400 hover:text-red-500 rounded"
+                                    title="삭제"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="p-3 text-gray-500 text-right">
-                            {item.nodeType === 'D' ? '-' : formatSize(item.fileSize)}
-                          </td>
-                          <td className="p-3 text-gray-500">
-                            {formatDate(item.modifyDt || item.createDt)}
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="p-3 text-gray-500 text-right">
+                              {item.nodeType === 'D' ? '-' : formatSize(item.fileSize)}
+                            </td>
+                            <td className="p-3 text-gray-500">
+                              {formatDate(item.modifyDt || item.createDt)}
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
-              )}
+              )
+}
             </div>
 
             {/* 상태 바 */}
             <div className="bg-gray-50 border-t border-gray-100 px-4 py-1.5 text-xs text-gray-400 flex justify-between">
-              <span>전체 {currentItems.length}개 항목</span>
+              <span>
+                전체 {currentItems.length}개 항목
+                {selectedIds.size > 0 && (
+                  <span className="ml-2 font-medium text-blue-600">
+                    ({selectedIds.size}개 선택됨)
+                  </span>
+                )}
+              </span>
             </div>
           </section>
         </div>
