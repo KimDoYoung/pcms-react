@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useMemo, useEffect } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/components/Toolbar'
@@ -48,11 +48,26 @@ function getStartEndYmd(year: number, month: number): [string, string] {
 }
 
 function Calendar1Page() {
+  const queryClient = useQueryClient()
   const todayDate = new Date()
   const [currentYear, setCurrentYear] = useState(todayDate.getFullYear())
   const [currentMonth, setCurrentMonth] = useState(todayDate.getMonth() + 1)
 
   const [startYmd, endYmd] = useMemo(() => getStartEndYmd(currentYear, currentMonth), [currentYear, currentMonth])
+
+  // 해당 월 표시될 때 공휴일 자동 Fetch
+  useEffect(() => {
+    const fetchHolidays = async () => {
+      try {
+        await apiClient.post(`/calendar/fetch-public-holiday/${currentYear}/${currentMonth}`)
+        // 데이터가 새로 들어왔을 수 있으므로 쿼리 무효화
+        queryClient.invalidateQueries({ queryKey: ['calendar-events'] })
+      } catch (error) {
+        console.error('Auto holiday fetch failed:', error)
+      }
+    }
+    fetchHolidays()
+  }, [currentYear, currentMonth, queryClient])
 
   const { data: events = [] } = useQuery<CalendarEvent[]>({
     queryKey: ['calendar-events', startYmd, endYmd],

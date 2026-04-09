@@ -43,7 +43,6 @@ public class CalendarServiceImpl implements CalendarService {
     public void fetchHolidaysForMonth(int year, int month) {
         String ym = String.format("%04d%02d", year, month);
         
-        // Action 확인 (이미 취득했는지) - 단, 강제 갱신 로직이 필요할 수도 있으나 설계대로 존재여부만 확인
         if (calendarMapper.countAction("Action", ym) > 0) {
             log.info("Holidays for {} already fetched. Skipping.", ym);
             return;
@@ -51,44 +50,63 @@ public class CalendarServiceImpl implements CalendarService {
 
         try {
             String url = String.format(
-                "https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?serviceKey=%s&solYear=%d&solMonth=%02d&numOfRows=100",
+                "https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?serviceKey=%s&solYear=%d&solMonth=%02d&numOfRows=100&_type=xml",
                 apiKey, year, month
             );
 
             log.debug("Requesting URL: {}", url);
-            String responseXml = restTemplate.getForObject(url, String.class);
-            if (responseXml == null) {
+            byte[] responseBytes = restTemplate.getForObject(url, byte[].class);
+            String responseXml = responseBytes != null ? new String(responseBytes, StandardCharsets.UTF_8) : null;
+            
+            calendarMapper.deleteDataByYm("Data", ym);
+            calendarMapper.deleteDataByYm("Action", ym);
+
+            if (responseXml == null || responseXml.trim().isEmpty()) {
                 log.warn("Empty response from public data portal for {}", ym);
+                saveAction(ym);
+                return;
+            }
+
+            log.info("Raw response for {}: {}", ym, responseXml);
+
+            if (responseXml.contains("<items></items>") || !responseXml.contains("<item>")) {
+                log.info("No holiday items found in response for {}", ym);
+                saveAction(ym);
                 return;
             }
 
             List<HolidayItem> items = parseHolidayXml(responseXml);
             
-            // 기존 데이터 삭제 (설계: Data, A-YM 데이터 모두 삭제)
-            calendarMapper.deleteDataByYm("Data", ym);
-
-            // 데이터 삽입
-            for (HolidayItem item : items) {
-                calendarMapper.insertCalendarPublic(CalendarPublic.builder()
-                        .dataType("Data")
-                        .ymd(item.locdate)
-                        .content(item.dateName)
-                        .build());
+            if (items.isEmpty()) {
+                log.info("Parsed 0 holiday items from XML for {}", ym);
+            } else {
+                for (HolidayItem item : items) {
+                    log.debug("Inserting holiday: {} on {}", item.dateName, item.locdate);
+                    calendarMapper.insertCalendarPublic(CalendarPublic.builder()
+                            .dataType("Data")
+                            .ymd(item.locdate)
+                            .content(item.dateName)
+                            .build());
+                }
             }
 
-            // Action 기록
-            calendarMapper.insertCalendarPublic(CalendarPublic.builder()
-                    .dataType("Action")
-                    .ymd(ym)
-                    .content("데이터취득")
-                    .build());
-
-            log.info("Successfully fetched {} holidays for {}", items.size(), ym);
+            saveAction(ym);
+            log.info("Successfully processed {} for {}. (Items: {})", 
+                items.isEmpty() ? "empty holidays" : "holidays", ym, items.size());
 
         } catch (Exception e) {
             log.error("Failed to fetch holidays for {}", ym, e);
             throw new RuntimeException("공휴일 정보 취득 실패: " + ym, e);
         }
+    }
+
+    private void saveAction(String ym) {
+        calendarMapper.deleteDataByYm("Action", ym);
+        calendarMapper.insertCalendarPublic(CalendarPublic.builder()
+                .dataType("Action")
+                .ymd(ym)
+                .content("데이터취득")
+                .build());
     }
 
     @Override
@@ -118,21 +136,33 @@ public class CalendarServiceImpl implements CalendarService {
         Document doc = builder.parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
 
         NodeList nodeList = doc.getElementsByTagName("item");
+        log.debug("Found {} <item> tags in XML", nodeList.getLength());
+
         for (int i = 0; i < nodeList.getLength(); i++) {
             Element element = (Element) nodeList.item(i);
             String isHoliday = getTagValue("isHoliday", element);
-            if ("Y".equals(isHoliday)) {
+            
+            if ("Y".equalsIgnoreCase(isHoliday)) {
                 String dateName = getTagValue("dateName", element);
                 String locdate = getTagValue("locdate", element);
-                result.add(new HolidayItem(dateName, locdate));
+                if (dateName != null && locdate != null) {
+                    result.add(new HolidayItem(dateName, locdate));
+                }
             }
         }
         return result;
     }
 
     private String getTagValue(String tag, Element element) {
-        NodeList nlList = element.getElementsByTagName(tag).item(0).getChildNodes();
-        return nlList.item(0).getNodeValue();
+        try {
+            NodeList tags = element.getElementsByTagName(tag);
+            if (tags != null && tags.getLength() > 0 && tags.item(0).getChildNodes().getLength() > 0) {
+                return tags.item(0).getChildNodes().item(0).getNodeValue();
+            }
+        } catch (Exception e) {
+            log.trace("Tag {} not found", tag);
+        }
+        return null;
     }
 
     private static class HolidayItem {
