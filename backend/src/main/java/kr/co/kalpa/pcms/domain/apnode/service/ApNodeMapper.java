@@ -22,4 +22,6 @@ public interface ApNodeMapper {
     void incrementChildCount(String parentId);
     void decrementChildCount(String parentId);
     void updateTotalSize(@Param("parentId") String parentId, @Param("delta") long delta);
+    void updateTotalSizeForAncestors(@Param("ids") String ids, @Param("delta") long delta);
+    void updateNodeTotalSize(@Param("id") String id, @Param("size") long size);
 }

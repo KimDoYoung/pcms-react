@@ -147,6 +147,8 @@ public class ApNodeServiceImpl implements ApNodeService {
                 .depth(depth)
                 .build();
         apNodeMapper.insertNode(node);
+        // 파일 노드 자신의 total_size = 파일 크기
+        apNodeMapper.updateNodeTotalSize(nodeId, file.getSize());
 
         ApFile apFile = ApFile.builder()
                 .nodeId(nodeId)
@@ -162,7 +164,7 @@ public class ApNodeServiceImpl implements ApNodeService {
 
         if (parentId != null) {
             apNodeMapper.incrementChildCount(parentId);
-            apNodeMapper.updateTotalSize(parentId, file.getSize());
+            propagateTotalSize(parentId, file.getSize());
         }
 
         return resolveNodeDto(apNodeMapper.selectById(nodeId).orElseThrow());
@@ -228,7 +230,7 @@ public class ApNodeServiceImpl implements ApNodeService {
             apNodeMapper.decrementChildCount(oldParentId);
             if ("F".equals(node.getNodeType())) {
                 apFileMapper.selectByNodeId(id).ifPresent(f ->
-                        apNodeMapper.updateTotalSize(oldParentId, -f.getFileSize()));
+                        propagateTotalSize(oldParentId, -f.getFileSize()));
             }
         }
 
@@ -236,7 +238,7 @@ public class ApNodeServiceImpl implements ApNodeService {
             apNodeMapper.incrementChildCount(newParentId);
             if ("F".equals(node.getNodeType())) {
                 apFileMapper.selectByNodeId(id).ifPresent(f ->
-                        apNodeMapper.updateTotalSize(newParentId, f.getFileSize()));
+                        propagateTotalSize(newParentId, f.getFileSize()));
             }
         }
 
@@ -257,7 +259,7 @@ public class ApNodeServiceImpl implements ApNodeService {
             apNodeMapper.decrementChildCount(node.getParentId());
             if ("F".equals(node.getNodeType())) {
                 apFileMapper.selectByNodeId(id).ifPresent(f ->
-                        apNodeMapper.updateTotalSize(node.getParentId(), -f.getFileSize()));
+                        propagateTotalSize(node.getParentId(), -f.getFileSize()));
             }
         }
     }
@@ -286,6 +288,18 @@ public class ApNodeServiceImpl implements ApNodeService {
                 .orElseThrow(() -> new RuntimeException("파일 정보를 찾을 수 없습니다."));
 
         return new FileDownloadDto(apFile.getSavedPath(), apFile.getOriginalName(), apFile.getContentType());
+    }
+
+    /**
+     * startId 노드부터 루트까지 조상 전체에 delta를 전파한다.
+     */
+    private void propagateTotalSize(String startId, long delta) {
+        List<ApNode> ancestors = apNodeMapper.selectAncestors(startId);
+        if (ancestors.isEmpty()) return;
+        String ids = "{" + ancestors.stream()
+                .map(ApNode::getId)
+                .collect(java.util.stream.Collectors.joining(",")) + "}";
+        apNodeMapper.updateTotalSizeForAncestors(ids, delta);
     }
 
     private ApNode findNode(String id) {

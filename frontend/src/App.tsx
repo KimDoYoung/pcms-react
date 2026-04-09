@@ -12,6 +12,7 @@ import PostsPage from './pages/PostsPage'
 import PostNewPage from './pages/PostNewPage'
 import PostViewPage from './pages/PostViewPage'
 import PostEditPage from './pages/PostEditPage'
+import ApNodePage from './pages/ApNodePage'
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         <Route path="/posts/new" element={<PostNewPage />} />
         <Route path="/posts/:id" element={<PostViewPage />} />
         <Route path="/posts/:id/edit" element={<PostEditPage />} />
+        <Route path="/apnode" element={<ApNodePage />} />
       </Routes>
     </BrowserRouter>
   )

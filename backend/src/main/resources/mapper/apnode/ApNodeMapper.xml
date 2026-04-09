@@ -101,4 +101,20 @@
         WHERE id = CAST(#{parentId} AS UUID)
     </update>
 
+    <!-- 조상 전체에 total_size 전파 -->
+    <update id="updateTotalSizeForAncestors">
+        UPDATE cms.ap_node
+        SET total_size = GREATEST(total_size + #{delta}, 0)
+        WHERE id = ANY(
+            CAST(#{ids} AS UUID[])
+        )
+    </update>
+
+    <!-- 파일 노드의 total_size 직접 설정 -->
+    <update id="updateNodeTotalSize">
+        UPDATE cms.ap_node
+        SET total_size = #{size}
+        WHERE id = CAST(#{id} AS UUID)
+    </update>
+
 </mapper>
