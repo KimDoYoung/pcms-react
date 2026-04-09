@@ -71,7 +71,7 @@ function Calendar1Page() {
 
   const { data: events = [] } = useQuery<CalendarEvent[]>({
     queryKey: ['calendar-events', startYmd, endYmd],
-    queryFn: () => apiClient.get<CalendarEvent[]>(`/calendar/events?start=${startYmd}&end=${endYmd}`),
+    queryFn: () => apiClient.get<CalendarEvent[]>(`/calendar/${startYmd}/${endYmd}`),
   })
 
   const days = useMemo(() => {

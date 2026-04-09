@@ -68,6 +68,39 @@
 </response>
 ```
 
+## 개인 calendar
+
+- table : calendar
+
+```sql
+-- cms.calendar definition
+
+-- Drop table
+
+-- DROP TABLE cms.calendar;
+
+CREATE TABLE cms.calendar (
+	id serial4 NOT NULL,
+	gubun bpchar(1) NOT NULL,
+	sorl bpchar(1) DEFAULT 'S'::bpchar NOT NULL,
+	ymd varchar(8) NOT NULL,
+	"content" varchar(200) NOT NULL,
+	created_dt timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	CONSTRAINT calendar_pkey PRIMARY KEY (id)
+);
+CREATE INDEX idx_calendar_gubun_ymd ON cms.calendar USING btree (gubun, ymd);
+CREATE INDEX idx_calendar_sorl ON cms.calendar USING btree (sorl);
+```
+- gubun : 'Y' 매년, 'M' 매달, 'S' : 특정일 
+- sorl : 'S' 양력, 'L' : 음력
+- ymd : gubun이 'Y'일 경우 MMDD , 'M' 일경우 DD, 'S' 일경우  YYYYMMDD 가 들어가 있어야함.
+```sql
+insert into calendar(gubun, sorl, ymd, content) values('S','S','20260420','4월휴가');
+insert into calendar(gubun, sorl, ymd, content) values('Y','S','0405','yh생일');
+insert into calendar(gubun, sorl, ymd, content) values('M','S','01','휴대폰백업');
+```
+- 달력이 2026년 04월 일경우 api /calendar/2026/04 
+
 
 ## API 
 

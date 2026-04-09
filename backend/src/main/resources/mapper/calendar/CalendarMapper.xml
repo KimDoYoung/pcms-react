@@ -30,4 +30,67 @@
         ORDER BY ymd ASC
     </select>
 
+    <select id="selectCalendarByRange" resultType="kr.co.kalpa.pcms.domain.calendar.entity.CalendarEvent">
+        SELECT id, gubun, sorl, resolved_ymd AS ymd, content, created_dt
+        FROM (
+            -- 특정일(S): BETWEEN 직접 적용
+            SELECT id, gubun, sorl, ymd AS resolved_ymd, content, created_dt
+            FROM cms.calendar
+            WHERE sorl = 'S' AND gubun = 'S'
+              AND ymd BETWEEN #{start} AND #{end}
+
+            UNION ALL
+
+            -- 매년(Y): 범위 내 연도별로 확장 후 BETWEEN
+            SELECT c.id, c.gubun, c.sorl,
+                   TO_CHAR(yr, 'FM0000') || c.ymd AS resolved_ymd,
+                   c.content, c.created_dt
+            FROM cms.calendar c
+            CROSS JOIN generate_series(
+                EXTRACT(YEAR FROM TO_DATE(#{start}, 'YYYYMMDD'))::int,
+                EXTRACT(YEAR FROM TO_DATE(#{end},   'YYYYMMDD'))::int
+            ) AS yr
+            WHERE c.sorl = 'S' AND c.gubun = 'Y'
+              AND TO_CHAR(yr, 'FM0000') || c.ymd BETWEEN #{start} AND #{end}
+
+            UNION ALL
+
+            -- 매달(M): 범위 내 연월별로 확장 후 BETWEEN + 유효일 체크
+            SELECT c.id, c.gubun, c.sorl,
+                   TO_CHAR(ym, 'YYYYMM') || c.ymd AS resolved_ymd,
+                   c.content, c.created_dt
+            FROM cms.calendar c
+            CROSS JOIN generate_series(
+                DATE_TRUNC('month', TO_DATE(#{start}, 'YYYYMMDD'))::date,
+                DATE_TRUNC('month', TO_DATE(#{end},   'YYYYMMDD'))::date,
+                '1 month'::interval
+            ) AS ym
+            WHERE c.sorl = 'S' AND c.gubun = 'M'
+              AND TO_CHAR(ym, 'YYYYMM') || c.ymd BETWEEN #{start} AND #{end}
+              AND c.ymd::int &lt;= EXTRACT(DAY FROM (DATE_TRUNC('month', ym) + INTERVAL '1 month - 1 day'))
+        ) sub
+        ORDER BY resolved_ymd ASC
+    </select>
+
+    <insert id="insertCalendarEvent" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO cms.calendar (gubun, sorl, ymd, content)
+        VALUES (#{gubun}, #{sorl}, #{ymd}, #{content})
+    </insert>
+
+    <update id="updateCalendarEvent">
+        UPDATE cms.calendar
+        SET gubun = #{gubun}, sorl = #{sorl}, ymd = #{ymd}, content = #{content}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteCalendarEvent">
+        DELETE FROM cms.calendar WHERE id = #{id}
+    </delete>
+
+    <select id="selectCalendarEventById" resultType="kr.co.kalpa.pcms.domain.calendar.entity.CalendarEvent">
+        SELECT id, gubun, sorl, ymd, content, created_dt
+        FROM cms.calendar
+        WHERE id = #{id}
+    </select>
+
 </mapper>

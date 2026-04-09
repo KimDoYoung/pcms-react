@@ -1,6 +1,7 @@
 package kr.co.kalpa.pcms.domain.calendar.service;
 
 import kr.co.kalpa.pcms.domain.calendar.dto.CalendarEventDto;
+import kr.co.kalpa.pcms.domain.calendar.entity.CalendarEvent;
 import kr.co.kalpa.pcms.domain.calendar.entity.CalendarPublic;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -116,8 +117,10 @@ public class CalendarServiceImpl implements CalendarService {
 
     @Override
     public List<CalendarEventDto> getEventsByRange(String start, String end) {
-        List<CalendarPublic> publicHolidays = calendarMapper.selectPublicDataByRange(start, end);
         List<CalendarEventDto> result = new ArrayList<>();
+
+        // 공휴일
+        List<CalendarPublic> publicHolidays = calendarMapper.selectPublicDataByRange(start, end);
         for (CalendarPublic p : publicHolidays) {
             result.add(CalendarEventDto.builder()
                     .id("H_" + p.getId())
@@ -126,7 +129,40 @@ public class CalendarServiceImpl implements CalendarService {
                     .content(p.getContent())
                     .build());
         }
+
+        // 개인 일정 — SQL에서 Y/M 날짜 확장 및 BETWEEN 필터링 완료
+        List<CalendarEvent> myEvents = calendarMapper.selectCalendarByRange(start, end);
+        for (CalendarEvent e : myEvents) {
+            result.add(CalendarEventDto.builder()
+                    .id("C_" + e.getId())
+                    .type("EVENT")
+                    .ymd(e.getYmd())
+                    .content(e.getContent())
+                    .gubun(e.getGubun())
+                    .build());
+        }
+
         return result;
+    }
+
+    @Override
+    public void createCalendarEvent(CalendarEvent e) {
+        calendarMapper.insertCalendarEvent(e);
+    }
+
+    @Override
+    public void updateCalendarEvent(CalendarEvent e) {
+        calendarMapper.updateCalendarEvent(e);
+    }
+
+    @Override
+    public void deleteCalendarEvent(int id) {
+        calendarMapper.deleteCalendarEvent(id);
+    }
+
+    @Override
+    public CalendarEvent getCalendarEventById(int id) {
+        return calendarMapper.selectCalendarEventById(id);
     }
 
     private List<HolidayItem> parseHolidayXml(String xml) throws Exception {
