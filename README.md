@@ -33,6 +33,7 @@
 | 10 | Zod                | 3.x (LTS)          | MIT          | 스키마 기반 유효성 검증. TypeScript 타입 추론과 런타임 검증 통합 |
 | 11 | axios              | 1.7.x              | MIT          | HTTP 클라이언트. 인터셉터 기반 JWT 토큰 자동 첨부, 공통 에러 처리 |
 | 12 | TanStack Query     | 5.x                | MIT          | 서버 상태 관리. API 캐싱, 자동 리페치, 뮤테이션 및 낙관적 업데이트 처리 |
+| 13 | @milkdown/crepe    | 7.x                | MIT          | Markdown WYSIWYG 에디터. contentType이 markdown인 게시판 글 작성/편집에 사용 |
 
 ### Backend
 

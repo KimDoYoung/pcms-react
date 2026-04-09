@@ -24,6 +24,9 @@ export default function MilkdownEditor({ defaultValue, onChange, placeholder }: 
     const crepe = new Crepe({
       root: containerRef.current,
       defaultValue,
+      featureConfigs: placeholder
+        ? { [Crepe.Feature.Placeholder]: { text: placeholder } }
+        : undefined,
     })
 
     // 변경 감지
@@ -34,10 +37,6 @@ export default function MilkdownEditor({ defaultValue, onChange, placeholder }: 
         }
       })
     })
-
-    if (placeholder) {
-      crepe.addFeature(Crepe.Feature.Placeholder, { text: placeholder })
-    }
 
     crepe.create()
 

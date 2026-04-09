@@ -7,6 +7,7 @@ import Toolbar from '@/components/Toolbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import SpecEditor from '@/components/jangbi/SpecEditor'
+import MilkdownEditor from '@/components/board/MilkdownEditor'
 
 interface AttachmentDto {
   fileId: number
@@ -90,6 +91,7 @@ export default function PostEditPage() {
   }
 
   const isHtml = board?.contentType === 'html'
+  const isMarkdown = board?.contentType === 'markdown'
 
   async function handleSubmit() {
     if (!form.title.trim()) { alert('제목을 입력하세요.'); return }
@@ -207,6 +209,13 @@ export default function PostEditPage() {
                 value={form.content}
                 onChange={(html) => set('content', html)}
                 placeholder="내용을 입력하세요..."
+              />
+            ) : isMarkdown ? (
+              <MilkdownEditor
+                key={String(id)}
+                defaultValue={form.content}
+                onChange={(md) => set('content', md)}
+                placeholder="마크다운으로 내용을 입력하세요..."
               />
             ) : (
               <textarea
