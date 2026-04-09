@@ -16,6 +16,7 @@ import ApNodePage from './pages/ApNodePage'
 import UserInfoPage from './pages/UserInfoPage'
 import SettingsPage from './pages/SettingsPage'
 import Calendar1Page from './pages/Calendar1Page'
+import AnniversaryPage from './pages/AnniversaryPage'
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/user-info" element={<UserInfoPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/calendar" element={<Calendar1Page />} />
+        <Route path="/calendar/anniversary" element={<AnniversaryPage />} />
         <Route path="/diary" element={<DiaryPage />} />
         <Route path="/diary/register" element={<DiaryRegisterPage />} />
         <Route path="/jangbi" element={<JangbiPage />} />

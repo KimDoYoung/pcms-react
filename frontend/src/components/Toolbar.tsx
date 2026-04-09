@@ -25,6 +25,7 @@ const menuGroups: MenuGroup[] = [
       { label: '✏️ 일지기록', to: '/diary/register' },
       { label: '🔍 일지찾기', to: '/diary' },
       { label: '📅 달력', to: '/calendar' },
+      { label: '🎂 기념일', to: '/calendar/anniversary' },
     ],
   },
   {

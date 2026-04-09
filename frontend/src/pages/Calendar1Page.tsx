@@ -1,9 +1,23 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { useForm } from 'react-hook-form'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/components/Toolbar'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+
+const YMD_PLACEHOLDER: Record<string, string> = {
+  Y: 'MMDD (예: 0405)',
+  M: 'DD (예: 01)',
+  S: 'YYYYMMDD (예: 20260420)',
+}
 
 interface CalendarEvent {
   id: string
@@ -52,6 +66,43 @@ function Calendar1Page() {
   const todayDate = new Date()
   const [currentYear, setCurrentYear] = useState(todayDate.getFullYear())
   const [currentMonth, setCurrentMonth] = useState(todayDate.getMonth() + 1)
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [selectedYmd, setSelectedYmd] = useState('')
+
+  // 날짜 셀 클릭 - 특정일(S) 빠른 추가
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<{ content: string }>()
+
+  function openAddDialog(ymd: string) {
+    setSelectedYmd(ymd)
+    reset({ content: '' })
+    setAddDialogOpen(true)
+  }
+
+  async function onAddSubmit(data: { content: string }) {
+    await apiClient.post('/calendar/my', { gubun: 'S', sorl: 'S', ymd: selectedYmd, content: data.content })
+    queryClient.invalidateQueries({ queryKey: ['calendar-events'] })
+    setAddDialogOpen(false)
+  }
+
+  // 헤더 추가 버튼 - 전체 폼 (Y/M/S)
+  const [fullDialogOpen, setFullDialogOpen] = useState(false)
+  const { register: regFull, handleSubmit: handleFull, reset: resetFull,
+          watch: watchFull, setValue: setValueFull, formState: { errors: errorsFull },
+        } = useForm<{ gubun: string; ymd: string; content: string }>({
+    defaultValues: { gubun: 'Y', ymd: '', content: '' },
+  })
+  const fullGubun = watchFull('gubun')
+
+  function openFullDialog() {
+    resetFull({ gubun: 'Y', ymd: '', content: '' })
+    setFullDialogOpen(true)
+  }
+
+  async function onFullSubmit(data: { gubun: string; ymd: string; content: string }) {
+    await apiClient.post('/calendar/my', { ...data, sorl: 'S' })
+    queryClient.invalidateQueries({ queryKey: ['calendar-events'] })
+    setFullDialogOpen(false)
+  }
 
   const [startYmd, endYmd] = useMemo(() => getStartEndYmd(currentYear, currentMonth), [currentYear, currentMonth])
 
@@ -147,6 +198,7 @@ function Calendar1Page() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 pb-10">
       <Toolbar />
       <main className="container mx-auto px-4 mt-6">
@@ -179,13 +231,21 @@ function Calendar1Page() {
                   <ChevronRight className="w-6 h-6" />
                 </Button>
 
-                <Button 
-                  variant="secondary" 
-                  size="sm" 
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={goToday}
                   className="bg-white/20 border-white/30 text-white hover:bg-white/40 px-4 py-1.5 h-8 text-sm font-bold shadow-inner"
                 >
                   오늘
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={openFullDialog}
+                  className="bg-white/20 border-white/30 text-white hover:bg-white/40 px-3 py-1.5 h-8 text-sm font-bold shadow-inner"
+                >
+                  <Plus className="w-4 h-4 mr-1" />추가
                 </Button>
               </div>
             </div>
@@ -221,6 +281,13 @@ function Calendar1Page() {
                     >
                       {day.day}
                     </span>
+                    <button
+                      onClick={() => openAddDialog(day.ymd)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 rounded-full bg-rose-200 hover:bg-rose-300 flex items-center justify-center"
+                      title="일정 추가"
+                    >
+                      <Plus className="w-3 h-3 text-rose-500" />
+                    </button>
                   </div>
 
                   {/* Holidays */}
@@ -247,6 +314,74 @@ function Calendar1Page() {
         </div>
       </main>
     </div>
+
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              일정 추가 — {selectedYmd.substring(0,4)}-{selectedYmd.substring(4,6)}-{selectedYmd.substring(6,8)}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onAddSubmit)} className="space-y-4 pt-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">내용</label>
+              <Input
+                placeholder="일정 내용을 입력하세요"
+                autoFocus
+                {...register('content', { required: '내용을 입력하세요' })}
+              />
+              {errors.content && <p className="text-xs text-red-500">{errors.content.message}</p>}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>취소</Button>
+              <Button type="submit">추가</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={fullDialogOpen} onOpenChange={setFullDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>기념일 추가</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleFull(onFullSubmit)} className="space-y-4 pt-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">유형</label>
+              <Select value={fullGubun} onValueChange={v => setValueFull('gubun', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Y">매년</SelectItem>
+                  <SelectItem value="M">매달</SelectItem>
+                  <SelectItem value="S">특정일</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">날짜</label>
+              <Input
+                placeholder={YMD_PLACEHOLDER[fullGubun]}
+                {...regFull('ymd', { required: '날짜를 입력하세요' })}
+              />
+              {errorsFull.ymd && <p className="text-xs text-red-500">{errorsFull.ymd.message}</p>}
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">내용</label>
+              <Input
+                placeholder="내용을 입력하세요"
+                autoFocus
+                {...regFull('content', { required: '내용을 입력하세요' })}
+              />
+              {errorsFull.content && <p className="text-xs text-red-500">{errorsFull.content.message}</p>}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setFullDialogOpen(false)}>취소</Button>
+              <Button type="submit">추가</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

@@ -55,6 +55,12 @@ public class CalendarController {
         ));
     }
 
+    /** 개인 일정 전체 목록 */
+    @GetMapping("/my/list")
+    public ResponseEntity<List<CalendarEvent>> listMyEvents() {
+        return ResponseEntity.ok(calendarService.getAllCalendarEvents());
+    }
+
     /** 개인 일정 등록 */
     @PostMapping("/my")
     public ResponseEntity<Void> createEvent(@RequestBody CalendarEvent e) {

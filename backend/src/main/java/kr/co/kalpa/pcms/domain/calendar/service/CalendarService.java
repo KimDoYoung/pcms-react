@@ -11,6 +11,8 @@ public interface CalendarService {
     List<CalendarPublic> getPublicHolidays(String ym);
     List<CalendarEventDto> getEventsByRange(String start, String end);
 
+    List<CalendarEvent> getAllCalendarEvents();
+
     // cms.calendar CRUD
     void createCalendarEvent(CalendarEvent e);
     void updateCalendarEvent(CalendarEvent e);

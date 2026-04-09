@@ -72,6 +72,12 @@
         ORDER BY resolved_ymd ASC
     </select>
 
+    <select id="selectAllCalendarEvents" resultType="kr.co.kalpa.pcms.domain.calendar.entity.CalendarEvent">
+        SELECT id, gubun, sorl, ymd, content, created_dt
+        FROM cms.calendar
+        ORDER BY gubun, ymd
+    </select>
+
     <insert id="insertCalendarEvent" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO cms.calendar (gubun, sorl, ymd, content)
         VALUES (#{gubun}, #{sorl}, #{ymd}, #{content})

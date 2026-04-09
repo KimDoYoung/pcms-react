@@ -146,6 +146,11 @@ public class CalendarServiceImpl implements CalendarService {
     }
 
     @Override
+    public List<CalendarEvent> getAllCalendarEvents() {
+        return calendarMapper.selectAllCalendarEvents();
+    }
+
+    @Override
     public void createCalendarEvent(CalendarEvent e) {
         calendarMapper.insertCalendarEvent(e);
     }
