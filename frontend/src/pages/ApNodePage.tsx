@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/components/Toolbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ApNode } from '@/types/apnode'
+import type { ApNode } from '@/types/apnode'
 
 // ──── utils ────────────────────────────────────────────────────────────────
 
@@ -462,7 +462,7 @@ export default function ApNodePage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Toolbar />
 
-      <div className="flex flex-col flex-1" style={{ height: 'calc(100vh - 64px)' }}>
+      <div className="container mx-auto px-4 flex flex-col flex-1" style={{ height: 'calc(100vh - 64px)' }}>
 
         {/* 상단 헤더 */}
         <header className="bg-white border-b border-gray-100 px-6 py-3 flex items-center gap-4">

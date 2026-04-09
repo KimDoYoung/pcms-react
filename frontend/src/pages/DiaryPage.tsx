@@ -119,7 +119,7 @@ function DiaryPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
-      <main className="container mx-auto px-4 py-6 max-w-4xl">
+      <main className="container mx-auto px-4 py-6">
         <h1 className="text-xl font-bold text-gray-800 mb-4">🔍 일지 찾기</h1>
 
         {/* 검색 폼 */}

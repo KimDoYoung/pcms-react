@@ -310,7 +310,7 @@ function DiaryRegisterPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
-      <main className="container mx-auto px-4 py-6 max-w-7xl">
+      <main className="container mx-auto px-4 py-6">
         <div className="mb-4 flex items-center gap-2">
           <h1 className="text-xl font-bold text-gray-800">✏️ 일지 등록/수정</h1>
           <Button
