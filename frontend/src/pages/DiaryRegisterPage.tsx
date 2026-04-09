@@ -6,6 +6,7 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Paperclip, X, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import Toolbar from '@/components/Toolbar'
 import { apiClient } from '@/lib/apiClient'
@@ -141,6 +142,7 @@ function MenuBar({ editor }: { editor: ReturnType<typeof useEditor> }) {
 
 function DiaryRegisterPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const today = new Date().toISOString().slice(0, 10)
   const [diaryDate, setDiaryDate] = useState(searchParams.get('date') ?? today)
@@ -289,7 +291,8 @@ function DiaryRegisterPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       alert('저장되었습니다.')
-      
+      queryClient.invalidateQueries({ queryKey: ['diary-summary'] })
+
       // Refresh to get latest attachments
       const res = await apiClient.get(`/diary/date/${diaryPayload.ymd}`)
       if (res && typeof res === 'object' && 'id' in res) {
