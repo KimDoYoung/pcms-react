@@ -1,34 +1,15 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { Folder, File, ChevronRight, ChevronDown, Upload, FolderPlus, Download, Pencil, Trash2, X, List, Grid3X3, Link2 } from 'lucide-react'
+import { Folder, File, ChevronRight, ChevronDown, Upload, FolderPlus, Download, Pencil, Trash2, X, List, Grid3X3, Link2, Copy, Scissors, ClipboardPaste } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/components/Toolbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-
-interface ApNodeDto {
-  id: string
-  nodeType: 'F' | 'D' | 'L'
-  parentId: string | null
-  name: string
-  depth: number
-  createDt: string
-  modifyDt: string
-  childCount: number
-  totalSize: number
-  linkTargetId: string | null
-  brokenLink: boolean
-  fileUrl: string | null
-  originalName: string | null
-  fileSize: number | null
-  contentType: string | null
-  width: number | null
-  height: number | null
-}
+import { ApNode } from '@/types/apnode'
 
 // ──── utils ────────────────────────────────────────────────────────────────
 
-function formatSize(bytes: number | null): string {
+function formatSize(bytes: number | null | undefined): string {
   if (bytes == null) return '-'
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -36,16 +17,16 @@ function formatSize(bytes: number | null): string {
   return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`
 }
 
-function formatDate(dt: string | null): string {
+function formatDate(dt: string | null | undefined): string {
   if (!dt) return '-'
   return new Date(dt).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }
 
-function isImage(node: ApNodeDto): boolean {
+function isImage(node: ApNode): boolean {
   return !!node.contentType?.startsWith('image/')
 }
 
-function getNodeIcon(node: ApNodeDto) {
+function getNodeIcon(node: ApNode) {
   if (node.nodeType === 'D') return <Folder className="w-8 h-8 text-yellow-400" />
   if (node.nodeType === 'L') return <Link2 className="w-8 h-8 text-blue-400" />
   return <File className="w-8 h-8 text-gray-400" />
@@ -54,17 +35,25 @@ function getNodeIcon(node: ApNodeDto) {
 // ──── Tree Sidebar ──────────────────────────────────────────────────────────
 
 interface TreeNodeProps {
-  node: ApNodeDto
+  node: ApNode
   currentFolderId: string | null
   onNavigate: (id: string) => void
+  ancestorIds: string[]
 }
 
-function TreeNode({ node, currentFolderId, onNavigate }: TreeNodeProps) {
+function TreeNode({ node, currentFolderId, onNavigate, ancestorIds }: TreeNodeProps) {
   const [expanded, setExpanded] = useState(false)
 
-  const { data: children } = useQuery<ApNodeDto[]>({
+  // 조상 경로에 포함되어 있으면 자동 확장
+  useEffect(() => {
+    if (ancestorIds.includes(node.id)) {
+      setExpanded(true)
+    }
+  }, [ancestorIds, node.id])
+
+  const { data: children } = useQuery<ApNode[]>({
     queryKey: ['apnode-children', node.id],
-    queryFn: () => apiClient.get<ApNodeDto[]>(`/apnode/${node.id}/children`),
+    queryFn: () => apiClient.get<ApNode[]>(`/apnode/${node.id}/children`),
     enabled: expanded,
   })
 
@@ -95,7 +84,7 @@ function TreeNode({ node, currentFolderId, onNavigate }: TreeNodeProps) {
       {expanded && dirs.length > 0 && (
         <div className="ml-4 border-l border-gray-100 pl-1">
           {dirs.map((child) => (
-            <TreeNode key={child.id} node={child} currentFolderId={currentFolderId} onNavigate={onNavigate} />
+            <TreeNode key={child.id} node={child} currentFolderId={currentFolderId} onNavigate={onNavigate} ancestorIds={ancestorIds} />
           ))}
         </div>
       )}
@@ -109,7 +98,13 @@ interface CtxMenu {
   show: boolean
   x: number
   y: number
-  node: ApNodeDto | null
+  node: ApNode | null
+}
+
+interface Clipboard {
+  id: string
+  name: string
+  type: 'cut' | 'copy'
 }
 
 // ──── Main Page ─────────────────────────────────────────────────────────────
@@ -123,71 +118,138 @@ export default function ApNodePage() {
   const [isDragging, setIsDragging] = useState(false)
   const dragCounter = useRef(0)
 
+  // 사이드바 너비 조절 상태
+  const [sidebarWidth, setSidebarWidth] = useState(240)
+  const isResizing = useRef(false)
+
+  const startResizing = useCallback(() => {
+    isResizing.current = true
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }, [])
+
+  const stopResizing = useCallback(() => {
+    isResizing.current = false
+    document.body.style.cursor = 'default'
+    document.body.style.userSelect = 'auto'
+  }, [])
+
+  const resize = useCallback((e: MouseEvent) => {
+    if (!isResizing.current) return
+    const newWidth = e.clientX
+    if (newWidth > 150 && newWidth < 600) {
+      setSidebarWidth(newWidth)
+    }
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('mousemove', resize)
+    window.addEventListener('mouseup', stopResizing)
+    return () => {
+      window.removeEventListener('mousemove', resize)
+      window.removeEventListener('mouseup', stopResizing)
+    }
+  }, [resize, stopResizing])
+
   // 모달 상태
   const [createFolderOpen, setCreateFolderOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
   const [renameOpen, setRenameOpen] = useState(false)
-  const [renameNode, setRenameNode] = useState<ApNodeDto | null>(null)
+  const [renameNode, setRenameNode] = useState<ApNode | null>(null)
   const [renameName, setRenameName] = useState('')
+
+  // 클립보드 (이동/링크용)
+  const [clipboard, setClipboard] = useState<Clipboard | null>(null)
 
   // 컨텍스트 메뉴
   const [ctxMenu, setCtxMenu] = useState<CtxMenu>({ show: false, x: 0, y: 0, node: null })
 
   // ── 데이터 조회 ──
-  const rootsQuery = useQuery<ApNodeDto[]>({
+  const rootsQuery = useQuery<ApNode[]>({
     queryKey: ['apnode-roots'],
-    queryFn: () => apiClient.get<ApNodeDto[]>('/apnode'),
+    queryFn: () => apiClient.get<ApNode[]>('/apnode'),
   })
 
-  const childrenQuery = useQuery<ApNodeDto[]>({
+  const childrenQuery = useQuery<ApNode[]>({
     queryKey: ['apnode-children', currentFolderId],
     queryFn: () =>
       currentFolderId
-        ? apiClient.get<ApNodeDto[]>(`/apnode/${currentFolderId}/children`)
+        ? apiClient.get<ApNode[]>(`/apnode/${currentFolderId}/children`)
         : Promise.resolve([]),
     enabled: currentFolderId != null,
   })
 
-  const pathQuery = useQuery<ApNodeDto[]>({
+  const pathQuery = useQuery<ApNode[]>({
     queryKey: ['apnode-path', currentFolderId],
     queryFn: () =>
       currentFolderId
-        ? apiClient.get<ApNodeDto[]>(`/apnode/${currentFolderId}/path`)
+        ? apiClient.get<ApNode[]>(`/apnode/${currentFolderId}/path`)
         : Promise.resolve([]),
     enabled: currentFolderId != null,
   })
 
-  const currentItems: ApNodeDto[] =
+  const currentItems: ApNode[] =
     currentFolderId == null
       ? (rootsQuery.data ?? [])
       : (childrenQuery.data ?? [])
 
-  const breadcrumb: ApNodeDto[] = pathQuery.data ?? []
+  const breadcrumb: ApNode[] = pathQuery.data ?? []
+  const ancestorIds = breadcrumb.map((n) => n.id)
   const isLoading = currentFolderId == null ? rootsQuery.isLoading : childrenQuery.isLoading
 
   // ── mutations ──
   const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['apnode-children', currentFolderId] })
+    // 트리 전체 갱신을 위해 apnode-children의 모든 하위 쿼리 무효화
+    queryClient.invalidateQueries({ queryKey: ['apnode-children'] })
     queryClient.invalidateQueries({ queryKey: ['apnode-roots'] })
-  }, [queryClient, currentFolderId])
+    // 상단 경로(Breadcrumb) 정보도 무효화하여 즉시 갱신
+    queryClient.invalidateQueries({ queryKey: ['apnode-path'] })
+  }, [queryClient])
 
   const createDirMutation = useMutation({
     mutationFn: (name: string) =>
-      apiClient.post<ApNodeDto>('/apnode/directories', { name, parentId: currentFolderId }),
-    onSuccess: () => { invalidate(); setCreateFolderOpen(false); setNewFolderName('') },
+      apiClient.post<ApNode>('/apnode/directories', { name, parentId: currentFolderId }),
+    onSuccess: (newNode) => {
+      invalidate()
+      setCreateFolderOpen(false)
+      setNewFolderName('')
+      // 새로 생성된 폴더로 자동 이동
+      navigate(newNode.id)
+    },
     onError: () => alert('폴더 생성 실패'),
   })
 
   const renameMutation = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) =>
-      apiClient.put<ApNodeDto>(`/apnode/${id}/rename`, { name }),
+      apiClient.put<ApNode>(`/apnode/${id}/rename`, { name }),
     onSuccess: () => { invalidate(); setRenameOpen(false); setRenameNode(null) },
     onError: () => alert('이름 변경 실패'),
   })
 
+  const moveMutation = useMutation({
+    mutationFn: ({ id, targetParentId }: { id: string; targetParentId: string | null }) =>
+      apiClient.put<ApNode>(`/apnode/${id}/move`, { targetParentId }),
+    onSuccess: () => { invalidate(); setClipboard(null) },
+    onError: () => alert('이동 실패'),
+  })
+
+  const createLinkMutation = useMutation({
+    mutationFn: ({ name, targetId, parentId }: { name: string; targetId: string; parentId: string | null }) =>
+      apiClient.post<ApNode>('/apnode/links', { name, targetId, parentId }),
+    onSuccess: () => { invalidate(); setClipboard(null) },
+    onError: () => alert('링크 생성 실패'),
+  })
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/apnode/${id}`),
-    onSuccess: invalidate,
+    onSuccess: (_, deletedId) => {
+      invalidate()
+      // 현재 폴더를 삭제했다면 부모 폴더로 이동
+      if (deletedId === currentFolderId) {
+        const parentId = breadcrumb.length > 1 ? breadcrumb[breadcrumb.length - 2].id : null
+        setCurrentFolderId(parentId)
+      }
+    },
     onError: () => alert('삭제 실패'),
   })
 
@@ -197,25 +259,39 @@ export default function ApNodePage() {
     setCtxMenu((m) => ({ ...m, show: false }))
   }
 
-  function openRename(node: ApNodeDto) {
+  function openRename(node: ApNode) {
     setRenameNode(node)
     setRenameName(node.name)
     setRenameOpen(true)
     setCtxMenu((m) => ({ ...m, show: false }))
   }
 
-  function handleDelete(node: ApNodeDto) {
-    if (!confirm(`"${node.name}"을(를) 삭제하시겠습니까?`)) return
+  function handleDelete(node: ApNode) {
+    if (!confirm(`"${node.name}" 및 하위 모든 항목을 삭제하시겠습니까?`)) return
     deleteMutation.mutate(node.id)
     setCtxMenu((m) => ({ ...m, show: false }))
   }
 
-  function handleDownload(node: ApNodeDto) {
-    window.open(`http://localhost:8585/pcms/apnode/${node.id}/download`, '_blank')
+  function handleDownload(node: ApNode) {
+    const downloadUrl = `http://localhost:8585/pcms/apnode/${node.id}/download`
+    window.open(downloadUrl, '_blank')
     setCtxMenu((m) => ({ ...m, show: false }))
   }
 
-  function showCtxMenu(e: React.MouseEvent, node: ApNodeDto) {
+  function handlePaste() {
+    if (!clipboard) return
+    if (clipboard.type === 'cut') {
+      moveMutation.mutate({ id: clipboard.id, targetParentId: currentFolderId })
+    } else {
+      createLinkMutation.mutate({
+        name: `${clipboard.name} 링크`,
+        targetId: clipboard.id,
+        parentId: currentFolderId,
+      })
+    }
+  }
+
+  function showCtxMenu(e: React.MouseEvent, node: ApNode | null) {
     e.preventDefault()
     setCtxMenu({ show: true, x: e.clientX, y: e.clientY, node })
   }
@@ -227,7 +303,7 @@ export default function ApNodePage() {
       fd.append('file', file)
       if (currentFolderId) fd.append('parentId', currentFolderId)
       try {
-        await (apiClient as any).post('/apnode/files', fd, {
+        await apiClient.post('/apnode/files', fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
       } catch {
@@ -256,10 +332,27 @@ export default function ApNodePage() {
     uploadFiles(e.dataTransfer.files)
   }
 
-  // 폴더 더블클릭으로 진입
-  function handleDblClick(node: ApNodeDto) {
-    if (node.nodeType === 'D') navigate(node.id)
-    else if (node.nodeType === 'F') handleDownload(node)
+  // 더블클릭 핸들러
+  async function handleDblClick(node: ApNode) {
+    if (node.nodeType === 'D') {
+      navigate(node.id)
+    } else if (node.nodeType === 'L') {
+      if (node.linkTargetId) {
+        // 링크 대상이 디렉토리인지 확인하기 위해 정보를 가져옴
+        try {
+          const targetNode = await apiClient.get<ApNode>(`/apnode/${node.linkTargetId}`)
+          if (targetNode.nodeType === 'D') {
+            navigate(targetNode.id)
+          } else {
+            handleDownload(node)
+          }
+        } catch {
+          alert('링크 대상을 찾을 수 없습니다.')
+        }
+      }
+    } else if (node.nodeType === 'F') {
+      handleDownload(node)
+    }
   }
 
   const rootDirs = (rootsQuery.data ?? []).filter((n) => n.nodeType === 'D')
@@ -300,21 +393,13 @@ export default function ApNodePage() {
 
           {/* 액션 */}
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => setCreateFolderOpen(true)}>
-              <FolderPlus className="w-4 h-4 mr-1" /> 새 폴더
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-              <Upload className="w-4 h-4 mr-1" /> 업로드
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={(e) => uploadFiles(e.target.files)}
-            />
+            {clipboard && (
+              <Button size="sm" variant="ghost" className="text-blue-600 hover:bg-blue-50" onClick={handlePaste}>
+                <ClipboardPaste className="w-4 h-4 mr-1" /> 붙여넣기 ({clipboard.type === 'cut' ? '이동' : '링크'})
+              </Button>
+            )}
             {/* 뷰 전환 */}
-            <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+            <div className="flex border border-gray-200 rounded-lg overflow-hidden ml-2">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:bg-gray-50'}`}
@@ -335,8 +420,54 @@ export default function ApNodePage() {
         <div className="flex flex-1 min-h-0">
 
           {/* 트리 사이드바 */}
-          <aside className="w-56 border-r border-gray-100 bg-gray-50/50 overflow-y-auto flex-shrink-0 hidden md:block">
-            <div className="p-3">
+          <aside
+            style={{ width: `${sidebarWidth}px` }}
+            className="border-r border-gray-100 bg-gray-50/50 overflow-y-auto flex-shrink-0 hidden md:block"
+          >
+            <div className="p-4 flex flex-col gap-2">
+              <div className="flex flex-row gap-2">
+                <Button size="sm" variant="outline" className="flex-1 justify-start bg-white px-2" onClick={() => setCreateFolderOpen(true)}>
+                  <FolderPlus className="w-4 h-4 mr-1.5 text-blue-500 flex-shrink-0" /> <span className="truncate">새 폴더</span>
+                </Button>
+                <Button size="sm" variant="outline" className="flex-1 justify-start bg-white px-2" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="w-4 h-4 mr-1.5 text-green-500 flex-shrink-0" /> <span className="truncate">업로드</span>
+                </Button>
+              </div>
+              <div className="flex flex-row gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 justify-start bg-white px-2"
+                  disabled={!currentFolderId || breadcrumb.length === 0}
+                  onClick={() => {
+                    const currentFolderNode = breadcrumb[breadcrumb.length - 1]
+                    if (currentFolderNode) openRename(currentFolderNode)
+                  }}
+                >
+                  <Pencil className="w-4 h-4 mr-1.5 text-blue-500 flex-shrink-0" /> <span className="truncate">이름 변경</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 justify-start bg-white px-2 text-red-500 hover:text-red-600 hover:bg-red-50"
+                  disabled={!currentFolderId || breadcrumb.length === 0}
+                  onClick={() => {
+                    const currentFolderNode = breadcrumb[breadcrumb.length - 1]
+                    if (currentFolderNode) handleDelete(currentFolderNode)
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-1.5 flex-shrink-0" /> <span className="truncate">삭제</span>
+                </Button>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => uploadFiles(e.target.files)}
+              />
+            </div>
+            <div className="p-3 pt-0">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">폴더</p>
               {rootDirs.map((node) => (
                 <TreeNode
@@ -344,10 +475,17 @@ export default function ApNodePage() {
                   node={node}
                   currentFolderId={currentFolderId}
                   onNavigate={navigate}
+                  ancestorIds={ancestorIds}
                 />
               ))}
             </div>
           </aside>
+
+          {/* 리사이즈 바 */}
+          <div
+            className="w-1 hover:w-1.5 hover:bg-blue-300 bg-transparent transition-all cursor-col-resize flex-shrink-0 z-10 active:bg-blue-500 active:w-1.5"
+            onMouseDown={startResizing}
+          />
 
           {/* 파일 영역 */}
           <section
@@ -357,6 +495,7 @@ export default function ApNodePage() {
             onDragLeave={onDragLeave}
             onDrop={onDrop}
             onClick={() => setCtxMenu((m) => ({ ...m, show: false }))}
+            onContextMenu={(e) => showCtxMenu(e, null)}
           >
             {/* Drag overlay */}
             {isDragging && (
@@ -400,7 +539,7 @@ export default function ApNodePage() {
 
                       {/* 아이콘 / 썸네일 */}
                       <div className="flex-1 flex items-center justify-center w-full">
-                        {item.nodeType === 'F' && item.fileUrl && isImage(item) ? (
+                        {item.fileUrl && isImage(item) ? (
                           <img
                             src={item.fileUrl}
                             className="max-h-20 max-w-full object-contain rounded"
@@ -460,7 +599,7 @@ export default function ApNodePage() {
                                 >
                                   <Pencil className="w-3.5 h-3.5" />
                                 </button>
-                                {item.nodeType === 'F' && (
+                                {(item.nodeType === 'F' || item.nodeType === 'L') && (
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleDownload(item) }}
                                     className="p-1 text-gray-400 hover:text-green-500 rounded"
@@ -502,33 +641,66 @@ export default function ApNodePage() {
       </div>
 
       {/* ── 컨텍스트 메뉴 ── */}
-      {ctxMenu.show && ctxMenu.node && (
+      {ctxMenu.show && (
         <div
           className="fixed bg-white shadow-xl rounded-lg border border-gray-100 py-1 z-50 min-w-[160px]"
           style={{ top: ctxMenu.y, left: ctxMenu.x }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            onClick={() => openRename(ctxMenu.node!)}
-            className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 transition-colors"
-          >
-            <Pencil className="w-4 h-4 text-gray-400" /> 이름 변경
-          </button>
-          {ctxMenu.node.nodeType === 'F' && (
-            <button
-              onClick={() => handleDownload(ctxMenu.node!)}
-              className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 transition-colors"
-            >
-              <Download className="w-4 h-4 text-gray-400" /> 다운로드
-            </button>
+          {ctxMenu.node ? (
+            <>
+              <button
+                onClick={() => openRename(ctxMenu.node!)}
+                className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 transition-colors"
+              >
+                <Pencil className="w-4 h-4 text-gray-400" /> 이름 변경
+              </button>
+              <button
+                onClick={() => { setClipboard({ id: ctxMenu.node!.id, name: ctxMenu.node!.name, type: 'cut' }); setCtxMenu((m) => ({ ...m, show: false })) }}
+                className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 transition-colors"
+              >
+                <Scissors className="w-4 h-4 text-gray-400" /> 이동 (잘라내기)
+              </button>
+              <button
+                onClick={() => { setClipboard({ id: ctxMenu.node!.id, name: ctxMenu.node!.name, type: 'copy' }); setCtxMenu((m) => ({ ...m, show: false })) }}
+                className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 transition-colors"
+              >
+                <Copy className="w-4 h-4 text-gray-400" /> 링크 복사
+              </button>
+              {(ctxMenu.node.nodeType === 'F' || ctxMenu.node.nodeType === 'L') && (
+                <button
+                  onClick={() => handleDownload(ctxMenu.node!)}
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 transition-colors"
+                >
+                  <Download className="w-4 h-4 text-gray-400" /> 다운로드
+                </button>
+              )}
+              <hr className="my-1 border-gray-100" />
+              <button
+                onClick={() => handleDelete(ctxMenu.node!)}
+                className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-red-50 text-red-600 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" /> 삭제
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => { setCreateFolderOpen(true); setCtxMenu((m) => ({ ...m, show: false })) }}
+                className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 transition-colors"
+              >
+                <FolderPlus className="w-4 h-4 text-gray-400" /> 새 폴더
+              </button>
+              {clipboard && (
+                <button
+                  onClick={() => { handlePaste(); setCtxMenu((m) => ({ ...m, show: false })) }}
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-blue-50 text-blue-700 transition-colors"
+                >
+                  <ClipboardPaste className="w-4 h-4" /> 붙여넣기 ({clipboard.type === 'cut' ? '이동' : '링크'})
+                </button>
+              )}
+            </>
           )}
-          <hr className="my-1 border-gray-100" />
-          <button
-            onClick={() => handleDelete(ctxMenu.node!)}
-            className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-red-50 text-red-600 transition-colors"
-          >
-            <Trash2 className="w-4 h-4" /> 삭제
-          </button>
         </div>
       )}
 

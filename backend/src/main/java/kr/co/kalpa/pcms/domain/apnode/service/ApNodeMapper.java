@@ -11,11 +11,13 @@ import java.util.Optional;
 public interface ApNodeMapper {
     void insertNode(ApNode node);
     Optional<ApNode> selectById(String id);
+    Optional<ApNode> selectByNameAndParent(@Param("name") String name, @Param("parentId") String parentId);
     List<ApNode> selectRoots();
     List<ApNode> selectChildren(String parentId);
     List<ApNode> selectAncestors(String id);
 
     void softDelete(String id);
+    void softDeleteDescendants(String id);
     void updateName(@Param("id") String id, @Param("name") String name);
     void updateParent(@Param("id") String id, @Param("parentId") String parentId, @Param("depth") int depth);
 

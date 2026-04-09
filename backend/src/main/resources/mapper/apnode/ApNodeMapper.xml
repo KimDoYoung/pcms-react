@@ -23,6 +23,22 @@
         )
     </insert>
 
+    <select id="selectByNameAndParent" resultType="kr.co.kalpa.pcms.domain.apnode.entity.ApNode">
+        SELECT <include refid="selectColumns"/>
+        FROM cms.ap_node
+        WHERE name = #{name}
+          AND is_deleted = FALSE
+          <choose>
+              <when test="parentId != null">
+                  AND parent_id = CAST(#{parentId} AS UUID)
+              </when>
+              <otherwise>
+                  AND parent_id IS NULL
+              </otherwise>
+          </choose>
+        LIMIT 1
+    </select>
+
     <select id="selectById" resultType="kr.co.kalpa.pcms.domain.apnode.entity.ApNode">
         SELECT <include refid="selectColumns"/>
         FROM cms.ap_node
@@ -69,6 +85,17 @@
         UPDATE cms.ap_node
         SET is_deleted = TRUE, delete_dt = CURRENT_TIMESTAMP
         WHERE id = CAST(#{id} AS UUID)
+    </update>
+
+    <update id="softDeleteDescendants">
+        WITH RECURSIVE descendants AS (
+            SELECT id FROM cms.ap_node WHERE parent_id = CAST(#{id} AS UUID)
+            UNION ALL
+            SELECT n.id FROM cms.ap_node n JOIN descendants d ON n.parent_id = n.id
+        )
+        UPDATE cms.ap_node
+        SET is_deleted = TRUE, delete_dt = CURRENT_TIMESTAMP
+        WHERE id IN (SELECT id FROM descendants)
     </update>
 
     <update id="updateName">

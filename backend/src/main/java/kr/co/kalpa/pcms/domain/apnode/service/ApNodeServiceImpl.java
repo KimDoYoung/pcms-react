@@ -28,6 +28,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -79,26 +80,48 @@ public class ApNodeServiceImpl implements ApNodeService {
 
     @Override
     public ApNodeDto createDirectory(DirectoryCreateDto dto) {
-        int depth = 0;
-        if (dto.getParentId() != null) {
-            ApNode parent = findNode(dto.getParentId());
-            ensureDirectory(parent);
-            depth = parent.getDepth() + 1;
+        String[] pathSegments = dto.getName().split("/");
+        String currentParentId = dto.getParentId();
+        ApNode lastNode = null;
+
+        for (String segmentName : pathSegments) {
+            String name = segmentName.trim();
+            if (name.isEmpty()) continue;
+
+            // 이미 존재하는지 확인 (중복 생성 방지)
+            Optional<ApNode> existing = apNodeMapper.selectByNameAndParent(name, currentParentId);
+            if (existing.isPresent()) {
+                lastNode = existing.get();
+                ensureDirectory(lastNode);
+            } else {
+                int depth = 0;
+                if (currentParentId != null) {
+                    ApNode parent = findNode(currentParentId);
+                    ensureDirectory(parent);
+                    depth = parent.getDepth() + 1;
+                }
+
+                lastNode = ApNode.builder()
+                        .id(UUID.randomUUID().toString())
+                        .nodeType("D")
+                        .parentId(currentParentId)
+                        .name(name)
+                        .depth(depth)
+                        .build();
+                apNodeMapper.insertNode(lastNode);
+
+                if (currentParentId != null) {
+                    apNodeMapper.incrementChildCount(currentParentId);
+                }
+            }
+            currentParentId = lastNode.getId();
         }
 
-        ApNode node = ApNode.builder()
-                .id(UUID.randomUUID().toString())
-                .nodeType("D")
-                .parentId(dto.getParentId())
-                .name(dto.getName())
-                .depth(depth)
-                .build();
-        apNodeMapper.insertNode(node);
-
-        if (dto.getParentId() != null) {
-            apNodeMapper.incrementChildCount(dto.getParentId());
+        if (lastNode == null) {
+            throw new IllegalArgumentException("유효하지 않은 폴더 이름입니다.");
         }
-        return toBaseDto(node);
+
+        return toBaseDto(lastNode);
     }
 
     @Override
@@ -249,8 +272,9 @@ public class ApNodeServiceImpl implements ApNodeService {
     public void delete(String id) {
         ApNode node = findNode(id);
 
-        if ("D".equals(node.getNodeType()) && node.getChildCount() > 0) {
-            throw new IllegalStateException("파일이 있는 디렉토리는 삭제할 수 없습니다.");
+        // 하위 노드들 모두 소프트 삭제
+        if ("D".equals(node.getNodeType())) {
+            apNodeMapper.softDeleteDescendants(id);
         }
 
         apNodeMapper.softDelete(id);
@@ -260,6 +284,9 @@ public class ApNodeServiceImpl implements ApNodeService {
             if ("F".equals(node.getNodeType())) {
                 apFileMapper.selectByNodeId(id).ifPresent(f ->
                         propagateTotalSize(node.getParentId(), -f.getFileSize()));
+            } else if ("D".equals(node.getNodeType())) {
+                // 디렉토리 삭제 시 해당 디렉토리의 total_size만큼 부모들의 total_size 차감
+                propagateTotalSize(node.getParentId(), -node.getTotalSize());
             }
         }
     }
