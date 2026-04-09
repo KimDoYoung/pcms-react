@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Data
@@ -28,8 +28,8 @@ public class PostDto {
     @NotBlank(message = "날짜를 입력해 주세요.")
     private String baseYmd;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
     private Integer attachmentCount;
     private List<Long> deletedAttachmentIds;
     private List<AttachmentDto> attachments;
