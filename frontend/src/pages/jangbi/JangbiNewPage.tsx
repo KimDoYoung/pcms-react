@@ -64,10 +64,10 @@ export default function JangbiNewPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
 
           {/* 기본 정보 */}
-          <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-6 gap-5">
 
             {/* 구입일 */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
               <label className="text-sm font-medium text-gray-700">
                 구입일 <span className="text-red-500">*</span>
               </label>
@@ -78,24 +78,36 @@ export default function JangbiNewPage() {
               />
             </div>
 
-            {/* 중요도 */}
-            <div className="flex flex-col gap-1.5">
+            {/* 만족감 */}
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
               <label className="text-sm font-medium text-gray-700">
-                중요도 <span className="text-red-500">*</span>
+                만족도 <span className="text-red-500">*</span>
               </label>
               <select
                 value={form.lvl}
                 onChange={(e) => set('lvl', e.target.value)}
                 className="h-9 border border-gray-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="1">1 - 높음 (중요)</option>
-                <option value="2">2 - 중간</option>
-                <option value="3">3 - 낮음</option>
+                <option value="3">만족</option>
+                <option value="2">보통</option>
+                <option value="1">실망</option>
               </select>
             </div>
 
-            {/* 품목 */}
+            {/* 가격 */}
             <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <label className="text-sm font-medium text-gray-700">가격 (원)</label>
+              <Input
+                type="number"
+                placeholder="숫자만 입력"
+                min={0}
+                value={form.cost}
+                onChange={(e) => set('cost', e.target.value)}
+              />
+            </div>
+
+            {/* 품목 */}
+            <div className="flex flex-col gap-1.5 sm:col-span-3">
               <label className="text-sm font-medium text-gray-700">
                 품목 <span className="text-red-500">*</span>
               </label>
@@ -108,25 +120,13 @@ export default function JangbiNewPage() {
             </div>
 
             {/* 위치 */}
-            <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <div className="flex flex-col gap-1.5 sm:col-span-3">
               <label className="text-sm font-medium text-gray-700">위치</label>
               <Input
                 placeholder="예: 거실, 2층 창고"
                 maxLength={200}
                 value={form.location}
                 onChange={(e) => set('location', e.target.value)}
-              />
-            </div>
-
-            {/* 가격 */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-gray-700">가격 (원)</label>
-              <Input
-                type="number"
-                placeholder="숫자만 입력"
-                min={0}
-                value={form.cost}
-                onChange={(e) => set('cost', e.target.value)}
               />
             </div>
           </div>

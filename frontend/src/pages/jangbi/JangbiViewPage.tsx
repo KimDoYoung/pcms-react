@@ -4,6 +4,7 @@ import { Pencil, Trash2, ArrowLeft, Paperclip, Download } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/components/Toolbar'
 import { Button } from '@/components/ui/button'
+import StarRating from '@/components/StarRating'
 
 interface AttachmentDto {
   fileId: number
@@ -24,7 +25,7 @@ interface JangbiDto {
   attachments: AttachmentDto[]
 }
 
-const LVL_LABEL: Record<string, string> = { '1': '1 - 높음 (중요)', '2': '2 - 중간', '3': '3 - 낮음' }
+const LVL_LABEL: Record<string, string> = { '1': '실망', '2': '보통', '3': '만족' }
 const LVL_COLOR: Record<string, string> = {
   '1': 'bg-red-100 text-red-700',
   '2': 'bg-yellow-100 text-yellow-700',
@@ -113,6 +114,9 @@ export default function JangbiViewPage() {
             <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
               <Trash2 className="w-3.5 h-3.5 mr-1" /> 삭제
             </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/jangbi')}>
+              <ArrowLeft className="w-3.5 h-3.5 mr-1" /> 목록으로
+            </Button>
           </div>
         </div>
 
@@ -128,11 +132,9 @@ export default function JangbiViewPage() {
               <dd className="text-gray-800">{formatCost(jangbi.cost)}</dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-400 mb-1">중요도</dt>
+              <dt className="text-xs text-gray-400 mb-1">만족도</dt>
               <dd>
-                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${LVL_COLOR[jangbi.lvl] ?? 'bg-gray-100 text-gray-500'}`}>
-                  {LVL_LABEL[jangbi.lvl] ?? jangbi.lvl}
-                </span>
+                <StarRating value={parseInt(jangbi.lvl, 10)} max={3} size="sm" filled={true} />
               </dd>
             </div>
             <div>
@@ -182,11 +184,11 @@ export default function JangbiViewPage() {
         </div>
 
         {/* 하단 버튼 */}
-        <div className="flex justify-start">
+        {/* <div className="flex justify-start">
           <Button variant="outline" size="sm" onClick={() => navigate('/jangbi')}>
             <ArrowLeft className="w-4 h-4 mr-1" /> 목록으로
           </Button>
-        </div>
+        </div> */}
 
       </main>
     </div>

@@ -6,6 +6,7 @@ import Toolbar from '@/components/Toolbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, Plus, Pencil, Trash2 } from 'lucide-react'
+import StarRating from '@/components/StarRating'
 
 interface JangbiDto {
   id: number
@@ -24,9 +25,9 @@ interface PageResponse {
   size: number
 }
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 10
 
-const LVL_LABEL: Record<string, string> = { '1': '높음', '2': '중간', '3': '낮음' }
+const LVL_LABEL: Record<string, string> = { '3': '만족', '2': '보통', '1': '실망' }
 const LVL_COLOR: Record<string, string> = {
   '1': 'bg-red-100 text-red-700',
   '2': 'bg-yellow-100 text-yellow-700',
@@ -40,7 +41,7 @@ function formatYmd(ymd: string) {
 
 function formatCost(cost: number | null) {
   if (cost == null) return '-'
-  return cost.toLocaleString('ko-KR') + '원'
+  return cost.toLocaleString('ko-KR')
 }
 
 export default function JangbiPage() {
@@ -101,16 +102,16 @@ export default function JangbiPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-500 shrink-0">중요도</label>
+            <label className="text-xs text-gray-500 shrink-0">만족도</label>
             <select
               value={form.lvl}
               onChange={(e) => setForm((f) => ({ ...f, lvl: e.target.value }))}
               className="text-sm border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 h-9"
             >
               <option value="">전체</option>
-              <option value="1">1 - 높음</option>
-              <option value="2">2 - 중간</option>
-              <option value="3">3 - 낮음</option>
+              <option value="3">만족</option>
+              <option value="2">보통</option>
+              <option value="1">실망</option>
             </select>
           </div>
           <Button onClick={handleSearch} className="shrink-0">
@@ -132,8 +133,8 @@ export default function JangbiPage() {
                     <th className="px-4 py-3 text-left font-medium">품목</th>
                     <th className="px-4 py-3 text-left font-medium">구입일</th>
                     <th className="px-4 py-3 text-left font-medium">위치</th>
-                    <th className="px-4 py-3 text-right font-medium">가격</th>
-                    <th className="px-4 py-3 text-center font-medium">중요도</th>
+                    <th className="px-4 py-3 text-right font-medium">가격(원)</th>
+                    <th className="px-4 py-3 text-center font-medium">만족도</th>
                     <th className="px-4 py-3 text-center font-medium">첨부</th>
                     <th className="px-4 py-3 text-center font-medium">액션</th>
                   </tr>
@@ -160,9 +161,7 @@ export default function JangbiPage() {
                       <td className="px-4 py-3 text-gray-500">{j.location || '-'}</td>
                       <td className="px-4 py-3 text-right text-gray-700">{formatCost(j.cost)}</td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${LVL_COLOR[j.lvl] ?? 'bg-gray-100 text-gray-500'}`}>
-                          {LVL_LABEL[j.lvl] ?? j.lvl}
-                        </span>
+                        <StarRating value={parseInt(j.lvl, 10)} max={3} size="sm" filled={true} />
                       </td>
                       <td className="px-4 py-3 text-center text-xs text-gray-400">
                         {j.attachmentCount > 0 ? `📎 ${j.attachmentCount}` : '-'}

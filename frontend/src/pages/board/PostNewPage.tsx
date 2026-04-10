@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Paperclip, X, ArrowLeft } from 'lucide-react'
@@ -26,6 +26,7 @@ export default function PostNewPage() {
   const [form, setForm] = useState({ title: '', author: userNm ?? '', baseYmd: today, content: '' })
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [saving, setSaving] = useState(false)
+  const contentAreaRef = useRef<HTMLDivElement>(null)
 
   const { data: board } = useQuery<BoardDto>({
     queryKey: ['board', boardId],
@@ -106,6 +107,13 @@ export default function PostNewPage() {
                 maxLength={500}
                 value={form.title}
                 onChange={(e) => set('title', e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Tab') {
+                    e.preventDefault()
+                    const el = contentAreaRef.current?.querySelector<HTMLElement>('[contenteditable], textarea')
+                    el?.focus()
+                  }
+                }}
               />
             </div>
 
@@ -131,7 +139,7 @@ export default function PostNewPage() {
           </div>
 
           {/* 내용 */}
-          <div className="px-6 py-5 flex flex-col gap-2">
+          <div ref={contentAreaRef} className="px-6 py-5 flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700">
               내용
               {board && <span className="ml-2 text-xs text-gray-400">({board.contentType})</span>}
