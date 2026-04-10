@@ -17,6 +17,9 @@
                     OR location LIKE CONCAT('%', #{keyword}, '%')
                     OR spec LIKE CONCAT('%', #{keyword}, '%'))
             </if>
+            <if test="lvl != null and lvl != ''">
+                AND lvl = #{lvl}
+            </if>
         </where>
     </sql>
 

@@ -140,7 +140,7 @@ public class ApNodeServiceImpl implements ApNodeService {
 
         String originalName = file.getOriginalFilename();
         String ext = getExtension(originalName);
-        String physicalName = UUID.randomUUID() + (ext.isEmpty() ? "" : ext);
+        String physicalName = UUID.randomUUID().toString().replace("-", "") + (ext.isEmpty() ? "" : ext);
         Path savePath = saveDir.resolve(physicalName);
         Files.copy(file.getInputStream(), savePath, StandardCopyOption.REPLACE_EXISTING);
 

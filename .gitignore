@@ -28,6 +28,9 @@ frontend/dist/
 frontend/dist-ssr/
 *.local
 
+# === Deploy ===
+backend/src/main/resources/static/
+
 # === Logs ===
 logs/
 *.log

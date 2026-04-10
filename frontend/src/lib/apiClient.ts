@@ -1,8 +1,10 @@
 import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
 
+// 개발: http://localhost:8585/pcms (로컬 백엔드 직접)
+// 배포: /pcms (nginx가 same-origin proxy_pass)
 const instance = axios.create({
-  baseURL: 'http://localhost:8585/pcms',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8585/pcms',
 })
 
 instance.interceptors.request.use((config) => {

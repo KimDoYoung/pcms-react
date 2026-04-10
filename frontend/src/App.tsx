@@ -21,8 +21,11 @@ import Practice01Flex from './pages/practice/Practice01Flex'
 import MessageBox from './components/MessageBox'
 
 function App() {
+  // 프로덕션(WAR 배포)에서는 /pcms/ 아래에서 동작하므로 basename 지정
+  const basename = import.meta.env.PROD ? '/pcms' : '/'
+
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <MessageBox />
       <Routes>
         <Route path="/" element={<HomePage />} />

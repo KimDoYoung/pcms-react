@@ -15,5 +15,7 @@ export default defineConfig({
   },
   server: {
     port: 5173
-  }
+  },
+  // 프로덕션 빌드 시 모든 asset 경로가 /pcms/ 기준으로 생성됨
+  base: process.env.NODE_ENV === 'production' ? '/pcms/' : '/',
 })

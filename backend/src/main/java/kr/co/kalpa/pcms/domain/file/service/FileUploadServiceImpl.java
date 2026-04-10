@@ -50,7 +50,7 @@ public class FileUploadServiceImpl implements FileUploadService {
             String base64Data = matcher.group(3).replaceAll("\\s+", "");
 
             String ext = mimeToExt(mimeType);
-            String physicalFileName = UUID.randomUUID() + "." + ext;
+            String physicalFileName = UUID.randomUUID().toString().replace("-", "") + "." + ext;
             String folderPath = dailyFolderPath();
 
             try {
@@ -86,7 +86,7 @@ public class FileUploadServiceImpl implements FileUploadService {
         String orgName = StringUtils.hasText(file.getOriginalFilename())
                 ? file.getOriginalFilename() : "attachment";
         String ext = StringUtils.getFilenameExtension(orgName);
-        String physicalFileName = UUID.randomUUID() + (ext != null ? "." + ext : "");
+        String physicalFileName = UUID.randomUUID().toString().replace("-", "") + (ext != null ? "." + ext : "");
         String folderPath = dailyFolderPath();
 
         try {

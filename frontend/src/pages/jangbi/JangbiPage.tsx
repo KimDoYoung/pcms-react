@@ -27,13 +27,6 @@ interface PageResponse {
 
 const PAGE_SIZE = 10
 
-const LVL_LABEL: Record<string, string> = { '3': '만족', '2': '보통', '1': '실망' }
-const LVL_COLOR: Record<string, string> = {
-  '1': 'bg-red-100 text-red-700',
-  '2': 'bg-yellow-100 text-yellow-700',
-  '3': 'bg-green-100 text-green-700',
-}
-
 function formatYmd(ymd: string) {
   if (!ymd || ymd.length !== 8) return ymd
   return `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`
