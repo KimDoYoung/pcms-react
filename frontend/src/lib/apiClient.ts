@@ -20,7 +20,7 @@ instance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().clearAuth()
-      window.location.href = '/login'
+      window.location.href = import.meta.env.PROD ? '/pcms/login' : '/login'
     }
     return Promise.reject(error)
   },

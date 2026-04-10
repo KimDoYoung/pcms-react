@@ -32,7 +32,7 @@ public class DiaryController {
         return ResponseEntity.ok(Map.of("id", id));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[0-9]+}")
     public ResponseEntity<DiaryDto> get(@PathVariable Long id) {
         log.info("get diary: {}", id);
         return ResponseEntity.ok(diaryService.get(id));
@@ -58,7 +58,7 @@ public class DiaryController {
         return ResponseEntity.ok(Map.of("result", "success"));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:[0-9]+}")
     public ResponseEntity<Map<String, String>> remove(@PathVariable Long id) {
         log.info("remove diary: {}", id);
         diaryService.remove(id);

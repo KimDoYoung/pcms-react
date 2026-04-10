@@ -169,10 +169,10 @@ function DiaryPage() {
               총 {data?.total ?? 0}건
             </div>
             <ul className="flex flex-col gap-2">
-              {data?.dtoList.length === 0 && (
+              {data?.dtoList?.length === 0 && (
                 <li className="text-sm text-gray-400 text-center py-10">검색 결과가 없습니다.</li>
               )}
-              {data?.dtoList.map((item) => (
+              {data?.dtoList?.map((item) => (
                 <DiaryItem key={item.id} item={item} />
               ))}
             </ul>

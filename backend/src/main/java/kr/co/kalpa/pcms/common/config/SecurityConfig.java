@@ -50,7 +50,31 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/health"),
                     new AntPathRequestMatcher("/error"),
                     new AntPathRequestMatcher("/editor-images/**"),
-                    new AntPathRequestMatcher("/apnodes/**")
+                    new AntPathRequestMatcher("/apnodes/**"),
+                    // React SPA 정적 파일 및 라우트 (Security는 API 레벨에서 적용)
+                    new AntPathRequestMatcher("/"),
+                    new AntPathRequestMatcher("/index.html"),
+                    new AntPathRequestMatcher("/*.js"),
+                    new AntPathRequestMatcher("/*.css"),
+                    new AntPathRequestMatcher("/*.ico"),
+                    new AntPathRequestMatcher("/*.png"),
+                    new AntPathRequestMatcher("/*.svg"),
+                    new AntPathRequestMatcher("/assets/**"),
+                    new AntPathRequestMatcher("/login"),
+                    new AntPathRequestMatcher("/user-info"),
+                    new AntPathRequestMatcher("/settings"),
+                    new AntPathRequestMatcher("/calendar"),
+                    new AntPathRequestMatcher("/calendar/**"),
+                    new AntPathRequestMatcher("/diary"),
+                    new AntPathRequestMatcher("/diary/**"),
+                    new AntPathRequestMatcher("/jangbi"),
+                    new AntPathRequestMatcher("/jangbi/**"),
+                    new AntPathRequestMatcher("/boards"),
+                    new AntPathRequestMatcher("/posts"),
+                    new AntPathRequestMatcher("/posts/**"),
+                    new AntPathRequestMatcher("/apnode"),
+                    new AntPathRequestMatcher("/apnode/**"),
+                    new AntPathRequestMatcher("/practice/**")
                 ).permitAll()
                 .anyRequest().authenticated()
             )

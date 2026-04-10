@@ -32,7 +32,7 @@ public class JangbiController {
         return ResponseEntity.ok(Map.of("id", id));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[0-9]+}")
     public ResponseEntity<JangbiDto> get(@PathVariable Long id) {
         log.info("get jangbi: {}", id);
         return ResponseEntity.ok(jangbiService.get(id));
@@ -47,7 +47,7 @@ public class JangbiController {
         return ResponseEntity.ok(Map.of("result", "success"));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:[0-9]+}")
     public ResponseEntity<Map<String, String>> remove(@PathVariable Long id) {
         log.info("remove jangbi: {}", id);
         jangbiService.remove(id);

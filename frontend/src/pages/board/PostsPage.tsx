@@ -198,7 +198,7 @@ export default function PostsPage() {
                         <td colSpan={6} className="text-center py-14 text-gray-400">게시글이 없습니다.</td>
                       </tr>
                     )}
-                    {data?.dtoList.map((post, idx) => {
+                    {data?.dtoList?.map((post, idx) => {
                       const no = (data.total) - ((page - 1) * PAGE_SIZE) - idx
                       return (
                         <tr

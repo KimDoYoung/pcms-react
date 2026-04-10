@@ -26,7 +26,7 @@ public class BoardController {
         return ResponseEntity.ok(Map.of("id", id));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[0-9]+}")
     public ResponseEntity<BoardDto> get(@PathVariable Long id) {
         log.info("get board: {}", id);
         return ResponseEntity.ok(boardService.get(id));
@@ -39,7 +39,7 @@ public class BoardController {
         return ResponseEntity.ok(Map.of("result", "success"));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:[0-9]+}")
     public ResponseEntity<Map<String, String>> remove(@PathVariable Long id) {
         log.info("remove board: {}", id);
         boardService.remove(id);

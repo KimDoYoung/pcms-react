@@ -67,7 +67,7 @@ export default function DiarySummaryList({ onSelect }: Props) {
   })
 
   const entryMap = new Map<string, DiaryDto>()
-  data?.dtoList.forEach((d) => entryMap.set(d.ymd, d))
+  data?.dtoList?.forEach((d) => entryMap.set(d.ymd, d))
 
   return (
     <div className="flex flex-col gap-1">

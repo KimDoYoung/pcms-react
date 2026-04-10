@@ -23,7 +23,7 @@ export const useMessageStore = create<MessageStore>((set) => ({
   position: 'bottom-center',
   addMessage: (msg) =>
     set((state) => ({
-      messages: [...state.messages, { ...msg, id: crypto.randomUUID() }],
+      messages: [...state.messages, { ...msg, id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) }],
     })),
   removeMessage: (id) =>
     set((state) => ({

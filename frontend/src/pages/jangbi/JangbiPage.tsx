@@ -140,7 +140,7 @@ export default function JangbiPage() {
                       </td>
                     </tr>
                   )}
-                  {data?.dtoList.map((j) => (
+                  {data?.dtoList?.map((j) => (
                     <tr key={j.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 font-medium">
                         <button

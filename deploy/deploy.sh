@@ -33,7 +33,7 @@ echo "  WAR: $WAR_FILE"
 
 # 4. jskn Tomcat webapps로 전송
 echo "[4/4] jskn으로 전송..."
-sftp "$JSKN" <<EOF
+sftp -P 2020 "$JSKN" <<EOF
 put $WAR_FILE $REMOTE_WEBAPPS/pcms.war
 EOF
 
