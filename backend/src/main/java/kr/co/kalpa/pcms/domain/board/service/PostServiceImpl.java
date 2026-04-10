@@ -2,12 +2,15 @@ package kr.co.kalpa.pcms.domain.board.service;
 import kr.co.kalpa.pcms.domain.board.entity.Post;
 import kr.co.kalpa.pcms.domain.board.dto.PostDto;
 import kr.co.kalpa.pcms.domain.board.dto.PostSearchDto;
+import kr.co.kalpa.pcms.domain.auth.service.UserMapper;
 import kr.co.kalpa.pcms.domain.file.service.FileUploadService;
 
 import kr.co.kalpa.pcms.common.dto.PageResponseDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +31,7 @@ public class PostServiceImpl implements PostService {
 
     private final PostMapper postMapper;
     private final FileUploadService fileUploadService;
+    private final UserMapper userMapper;
 
     @Override
     public Long register(PostDto postDto, List<MultipartFile> attachments) {
@@ -37,7 +41,7 @@ public class PostServiceImpl implements PostService {
         Post post = Post.builder()
                 .boardId(postDto.getBoardId())
                 .title(postDto.getTitle())
-                .author(postDto.getAuthor() != null ? postDto.getAuthor() : "관리자")
+                .author(postDto.getAuthor() != null ? postDto.getAuthor() : resolveCurrentUserName())
                 .content(imageResult.content())
                 .baseYmd(postDto.getBaseYmd())
                 .build();
@@ -147,5 +151,16 @@ public class PostServiceImpl implements PostService {
                 .updatedAt(post.getUpdatedAt())
                 .attachmentCount(post.getAttachmentCount())
                 .build();
+    }
+
+    private String resolveCurrentUserName() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null) {
+            return null;
+        }
+
+        return userMapper.findByUserId(authentication.getName())
+                .map(user -> user.getUserNm())
+                .orElse(null);
     }
 }

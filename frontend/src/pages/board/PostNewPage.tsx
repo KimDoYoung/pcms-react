@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import SpecEditor from '@/components/jangbi/SpecEditor'
 import MilkdownEditor from '@/components/board/MilkdownEditor'
+import { useAuthStore } from '@/store/authStore'
 
 interface BoardDto {
   id: number
@@ -20,8 +21,9 @@ export default function PostNewPage() {
   const [searchParams] = useSearchParams()
   const boardId = searchParams.get('boardId') ? Number(searchParams.get('boardId')) : null
   const today = new Date().toISOString().slice(0, 10)
+  const { userNm } = useAuthStore()
 
-  const [form, setForm] = useState({ title: '', author: '', baseYmd: today, content: '' })
+  const [form, setForm] = useState({ title: '', author: userNm ?? '', baseYmd: today, content: '' })
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [saving, setSaving] = useState(false)
 
@@ -111,7 +113,7 @@ export default function PostNewPage() {
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-gray-700">작성자</label>
               <Input
-                placeholder="미입력 시 관리자"
+                placeholder="작성자명"
                 value={form.author}
                 onChange={(e) => set('author', e.target.value)}
               />

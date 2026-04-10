@@ -9,8 +9,8 @@ export default function Practice01Flex() {
             <button className="px-4 py-2 bg-blue-400 text-white rounded hover:bg-blue-700 transition-colors">
               버튼1
             </button>
-            <div className="bg-gray-300">111</div>
-            <div>222</div>
+            <div className="bg-gray-300 flex-1 mx-3 p-2">111</div>
+            <div className="flex-1 mx-3 bg-blue-300 p-2">222</div>
           </div>
         </main>
     </div>

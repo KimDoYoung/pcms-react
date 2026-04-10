@@ -18,10 +18,12 @@ import SettingsPage from './pages/user/SettingsPage'
 import Calendar1Page from './pages/calendar/Calendar1Page'
 import AnniversaryPage from './pages/calendar/AnniversaryPage'
 import Practice01Flex from './pages/practice/Practice01Flex'
+import MessageBox from './components/MessageBox'
 
 function App() {
   return (
     <BrowserRouter>
+      <MessageBox />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />

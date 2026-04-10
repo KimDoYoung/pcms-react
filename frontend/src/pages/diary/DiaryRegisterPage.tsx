@@ -12,6 +12,7 @@ import Toolbar from '@/components/Toolbar'
 import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/components/ui/button'
 import DiarySummaryList from '@/components/diary/DiarySummaryList'
+import { useMessage } from '@/hooks/useMessage'
 
 const TEXT_COLORS = [
   { label: '기본', value: '' },
@@ -143,6 +144,7 @@ function MenuBar({ editor }: { editor: ReturnType<typeof useEditor> }) {
 function DiaryRegisterPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { showMessage } = useMessage()
   const [searchParams] = useSearchParams()
   const today = new Date().toISOString().slice(0, 10)
   const [diaryDate, setDiaryDate] = useState(searchParams.get('date') ?? today)
@@ -290,7 +292,7 @@ function DiaryRegisterPage() {
       await apiClient.post<{ id: number }>('/diary', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
-      alert('저장되었습니다.')
+      showMessage('저장되었습니다.', 'success')
       queryClient.invalidateQueries({ queryKey: ['diary-summary'] })
 
       // Refresh to get latest attachments
@@ -303,7 +305,7 @@ function DiaryRegisterPage() {
       }
     } catch (e) {
       console.error(e)
-      alert('저장 중 오류가 발생했습니다.')
+      showMessage('저장 중 오류가 발생했습니다.', 'error')
     }
   }
 
@@ -361,6 +363,12 @@ function DiaryRegisterPage() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Tab') {
+                  e.preventDefault()
+                  editor?.commands.focus()
+                }
+              }}
               placeholder="제목을 입력하세요"
               className="flex-1 w-full text-lg font-semibold focus:outline-none placeholder:text-gray-300 bg-transparent"
             />
