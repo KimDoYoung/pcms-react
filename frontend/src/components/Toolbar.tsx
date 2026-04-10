@@ -43,6 +43,13 @@ const menuGroups: MenuGroup[] = [
       { label: '📂 파일관리', to: '/apnode' },
     ],
   },
+  {
+    key: 'practice',
+    label: '📝 실습',
+    items: [
+      { label: '✏️ Tailwind CSS 연습', to: '/practice/tailwindcss'},
+    ],
+  }
 ]
 
 function DropdownMenu({ group, isOpen, onToggle }: {

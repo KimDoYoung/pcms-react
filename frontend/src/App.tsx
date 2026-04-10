@@ -17,6 +17,7 @@ import UserInfoPage from './pages/user/UserInfoPage'
 import SettingsPage from './pages/user/SettingsPage'
 import Calendar1Page from './pages/calendar/Calendar1Page'
 import AnniversaryPage from './pages/calendar/AnniversaryPage'
+import Practice01Flex from './pages/practice/Practice01Flex'
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
         <Route path="/posts/:id" element={<PostViewPage />} />
         <Route path="/posts/:id/edit" element={<PostEditPage />} />
         <Route path="/apnode" element={<ApNodePage />} />
+        <Route path="/practice/tailwindcss" element={<Practice01Flex />} />
       </Routes>
     </BrowserRouter>
   )
