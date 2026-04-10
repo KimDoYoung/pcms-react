@@ -38,7 +38,7 @@ public class ApNodeController {
     @Value("${apnode.file.base-dir}")
     private String apnodeBaseDir;
 
-    @GetMapping
+    @GetMapping(produces = "application/json")
     public ResponseEntity<List<ApNodeDto>> listRoots() {
         return ResponseEntity.ok(apNodeService.listRoots());
     }

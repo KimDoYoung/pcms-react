@@ -64,3 +64,9 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// 외장 Tomcat 배포 시 DevTools가 WAR에 포함되면 classpath 감시로 인한 재시작 루프 발생
+// developmentOnly 설정에도 불구하고 포함될 수 있으므로 명시적으로 제거
+war {
+    classpath = classpath.filter { !it.name.contains('devtools') }
+}

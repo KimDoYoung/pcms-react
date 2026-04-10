@@ -46,7 +46,7 @@ public class BoardController {
         return ResponseEntity.ok(Map.of("result", "success"));
     }
 
-    @GetMapping
+    @GetMapping(produces = "application/json")
     public ResponseEntity<List<BoardDto>> getList() {
         log.info("getList boards");
         return ResponseEntity.ok(boardService.getList());

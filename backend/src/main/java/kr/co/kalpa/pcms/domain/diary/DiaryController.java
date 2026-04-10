@@ -65,7 +65,7 @@ public class DiaryController {
         return ResponseEntity.ok(Map.of("result", "success"));
     }
 
-    @GetMapping
+    @GetMapping(produces = "application/json")
     public ResponseEntity<PageResponseDto<DiaryDto>> getList(DiarySearchDto searchDto) {
         log.info("getList diary: {}", searchDto);
         return ResponseEntity.ok(diaryService.getList(searchDto));

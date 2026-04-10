@@ -1,6 +1,7 @@
 package kr.co.kalpa.pcms;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -14,7 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class SpaController {
 
-    @GetMapping({
+    @GetMapping(value = {
         "/",
         "/login",
         "/user-info",
@@ -31,7 +32,7 @@ public class SpaController {
         "/apnode",
         "/apnode/**",
         "/practice/**",
-    })
+    }, produces = MediaType.TEXT_HTML_VALUE)
     public String forward() {
         return "forward:/index.html";
     }

@@ -54,7 +54,7 @@ public class JangbiController {
         return ResponseEntity.ok(Map.of("result", "success"));
     }
 
-    @GetMapping
+    @GetMapping(produces = "application/json")
     public ResponseEntity<PageResponseDto<JangbiDto>> getList(JangbiSearchDto searchDto) {
         log.info("getList jangbi: {}", searchDto);
         return ResponseEntity.ok(jangbiService.getList(searchDto));
