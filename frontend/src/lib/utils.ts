@@ -27,7 +27,11 @@ export function formatDate(
 ): string {
   if (!dateInput) return "-";
 
-  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  const normalized =
+    typeof dateInput === "string" && dateInput.length === 8
+      ? `${dateInput.slice(0, 4)}-${dateInput.slice(4, 6)}-${dateInput.slice(6, 8)}`
+      : dateInput;
+  const date = typeof normalized === "string" ? new Date(normalized) : normalized;
 
   if (isNaN(date.getTime())) return "Invalid Date : " + dateInput;
 

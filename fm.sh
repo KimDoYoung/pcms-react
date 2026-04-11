@@ -86,6 +86,12 @@ do_dev() {
     npm run dev -- --mode "$mode"
 }
 
+do_test() {
+    header "Test - 단위 테스트 실행"
+    cd "$FRONTEND_DIR" || exit
+    npm run test
+}
+
 do_build() {
     header "Build - 프로덕션 빌드"
     cd "$FRONTEND_DIR" || exit
@@ -134,6 +140,7 @@ do_clean() {
 print_menu() {
     local items=(
         "dev:개발 서버 실행"
+        "test:단위 테스트 실행"
         "build:프로덕션 빌드"
         "preview:빌드 미리보기"
         "install:패키지 설치"
@@ -172,7 +179,7 @@ main() {
         print_banner
         print_menu
 
-        local cmds=("dev" "build" "preview" "install" "lint" "clean")
+        local cmds=("dev" "test" "build" "preview" "install" "lint" "clean")
 
         read -rp "  번호를 입력하세요: " choice
         echo ""
@@ -195,6 +202,7 @@ main() {
 
     case "$cmd" in
         dev|run)  do_dev     ;;
+        test)     do_test    ;;
         build)    do_build   ;;
         preview)  do_preview ;;
         install)  do_install ;;

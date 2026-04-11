@@ -78,6 +78,12 @@ export default function PostsPage() {
     setPage(1)
   }
 
+  function handleReset() {
+    setKeyword('')
+    setSearchKeyword('')
+    setPage(1)
+  }
+
   function selectBoard(id: number) {
     setSearchParams({ boardId: String(id) })
     setSearchKeyword('')
@@ -160,7 +166,10 @@ export default function PostsPage() {
               className="text-sm"
             />
             <Button onClick={handleSearch} className="shrink-0">
-              <Search className="w-4 h-4 mr-1" /> 검색
+              <Search className="w-4 h-4 mr-1" /> 찾기
+            </Button>
+            <Button variant="outline" onClick={handleReset} className="shrink-0">
+              초기화
             </Button>
           </div>
         )}

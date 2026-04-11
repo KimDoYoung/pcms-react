@@ -12,6 +12,8 @@
 | **TypeScript** | 5.9.3 | strict 모드 |
 | **@vitejs/plugin-react-swc** | 4.2.2 | SWC 기반 빠른 컴파일 |
 | **ESLint** | 9.39.1 | eslint-plugin-react-hooks, react-refresh |
+| **Vitest** | 4.1.4 | 단위 테스트 러너 (utils 순수 함수) |
+| **@vitest/ui** | 4.1.4 | 브라우저 기반 테스트 리포트 UI |
 
 ### 경로 별칭
 ```ts

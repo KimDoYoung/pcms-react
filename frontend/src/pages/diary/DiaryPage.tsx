@@ -111,6 +111,12 @@ function DiaryPage() {
     setSearch({ ...form, page: 1 })
   }
 
+  function handleReset() {
+    const empty = { startYmd: '', endYmd: '', keyword: '' }
+    setForm(empty)
+    setSearch({ ...empty, page: 1 })
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') handleSearch()
   }
@@ -155,7 +161,10 @@ function DiaryPage() {
             />
           </div>
           <Button onClick={handleSearch} className="shrink-0">
-            <Search className="w-4 h-4 mr-1" /> 검색
+            <Search className="w-4 h-4 mr-1" /> 찾기
+          </Button>
+          <Button variant="outline" onClick={handleReset} className="shrink-0">
+            초기화
           </Button>
         </div>
 
