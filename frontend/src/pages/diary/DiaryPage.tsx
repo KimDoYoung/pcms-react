@@ -5,7 +5,8 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/components/Toolbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Search, ChevronDown, ChevronUp, Pencil } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp, Pencil, Eye } from 'lucide-react'
+import { formatDate } from '@/lib/utils'
 
 interface DiaryDto {
   id: number
@@ -29,19 +30,7 @@ interface SearchParams {
   page: number
 }
 
-const DAY_KO = ['일', '월', '화', '수', '목', '금', '토']
-const PAGE_SIZE = 20
-
-function formatYmdDisplay(ymd: string): string {
-  // yyyymmdd → yyyy-mm-dd (요일)
-  if (ymd.length !== 8) return ymd
-  const y = ymd.slice(0, 4)
-  const m = ymd.slice(4, 6)
-  const d = ymd.slice(6, 8)
-  const date = new Date(`${y}-${m}-${d}`)
-  const day = DAY_KO[date.getDay()]
-  return `${y}-${m}-${d} (${day})`
-}
+const PAGE_SIZE = 14
 
 function DiaryItem({ item }: { item: DiaryDto }) {
   const [expanded, setExpanded] = useState(false)
@@ -56,7 +45,7 @@ function DiaryItem({ item }: { item: DiaryDto }) {
         onClick={() => setExpanded((v) => !v)}
       >
         <span className="shrink-0 text-xs font-mono text-gray-400 w-36">
-          {formatYmdDisplay(item.ymd)}
+          {formatDate(displayDate, false, true, true)}
         </span>
         <span className="flex-1 text-sm text-gray-800 truncate">
           {item.summary ?? <span className="text-gray-300 italic">제목 없음</span>}
@@ -65,6 +54,16 @@ function DiaryItem({ item }: { item: DiaryDto }) {
           {item.attachmentCount > 0 && (
             <span className="text-xs text-gray-400">📎 {item.attachmentCount}</span>
           )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate(`/diary/${item.id}`)
+            }}
+            className="p-1 text-gray-400 hover:text-green-500 rounded transition-colors"
+            title="보기"
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </button>
           <button
             onClick={(e) => {
               e.stopPropagation()

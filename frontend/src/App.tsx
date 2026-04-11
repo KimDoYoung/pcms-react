@@ -3,6 +3,7 @@ import HomePage from './pages/home/HomePage'
 import LoginPage from './pages/auth/LoginPage'
 import DiaryPage from './pages/diary/DiaryPage'
 import DiaryRegisterPage from './pages/diary/DiaryRegisterPage'
+import DiaryViewPage from './pages/diary/DiaryViewPage'
 import JangbiPage from './pages/jangbi/JangbiPage'
 import JangbiNewPage from './pages/jangbi/JangbiNewPage'
 import JangbiViewPage from './pages/jangbi/JangbiViewPage'
@@ -36,6 +37,7 @@ function App() {
         <Route path="/calendar/anniversary" element={<AnniversaryPage />} />
         <Route path="/diary" element={<DiaryPage />} />
         <Route path="/diary/register" element={<DiaryRegisterPage />} />
+        <Route path="/diary/:id" element={<DiaryViewPage />} />
         <Route path="/jangbi" element={<JangbiPage />} />
         <Route path="/jangbi/new" element={<JangbiNewPage />} />
         <Route path="/jangbi/:id" element={<JangbiViewPage />} />

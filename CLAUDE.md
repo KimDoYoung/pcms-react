@@ -65,3 +65,8 @@ redis-cli -h jskn.iptime.org -p 6379 -a "kalpa987!"
 - **주석**: *왜(Why)* 를 설명하는 주석만 제한적으로 추가. 불필요한 주석 지양.
 - **설계 문서**: `docs/설계.md` (아키텍처 결정사항), `docs/frontend-init.md` (프론트엔드 초기 세팅 내역).
 - **디자인** : shadcn을 주로 사용하기로 함
+
+## Page를 만들때 원칙
+
+- 날짜관련 표현은 lib/Utils.ts에 있는 함수를 우선적으로 사용한다.
+- 페이지의 main div는  `<main className="container mx-auto px-4 py-6">`  을 사용한다.
