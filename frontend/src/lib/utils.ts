@@ -20,7 +20,7 @@ export function formatDate(dateInput: string | Date | undefined): string {
   const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
 
   // 유효하지 않은 날짜인 경우 처리
-  if (isNaN(date.getTime())) return "Invalid Date";
+  if (isNaN(date.getTime())) return "Invalid Date : " + dateInput;
 
   const pad = (n: number) => n.toString().padStart(2, "0");
   
@@ -35,4 +35,26 @@ export function formatDate(dateInput: string | Date | undefined): string {
   const dayOfWeek = week[date.getDay()];
 
   return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss} (${dayOfWeek})`;
+}
+
+/**
+ * 날짜 문자열에서 요일을 반환합니다.
+ * @param dateStr - 'yyyy-mm-dd' 또는 'yyyymmdd' 형식
+ * @param short - true이면 단축 요일 (토 / Sat), false이면 전체 (토요일 / Saturday)
+ * @param english - true이면 영어, false이면 한국어
+ */
+export const getDayOfWeek = (dateStr: string, short = false, english = false) => {
+  try {
+    // yyyymmdd → yyyy-mm-dd 정규화
+    const normalized = dateStr.length === 8
+      ? `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`
+      : dateStr
+    const d = new Date(normalized)
+    return d.toLocaleDateString(english ? 'en-US' : 'ko-KR', {
+      weekday: short ? 'short' : 'long',
+    })
+  } catch (e) {
+    console.error('Invalid date format', e)
+    return ''
+  }
 }

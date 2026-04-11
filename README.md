@@ -63,3 +63,13 @@
 - fm.sh
 - bm.sh
 
+
+## 배포
+
+1. frontend부분을 backend의 static으로 복사 한 후에 war를 만든다.
+2. 만들어진 war는 jskn(jskn.iptime.org)의 docker 안에서 돌고 있는 tomcat에 배포한다.
+3. local에서 개발시 사용하는 .env.<profile>의 환경변수는 모두 application.properties에 값으로 입력된다.
+4. .env.<profile> 은 server에서 사용되지 않는다.
+5. frontend부분을 backend 즉 springboot 의 resource/static으로 복사하는 것에 따른 영향을 고려해야한다.
+    1. security가 static부분을 차단하지 않도록 해야함.
+    2. rendering시점에 따라서 dataset이 null 이 될 수 있다.
