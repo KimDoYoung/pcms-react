@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 /**
- * 1. Tailwind CSS 클래스 합치기 유틸리티
+ * Tailwind CSS 클래스 합치기 유틸리티
  * 조건부 클래스 할당(clsx)과 클래스 중복 제거(twMerge)를 동시에 처리합니다.
  */
 export function cn(...inputs: ClassValue[]) {
@@ -10,31 +10,47 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * 2. 날짜 포맷팅 유틸리티
- * @param dateInput - string 또는 Date 객체
- * @returns 'yyyy-MM-dd HH:mm:ss (요일)' 형태의 문자열
+ * 날짜 포맷팅 유틸리티
+ * @param dateInput - string 또는 Date 객체 ('yyyy-mm-dd', 'yyyymmdd', ISO 문자열 등)
+ * @param time_display - true이면 시간(HH:mm:ss) 포함, 기본값 false
+ * @param dayofweek - true이면 요일 포함, 기본값 false
+ * @param short - true이면 단축 요일 (토 / Sat), 기본값 false. dayofweek=true일 때만 유효
+ * @param english - true이면 영어 요일, 기본값 false. dayofweek=true일 때만 유효
+ * @returns 포맷팅된 날짜 문자열 (예: '2026-04-11 14:30:00 (토요일)')
  */
-export function formatDate(dateInput: string | Date | undefined): string {
-  if (!dateInput) return "-"; // 데이터가 없을 경우 처리
+export function formatDate(
+  dateInput: string | Date | undefined,
+  time_display = false,
+  dayofweek = false,
+  short = false,
+  english = false,
+): string {
+  if (!dateInput) return "-";
 
   const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
 
-  // 유효하지 않은 날짜인 경우 처리
   if (isNaN(date.getTime())) return "Invalid Date : " + dateInput;
 
   const pad = (n: number) => n.toString().padStart(2, "0");
-  
+
   const yyyy = date.getFullYear();
   const mm = pad(date.getMonth() + 1);
   const dd = pad(date.getDate());
-  const hh = pad(date.getHours());
-  const min = pad(date.getMinutes());
-  const ss = pad(date.getSeconds());
 
-  const week = ["일", "월", "화", "수", "목", "금", "토"];
-  const dayOfWeek = week[date.getDay()];
+  let result = `${yyyy}-${mm}-${dd}`;
 
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss} (${dayOfWeek})`;
+  if (time_display) {
+    const hh = pad(date.getHours());
+    const min = pad(date.getMinutes());
+    const ss = pad(date.getSeconds());
+    result += ` ${hh}:${min}:${ss}`;
+  }
+
+  if (dayofweek) {
+    result += ` (${getDayOfWeek(`${yyyy}-${mm}-${dd}`, short, english)})`;
+  }
+
+  return result;
 }
 
 /**

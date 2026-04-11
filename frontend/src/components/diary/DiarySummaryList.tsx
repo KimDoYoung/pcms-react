@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { formatDate, getDayOfWeek } from '@/lib/utils'
 
 interface DiaryDto {
   id: number
@@ -14,20 +15,6 @@ interface PageResponse {
   dtoList: DiaryDto[]
 }
 
-const DAY_KO = ['일', '월', '화', '수', '목', '금', '토']
-
-// 표시용: yyyy-mm-dd
-function formatDisplay(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-// API/DB용: yyyymmdd
-function formatYmd(date: Date): string {
-  return formatDisplay(date).replace(/-/g, '')
-}
 
 function buildRange(weekOffset: number): { startYmd: string; endYmd: string; days: Date[] } {
   const today = new Date()
@@ -46,7 +33,7 @@ function buildRange(weekOffset: number): { startYmd: string; endYmd: string; day
     cur.setDate(cur.getDate() + 1)
   }
 
-  return { startYmd: formatYmd(start), endYmd: formatYmd(end), days }
+  return { startYmd: formatDate(start).replace(/-/g, ''), endYmd: formatDate(end).replace(/-/g, ''), days }
 }
 
 interface Props {
@@ -77,10 +64,10 @@ export default function DiarySummaryList({ onSelect }: Props) {
 
       <ul className="flex flex-col">
         {days.map((day) => {
-          const ymd = formatYmd(day)          // yyyymmdd (API/map key)
-          const display = formatDisplay(day)  // yyyy-mm-dd (화면 표시)
+          const display = formatDate(day)               // yyyy-mm-dd (화면 표시)
+          const ymd = display.replace(/-/g, '')         // yyyymmdd (API/map key)
           const entry = entryMap.get(ymd)
-          const dayName = DAY_KO[day.getDay()]
+          const dayName = getDayOfWeek(display, true)
           const isSun = day.getDay() === 0
           const isSat = day.getDay() === 6
 
