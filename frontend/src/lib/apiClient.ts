@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useAuthStore } from '@/store/authStore'
+import { useAuthStore } from '@/shared/store/authStore'
 
 // 개발: http://localhost:8585/pcms (로컬 백엔드 직접)
 // 배포: /pcms (nginx가 same-origin proxy_pass)
