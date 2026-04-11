@@ -45,7 +45,7 @@ function DiaryItem({ item }: { item: DiaryDto }) {
         onClick={() => setExpanded((v) => !v)}
       >
         <span className="shrink-0 text-xs font-mono text-gray-400 w-36">
-          {formatDate(displayDate, false, true, true)}
+          {formatDate(displayDate)}
         </span>
         <span className="flex-1 text-sm text-gray-800 truncate">
           {item.summary ?? <span className="text-gray-300 italic">제목 없음</span>}

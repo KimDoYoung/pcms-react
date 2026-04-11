@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, Plus, Pencil, Trash2 } from 'lucide-react'
 import StarRating from '@/components/StarRating'
+import { formatDate } from '@/lib/utils'
 
 interface JangbiDto {
   id: number
@@ -27,11 +28,6 @@ interface PageResponse {
 
 const PAGE_SIZE = 10
 
-function formatYmd(ymd: string) {
-  if (!ymd || ymd.length !== 8) return ymd
-  return `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`
-}
-
 function formatCost(cost: number | null) {
   if (cost == null) return '-'
   return cost.toLocaleString('ko-KR')
@@ -40,8 +36,8 @@ function formatCost(cost: number | null) {
 export default function JangbiPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [form, setForm] = useState({ keyword: '', lvl: '' })
-  const [search, setSearch] = useState({ keyword: '', lvl: '', page: 1 })
+  const [form, setForm] = useState({ keyword: '', lvl: '', startYmd: '', endYmd: '' })
+  const [search, setSearch] = useState({ keyword: '', lvl: '', startYmd: '', endYmd: '', page: 1 })
 
   const { data, isLoading } = useQuery<PageResponse>({
     queryKey: ['jangbi-list', search],
@@ -49,6 +45,8 @@ export default function JangbiPage() {
       const params: Record<string, string | number> = { size: PAGE_SIZE, page: search.page }
       if (search.keyword) params.keyword = search.keyword
       if (search.lvl) params.lvl = search.lvl
+      if (search.startYmd) params.startYmd = search.startYmd
+      if (search.endYmd) params.endYmd = search.endYmd
       return apiClient.get<PageResponse>('/jangbi', { params })
     },
   })
@@ -57,6 +55,12 @@ export default function JangbiPage() {
 
   function handleSearch() {
     setSearch({ ...form, page: 1 })
+  }
+
+  function handleReset() {
+    const empty = { keyword: '', lvl: '', startYmd: '', endYmd: '', page: 1 }
+    setForm({ keyword: '', lvl: '', startYmd: '', endYmd: '' })
+    setSearch(empty)
   }
 
   async function handleDelete(id: number, item: string) {
@@ -95,6 +99,22 @@ export default function JangbiPage() {
             />
           </div>
           <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500 shrink-0">구입일</label>
+            <Input
+              type="date"
+              value={form.startYmd}
+              onChange={(e) => setForm((f) => ({ ...f, startYmd: e.target.value }))}
+              className="text-sm w-36"
+            />
+            <span className="text-xs text-gray-400">~</span>
+            <Input
+              type="date"
+              value={form.endYmd}
+              onChange={(e) => setForm((f) => ({ ...f, endYmd: e.target.value }))}
+              className="text-sm w-36"
+            />
+          </div>
+          <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500 shrink-0">만족도</label>
             <select
               value={form.lvl}
@@ -108,7 +128,10 @@ export default function JangbiPage() {
             </select>
           </div>
           <Button onClick={handleSearch} className="shrink-0">
-            <Search className="w-4 h-4 mr-1" /> 검색
+            <Search className="w-4 h-4 mr-1" /> 찾기
+          </Button>
+          <Button variant="outline" onClick={handleReset} className="shrink-0">
+            초기화
           </Button>
         </div>
 
@@ -123,8 +146,8 @@ export default function JangbiPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500">
-                    <th className="px-4 py-3 text-left font-medium">품목</th>
                     <th className="px-4 py-3 text-left font-medium">구입일</th>
+                    <th className="px-4 py-3 text-left font-medium">품목</th>
                     <th className="px-4 py-3 text-left font-medium">위치</th>
                     <th className="px-4 py-3 text-right font-medium">가격(원)</th>
                     <th className="px-4 py-3 text-center font-medium">만족도</th>
@@ -142,6 +165,7 @@ export default function JangbiPage() {
                   )}
                   {data?.dtoList?.map((j) => (
                     <tr key={j.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-gray-500 font-mono text-xs">{formatDate(j.ymd)}</td>
                       <td className="px-4 py-3 font-medium">
                         <button
                           onClick={() => navigate(`/jangbi/${j.id}`)}
@@ -150,7 +174,6 @@ export default function JangbiPage() {
                           {j.item}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-gray-500 font-mono text-xs">{formatYmd(j.ymd)}</td>
                       <td className="px-4 py-3 text-gray-500">{j.location || '-'}</td>
                       <td className="px-4 py-3 text-right text-gray-700">{formatCost(j.cost)}</td>
                       <td className="px-4 py-3 text-center">

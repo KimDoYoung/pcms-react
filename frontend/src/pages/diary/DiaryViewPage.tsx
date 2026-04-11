@@ -1,10 +1,10 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Paperclip, Download, Pencil } from 'lucide-react'
+import { ArrowLeft, Paperclip, Download, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/components/Toolbar'
 import { Button } from '@/components/ui/button'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatFileSize } from '@/lib/utils'
 
 interface AttachmentDto {
   fileId: number
@@ -21,12 +21,11 @@ interface DiaryDto {
   attachments: AttachmentDto[]
 }
 
-function formatFileSize(bytes: number) {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`
+function shiftYmd(ymd: string, days: number): string {
+  const date = new Date(`${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`)
+  date.setDate(date.getDate() + days)
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`
 }
 
 export default function DiaryViewPage() {
@@ -38,6 +37,27 @@ export default function DiaryViewPage() {
     queryFn: () => apiClient.get<DiaryDto>(`/diary/${id}`),
     enabled: !!id,
   })
+
+  type AdjacentItem = { id: number; ymd: string; summary: string | null }
+  type DiaryPage = { dtoList: AdjacentItem[] }
+
+  const prevYmd = diary ? shiftYmd(diary.ymd, -1) : ''
+  const nextYmd = diary ? shiftYmd(diary.ymd, 1) : ''
+
+  const { data: prevData } = useQuery<DiaryPage>({
+    queryKey: ['diary-adj', prevYmd],
+    queryFn: () => apiClient.get('/diary', { params: { startYmd: prevYmd, endYmd: prevYmd, size: 1, page: 1 } }),
+    enabled: !!diary,
+  })
+
+  const { data: nextData } = useQuery<DiaryPage>({
+    queryKey: ['diary-adj', nextYmd],
+    queryFn: () => apiClient.get('/diary', { params: { startYmd: nextYmd, endYmd: nextYmd, size: 1, page: 1 } }),
+    enabled: !!diary,
+  })
+
+  const prevEntry = prevData?.dtoList?.[0] ?? null
+  const nextEntry = nextData?.dtoList?.[0] ?? null
 
   if (isLoading) {
     return (
@@ -67,7 +87,7 @@ export default function DiaryViewPage() {
         {/* 헤더 */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <p className="text-xs text-gray-400 mb-1 font-mono">{formatDate(displayDate, false, true, true)}</p>
+            <p className="text-xl text-blue-500 mb-1 font-mono">{formatDate(displayDate)}</p>
             <h1 className="text-xl font-bold text-gray-800">
               {diary.summary ?? <span className="text-gray-300 italic">제목 없음</span>}
             </h1>
@@ -126,6 +146,27 @@ export default function DiaryViewPage() {
             </ul>
           </div>
         )}
+
+        {/* 이전 / 이후 네비게이션 */}
+        <div className="flex justify-between mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!prevEntry}
+            onClick={() => prevEntry && navigate(`/diary/${prevEntry.id}`)}
+          >
+            <ChevronLeft className="w-4 h-4" /> 이전 일
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!nextEntry}
+            onClick={() => nextEntry && navigate(`/diary/${nextEntry.id}`)}
+          >
+            다음 일 <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
 
       </main>
     </div>

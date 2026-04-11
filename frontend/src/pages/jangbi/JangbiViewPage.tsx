@@ -5,6 +5,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/components/Toolbar'
 import { Button } from '@/components/ui/button'
 import StarRating from '@/components/StarRating'
+import { formatFileSize } from '@/lib/utils'
 
 interface AttachmentDto {
   fileId: number
@@ -33,14 +34,6 @@ function formatYmd(ymd: string) {
 function formatCost(cost: number | null) {
   if (cost == null) return '-'
   return cost.toLocaleString('ko-KR') + '원'
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`
 }
 
 function formatDateTime(dt: string | null) {

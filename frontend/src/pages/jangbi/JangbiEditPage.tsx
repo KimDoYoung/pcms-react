@@ -7,6 +7,7 @@ import Toolbar from '@/components/Toolbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import SpecEditor from '@/components/jangbi/SpecEditor'
+import { formatFileSize } from '@/lib/utils'
 
 interface AttachmentDto {
   fileId: number
@@ -23,14 +24,6 @@ interface JangbiDto {
   spec: string | null
   lvl: string
   attachments: AttachmentDto[]
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`
 }
 
 export default function JangbiEditPage() {

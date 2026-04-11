@@ -4,6 +4,7 @@ import { Pencil, Trash2, ArrowLeft, Paperclip, Download } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/components/Toolbar'
 import { Button } from '@/components/ui/button'
+import { formatFileSize } from '@/lib/utils'
 
 interface AttachmentDto {
   fileId: number
@@ -32,14 +33,6 @@ interface BoardDto {
 function formatYmd(ymd: string) {
   if (!ymd || ymd.length !== 8) return ymd
   return `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`
 }
 
 export default function PostViewPage() {

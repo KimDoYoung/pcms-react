@@ -20,10 +20,10 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function formatDate(
   dateInput: string | Date | undefined,
-  time_display = false,
-  dayofweek = false,
-  short = false,
+  dayofweek = true,
+  short = true,
   english = false,
+  time_display = false,
 ): string {
   if (!dateInput) return "-";
 
@@ -73,4 +73,17 @@ export const getDayOfWeek = (dateStr: string, short = false, english = false) =>
     console.error('Invalid date format', e)
     return ''
   }
+}
+
+/**
+ * 파일 크기를 사람이 읽기 쉬운 문자열로 변환합니다.
+ * @param bytes - 바이트 단위의 파일 크기
+ * @returns 포맷팅된 파일 크기 문자열 (예: '1.5 MB', '320.0 KB')
+ */
+export function formatFileSize(bytes: number) {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`
 }
