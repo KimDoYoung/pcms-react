@@ -7,7 +7,7 @@ import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import SpecEditor from '@/shared/components/editor/SpecEditor'
-import MilkdownEditor from '@/board/components/MilkdownEditor'
+import MilkdownEditor from '@/domain/board/components/MilkdownEditor'
 import { useAuthStore } from '@/shared/store/authStore'
 
 interface BoardDto {

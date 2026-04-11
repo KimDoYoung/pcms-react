@@ -13,7 +13,7 @@ import { ChevronLeft, ChevronRight, Paperclip, X, PanelRightOpen, PanelRightClos
 import Toolbar from '@/shared/components/Toolbar'
 import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/shared/components/ui/button'
-import DiarySummaryList from '@/diary/components/DiarySummaryList'
+import DiarySummaryList from '@/domain/diary/components/DiarySummaryList'
 import { useMessage } from '@/shared/hooks/useMessage'
 
 function DiaryRegisterPage() {

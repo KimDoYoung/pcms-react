@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-import type { ApNode } from '@/apnode/types/apnode'
+import type { ApNode } from '@/domain/apnode/types/apnode'
 
 // ──── utils ────────────────────────────────────────────────────────────────
 
