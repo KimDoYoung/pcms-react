@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Paperclip, X } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import SpecEditor from '@/shared/components/editor/SpecEditor'
 import MilkdownEditor from '@/domain/board/components/MilkdownEditor'
-import AttachmentUploader from '@/shared/components/AttachmentUploader'
+import { formatDate, formatYmd, formatFileSize } from '@/lib/utils'
 import type { AttachmentDto, BoardDto, PostDto } from '@/domain/board/types/board'
 
 export default function PostEditPage() {
@@ -233,7 +233,7 @@ export default function PostEditPage() {
               {attachments.map((att) => (
                 <div key={att.fileId} className="flex items-center gap-2 text-sm text-gray-600 bg-white px-2.5 py-1.5 border border-gray-200 rounded-md shadow-sm">
                   <Paperclip className="w-3 h-3 text-gray-400" />
-                  <span className="truncate max-w-[160px]" title={att.orgFileName}>{att.orgFileName}</span>
+                  <span className="truncate max-w-[150px]" title={att.orgFileName}>{att.orgFileName}</span>
                   <span className="text-xs text-gray-400">({formatFileSize(att.fileSize)})</span>
                   <button type="button" onClick={() => removeAttachment(att.fileId)} className="text-gray-400 hover:text-red-500 p-0.5 rounded transition-colors">
                     <X className="w-3.5 h-3.5" />
@@ -243,7 +243,7 @@ export default function PostEditPage() {
               {newFiles.map((file, idx) => (
                 <div key={`new-${file.name}-${idx}`} className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 px-2.5 py-1.5 border border-blue-200 rounded-md">
                   <Paperclip className="w-3 h-3 text-blue-400" />
-                  <span className="truncate max-w-[160px]" title={file.name}>{file.name}</span>
+                  <span className="truncate max-w-[150px]" title={file.name}>{file.name}</span>
                   <span className="text-[10px] text-blue-500 bg-blue-100 px-1 rounded font-bold">NEW</span>
                   <button type="button" onClick={() => setNewFiles((p) => p.filter((_, i) => i !== idx))} className="text-blue-400 hover:text-red-500 p-0.5 rounded transition-colors">
                     <X className="w-3.5 h-3.5" />
@@ -264,13 +264,6 @@ export default function PostEditPage() {
             <Button onClick={handleSubmit} disabled={saving || !form.title.trim()}>
               {saving ? '저장 중...' : '저장'}
             </Button>
-          </div>
-        </div>
-      </main>
-    </div>
-  )
-}
-  </Button>
           </div>
         </div>
       </main>

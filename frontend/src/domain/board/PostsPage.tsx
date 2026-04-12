@@ -25,9 +25,9 @@ export default function PostsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const boardId = searchParams.get('boardId') ? Number(searchParams.get('boardId')) : null
 
-  const [keyword, setKeyword] = useState('')
-  const [searchKeyword, setSearchKeyword] = useState('')
-  const [page, setPage] = useState(1)
+  const page = Number(searchParams.get('page') ?? 1)
+  const searchKeyword = searchParams.get('keyword') ?? ''
+  const [keyword, setKeyword] = useState(searchKeyword)
   const [showBoardDropdown, setShowBoardDropdown] = useState(false)
 
   const { data: boards = [] } = useQuery<BoardWithCodeDto[]>({
@@ -50,21 +50,17 @@ export default function PostsPage() {
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0
 
   function handleSearch() {
-    setSearchKeyword(keyword)
-    setPage(1)
+    setSearchParams((p) => { p.set('keyword', keyword); p.set('page', '1'); return p })
   }
 
   function handleReset() {
     setKeyword('')
-    setSearchKeyword('')
-    setPage(1)
+    setSearchParams((p) => { p.delete('keyword'); p.set('page', '1'); return p })
   }
 
   function selectBoard(id: number) {
     setSearchParams({ boardId: String(id) })
-    setSearchKeyword('')
     setKeyword('')
-    setPage(1)
     setShowBoardDropdown(false)
   }
 
@@ -220,9 +216,9 @@ export default function PostsPage() {
               {/* 페이징 */}
               {totalPages > 1 && (
                 <div className="flex justify-center gap-1 mt-6">
-                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>이전</Button>
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setSearchParams((p) => { p.set('page', String(page - 1)); return p })}>이전</Button>
                   <span className="px-3 py-1 text-sm text-gray-600 flex items-center">{page} / {totalPages}</span>
-                  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>다음</Button>
+                  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setSearchParams((p) => { p.set('page', String(page + 1)); return p })}>다음</Button>
                 </div>
               )}
             </>

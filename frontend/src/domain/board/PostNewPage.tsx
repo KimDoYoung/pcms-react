@@ -9,13 +9,14 @@ import { Input } from '@/shared/components/ui/input'
 import SpecEditor from '@/shared/components/editor/SpecEditor'
 import MilkdownEditor from '@/domain/board/components/MilkdownEditor'
 import { useAuthStore } from '@/shared/store/authStore'
+import { formatDate, formatYmd } from '@/lib/utils'
 import type { BoardDto } from '@/domain/board/types/board'
 
 export default function PostNewPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const boardId = searchParams.get('boardId') ? Number(searchParams.get('boardId')) : null
-  const today = new Date().toISOString().slice(0, 10)
+  const today = formatDate(new Date(), false)
   const { userNm } = useAuthStore()
 
   const [form, setForm] = useState({ title: '', author: userNm ?? '', baseYmd: today, content: '' })
@@ -211,12 +212,6 @@ export default function PostNewPage() {
           <Button onClick={handleSubmit} disabled={saving || !form.title.trim()}>
             {saving ? '저장 중...' : '저장'}
           </Button>
-        </div>
-      </main>
-    </div>
-  )
-}
-ton>
         </div>
       </main>
     </div>

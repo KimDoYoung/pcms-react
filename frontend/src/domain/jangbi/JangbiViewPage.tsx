@@ -82,7 +82,7 @@ export default function JangbiViewPage() {
             <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
               <Trash2 className="w-3.5 h-3.5 mr-1" /> 삭제
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/jangbi')}>
+            <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> 목록으로
             </Button>
           </div>

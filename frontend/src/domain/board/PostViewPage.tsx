@@ -49,7 +49,7 @@ export default function PostViewPage() {
     try {
       await apiClient.delete(`/boards/${boardId}/posts/${post.id}`)
       queryClient.invalidateQueries({ queryKey: ['posts'] })
-      navigate(`/posts?boardId=${boardId}`)
+      navigate(-1)
     } catch {
       alert('삭제 중 오류가 발생했습니다.')
     }
@@ -93,7 +93,7 @@ export default function PostViewPage() {
               <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
                 <Trash2 className="w-3.5 h-3.5 mr-1" /> 삭제
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/posts?boardId=${boardId}`)}>
+              <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
                 <ArrowLeft className="w-3.5 h-3.5 mr-1" /> 목록으로
               </Button>
             </div>

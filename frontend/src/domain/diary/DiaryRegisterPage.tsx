@@ -7,7 +7,7 @@ import { Color } from '@tiptap/extension-color'
 import { useState, useRef, useEffect } from 'react'
 import TipTapMenuBar from '@/shared/components/editor/TipTapMenuBar'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { getDayOfWeek, formatYmd } from '@/lib/utils'
+import { getDayOfWeek, formatYmd, formatDate } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Paperclip, X, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import Toolbar from '@/shared/components/Toolbar'
@@ -21,7 +21,7 @@ function DiaryRegisterPage() {
   const queryClient = useQueryClient()
   const { showMessage } = useMessage()
   const [searchParams] = useSearchParams()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = formatDate(new Date(), false)
   const [diaryDate, setDiaryDate] = useState(searchParams.get('date') ?? today)
   const [showList, setShowList] = useState(true)
   const [title, setTitle] = useState('')
@@ -115,26 +115,6 @@ function DiaryRegisterPage() {
     setDiaryDate(d.toISOString().slice(0, 10))
   }
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey) {
-        if (e.key === 's' || e.key === 'S') {
-          e.preventDefault()
-          handleSubmit()
-        } else if (e.key === 'ArrowLeft') {
-          e.preventDefault()
-          changeDate(-1)
-        } else if (e.key === 'ArrowRight') {
-          e.preventDefault()
-          changeDate(1)
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [diaryDate, title, diaryId, attachments, newFiles, deletedAttachmentIds, editor])
-
   async function handleSubmit() {
     const content = editor?.getHTML() ?? ''
   
@@ -159,7 +139,12 @@ function DiaryRegisterPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       showMessage('저장되었습니다.', 'success')
-      queryClient.invalidateQueries({ queryKey: ['diary-summary'] })
+      
+      // 관련 쿼리 무효화 및 갱신 대기
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['diary-summary'] }),
+        queryClient.invalidateQueries({ queryKey: ['diary-list'] })
+      ])
 
       // Refresh to get latest attachments
       const res = await apiClient.get(`/diary/date/${diaryPayload.ymd}`)
@@ -174,6 +159,26 @@ function DiaryRegisterPage() {
       showMessage('저장 중 오류가 발생했습니다.', 'error')
     }
   }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey) {
+        if (e.key === 's' || e.key === 'S') {
+          e.preventDefault()
+          handleSubmit()
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault()
+          changeDate(-1)
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault()
+          changeDate(1)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [diaryDate, title, diaryId, attachments, newFiles, deletedAttachmentIds, editor])
 
   return (
     <div className="min-h-screen bg-gray-50">

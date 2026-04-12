@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Search, ChevronDown, ChevronUp, Pencil, Eye } from 'lucide-react'
 import { formatDate, formatYmd } from '@/lib/utils'
-import type { DiaryListDto, DiaryPageResponse, DiarySearchParams } from '@/domain/diary/types/diary'
+import type { DiaryListDto, DiaryPageResponse } from '@/domain/diary/types/diary'
 
 const PAGE_SIZE = 14
 
@@ -69,17 +69,23 @@ function DiaryItem({ item }: { item: DiaryListDto }) {
   )
 }
 
-function DiaryPage() {
-  const [form, setForm] = useState({ startYmd: '', endYmd: '', keyword: '' })
-  const [search, setSearch] = useState<DiarySearchParams>({ startYmd: '', endYmd: '', keyword: '', page: 1 })
+export default function DiaryPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const page = Number(searchParams.get('page') ?? 1)
+  const keyword = searchParams.get('keyword') ?? ''
+  const startYmd = searchParams.get('startYmd') ?? ''
+  const endYmd = searchParams.get('endYmd') ?? ''
+
+  const [form, setForm] = useState({ startYmd, endYmd, keyword })
 
   const { data, isLoading } = useQuery<DiaryPageResponse>({
-    queryKey: ['diary-list', search],
+    queryKey: ['diary-list', { keyword, startYmd, endYmd, page }],
     queryFn: () => {
-      const params: Record<string, string | number> = { size: PAGE_SIZE, page: search.page }
-      if (search.startYmd) params.startYmd = formatYmd(search.startYmd)
-      if (search.endYmd)   params.endYmd   = formatYmd(search.endYmd)
-      if (search.keyword)  params.keyword  = search.keyword
+      const params: Record<string, string | number> = { size: PAGE_SIZE, page }
+      if (startYmd) params.startYmd = formatYmd(startYmd)
+      if (endYmd)   params.endYmd   = formatYmd(endYmd)
+      if (keyword)  params.keyword  = keyword
       return apiClient.get<DiaryPageResponse>('/diary', { params })
     },
   })
@@ -87,13 +93,16 @@ function DiaryPage() {
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0
 
   function handleSearch() {
-    setSearch({ ...form, page: 1 })
+    const next: Record<string, string> = { page: '1' }
+    if (form.startYmd) next.startYmd = form.startYmd
+    if (form.endYmd) next.endYmd = form.endYmd
+    if (form.keyword) next.keyword = form.keyword
+    setSearchParams(next)
   }
 
   function handleReset() {
-    const empty = { startYmd: '', endYmd: '', keyword: '' }
-    setForm(empty)
-    setSearch({ ...empty, page: 1 })
+    setForm({ startYmd: '', endYmd: '', keyword: '' })
+    setSearchParams({})
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -170,19 +179,19 @@ function DiaryPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={search.page <= 1}
-                  onClick={() => setSearch((s) => ({ ...s, page: s.page - 1 }))}
+                  disabled={page <= 1}
+                  onClick={() => setSearchParams((p) => { p.set('page', String(page - 1)); return p })}
                 >
                   이전
                 </Button>
                 <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
-                  {search.page} / {totalPages}
+                  {page} / {totalPages}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={search.page >= totalPages}
-                  onClick={() => setSearch((s) => ({ ...s, page: s.page + 1 }))}
+                  disabled={page >= totalPages}
+                  onClick={() => setSearchParams((p) => { p.set('page', String(page + 1)); return p })}
                 >
                   다음
                 </Button>
@@ -194,5 +203,3 @@ function DiaryPage() {
     </div>
   )
 }
-
-export default DiaryPage

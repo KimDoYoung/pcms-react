@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
@@ -20,17 +20,24 @@ function formatCost(cost: number | null) {
 export default function JangbiPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [form, setForm] = useState({ keyword: '', lvl: '', startYmd: '', endYmd: '' })
-  const [search, setSearch] = useState({ keyword: '', lvl: '', startYmd: '', endYmd: '', page: 1 })
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const page = Number(searchParams.get('page') ?? 1)
+  const keyword = searchParams.get('keyword') ?? ''
+  const lvl = searchParams.get('lvl') ?? ''
+  const startYmd = searchParams.get('startYmd') ?? ''
+  const endYmd = searchParams.get('endYmd') ?? ''
+
+  const [form, setForm] = useState({ keyword, lvl, startYmd, endYmd })
 
   const { data, isLoading } = useQuery<JangbiPageResponse>({
-    queryKey: ['jangbi-list', search],
+    queryKey: ['jangbi-list', { keyword, lvl, startYmd, endYmd, page }],
     queryFn: () => {
-      const params: Record<string, string | number> = { size: PAGE_SIZE, page: search.page }
-      if (search.keyword) params.keyword = search.keyword
-      if (search.lvl) params.lvl = search.lvl
-      if (search.startYmd) params.startYmd = search.startYmd
-      if (search.endYmd) params.endYmd = search.endYmd
+      const params: Record<string, string | number> = { size: PAGE_SIZE, page }
+      if (keyword) params.keyword = keyword
+      if (lvl) params.lvl = lvl
+      if (startYmd) params.startYmd = startYmd
+      if (endYmd) params.endYmd = endYmd
       return apiClient.get<JangbiPageResponse>('/jangbi', { params })
     },
   })
@@ -38,13 +45,17 @@ export default function JangbiPage() {
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0
 
   function handleSearch() {
-    setSearch({ ...form, page: 1 })
+    const next: Record<string, string> = { page: '1' }
+    if (form.keyword) next.keyword = form.keyword
+    if (form.lvl) next.lvl = form.lvl
+    if (form.startYmd) next.startYmd = form.startYmd
+    if (form.endYmd) next.endYmd = form.endYmd
+    setSearchParams(next)
   }
 
   function handleReset() {
-    const empty = { keyword: '', lvl: '', startYmd: '', endYmd: '', page: 1 }
     setForm({ keyword: '', lvl: '', startYmd: '', endYmd: '' })
-    setSearch(empty)
+    setSearchParams({})
   }
 
   async function handleDelete(id: number, item: string) {
@@ -195,16 +206,16 @@ export default function JangbiPage() {
               <div className="flex justify-center gap-1 mt-6">
                 <Button
                   variant="outline" size="sm"
-                  disabled={search.page <= 1}
-                  onClick={() => setSearch((s) => ({ ...s, page: s.page - 1 }))}
+                  disabled={page <= 1}
+                  onClick={() => setSearchParams((p) => { p.set('page', String(page - 1)); return p })}
                 >이전</Button>
                 <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
-                  {search.page} / {totalPages}
+                  {page} / {totalPages}
                 </span>
                 <Button
                   variant="outline" size="sm"
-                  disabled={search.page >= totalPages}
-                  onClick={() => setSearch((s) => ({ ...s, page: s.page + 1 }))}
+                  disabled={page >= totalPages}
+                  onClick={() => setSearchParams((p) => { p.set('page', String(page + 1)); return p })}
                 >다음</Button>
               </div>
             )}

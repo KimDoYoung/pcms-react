@@ -33,8 +33,9 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
     reader.readAsDataURL(file)
   }
 
-  const btn = (label: string, action: () => boolean, active?: boolean) => (
+  const btn = (label: string, action: () => boolean, active?: boolean, key?: string | number) => (
     <button
+      key={key}
       type="button"
       onClick={() => action()}
       className={`px-2 py-1 text-sm rounded transition-colors ${
@@ -58,6 +59,7 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
           `H${level}`,
           () => editor.chain().focus().toggleHeading({ level }).run(),
           editor.isActive('heading', { level }),
+          `heading-${level}`
         ),
       )}
       <span className="w-px bg-gray-200 mx-1" />

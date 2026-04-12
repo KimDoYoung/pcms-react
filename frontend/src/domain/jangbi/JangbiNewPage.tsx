@@ -4,6 +4,7 @@ import { Paperclip, X } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
 import { formatDate, formatYmd } from '@/lib/utils'
 import SpecEditor from '@/shared/components/editor/SpecEditor'
 

@@ -87,7 +87,7 @@ export default function DiaryViewPage() {
             >
               <Pencil className="w-3.5 h-3.5 mr-1" /> 수정
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/diary')}>
+            <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> 목록
             </Button>
           </div>
