@@ -12,31 +12,12 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/shared/components/ui/select'
+import type { CalendarEvent, CalendarDay } from '@/domain/calendar/types/calendar'
 
 const YMD_PLACEHOLDER: Record<string, string> = {
   Y: 'MMDD (예: 0405)',
   M: 'DD (예: 01)',
   S: 'YYYYMMDD (예: 20260420)',
-}
-
-interface CalendarEvent {
-  id: string
-  type: 'HOLIDAY' | 'EVENT'
-  ymd: string
-  content: string
-  gubun?: string
-}
-
-interface CalendarDay {
-  ymd: string
-  day: number
-  isToday: boolean
-  isThisMonth: boolean
-  isHoliday: boolean
-  isSunday: boolean
-  isSaturday: boolean
-  holidays: CalendarEvent[]
-  events: CalendarEvent[]
 }
 
 function zeroPad(num: number): string {

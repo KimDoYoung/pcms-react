@@ -5,21 +5,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { formatDate, formatFileSize } from '@/lib/utils'
-
-interface AttachmentDto {
-  fileId: number
-  orgFileName: string
-  fileSize: number
-  mimeType: string
-}
-
-interface DiaryDto {
-  id: number
-  ymd: string
-  summary: string | null
-  content: string | null
-  attachments: AttachmentDto[]
-}
+import type { AttachmentDto, DiaryDto } from '@/domain/diary/types/diary'
 
 function shiftYmd(ymd: string, days: number): string {
   const date = new Date(`${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`)

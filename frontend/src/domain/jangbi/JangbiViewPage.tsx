@@ -6,25 +6,7 @@ import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import StarRating from '@/shared/components/StarRating'
 import { formatFileSize } from '@/lib/utils'
-
-interface AttachmentDto {
-  fileId: number
-  orgFileName: string
-  fileSize: number
-  mimeType: string
-}
-
-interface JangbiDto {
-  id: number
-  ymd: string
-  item: string
-  location: string | null
-  cost: number | null
-  spec: string | null
-  lvl: string
-  modifyDt: string | null
-  attachments: AttachmentDto[]
-}
+import type { AttachmentDto, JangbiDto } from '@/domain/jangbi/types/jangbi'
 
 function formatYmd(ymd: string) {
   if (!ymd || ymd.length !== 8) return ymd

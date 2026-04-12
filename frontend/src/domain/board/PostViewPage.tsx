@@ -5,30 +5,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { formatFileSize } from '@/lib/utils'
-
-interface AttachmentDto {
-  fileId: number
-  orgFileName: string
-  fileSize: number
-}
-
-interface PostDto {
-  id: number
-  boardId: number
-  title: string
-  author: string | null
-  content: string | null
-  viewCount: number
-  baseYmd: string
-  createdAt: string | null
-  attachments: AttachmentDto[]
-}
-
-interface BoardDto {
-  id: number
-  boardNameKor: string
-  contentType: string
-}
+import type { BoardDto, PostDto } from '@/domain/board/types/board'
 
 function formatYmd(ymd: string) {
   if (!ymd || ymd.length !== 8) return ymd

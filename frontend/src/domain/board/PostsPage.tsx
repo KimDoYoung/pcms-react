@@ -6,31 +6,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-
-interface BoardDto {
-  id: number
-  boardCode: string
-  boardNameKor: string
-  contentType: string
-}
-
-interface PostDto {
-  id: number
-  boardId: number
-  title: string
-  author: string | null
-  viewCount: number
-  baseYmd: string
-  createdAt: string | null
-  attachmentCount: number
-}
-
-interface PageResponse {
-  dtoList: PostDto[]
-  total: number
-  page: number
-  size: number
-}
+import type { BoardWithCodeDto, PostListDto, PostsPageResponse } from '@/domain/board/types/board'
 
 const PAGE_SIZE = 20
 
@@ -54,19 +30,19 @@ export default function PostsPage() {
   const [page, setPage] = useState(1)
   const [showBoardDropdown, setShowBoardDropdown] = useState(false)
 
-  const { data: boards = [] } = useQuery<BoardDto[]>({
+  const { data: boards = [] } = useQuery<BoardWithCodeDto[]>({
     queryKey: ['boards'],
-    queryFn: () => apiClient.get<BoardDto[]>('/boards'),
+    queryFn: () => apiClient.get<BoardWithCodeDto[]>('/boards'),
   })
 
   const currentBoard = boards.find((b) => b.id === boardId)
 
-  const { data, isLoading } = useQuery<PageResponse>({
+  const { data, isLoading } = useQuery<PostsPageResponse>({
     queryKey: ['posts', boardId, searchKeyword, page],
     queryFn: () => {
       const params: Record<string, string | number> = { page, size: PAGE_SIZE }
       if (searchKeyword) params.keyword = searchKeyword
-      return apiClient.get<PageResponse>(`/boards/${boardId}/posts`, { params })
+      return apiClient.get<PostsPageResponse>(`/boards/${boardId}/posts`, { params })
     },
     enabled: !!boardId,
   })
@@ -92,7 +68,7 @@ export default function PostsPage() {
     setShowBoardDropdown(false)
   }
 
-  async function handleDelete(post: PostDto) {
+  async function handleDelete(post: PostListDto) {
     if (!confirm(`"${post.title}"을(를) 삭제하시겠습니까?`)) return
     try {
       await apiClient.delete(`/boards/${post.boardId}/posts/${post.id}`)

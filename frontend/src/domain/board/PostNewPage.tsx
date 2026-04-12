@@ -9,12 +9,7 @@ import { Input } from '@/shared/components/ui/input'
 import SpecEditor from '@/shared/components/editor/SpecEditor'
 import MilkdownEditor from '@/domain/board/components/MilkdownEditor'
 import { useAuthStore } from '@/shared/store/authStore'
-
-interface BoardDto {
-  id: number
-  boardNameKor: string
-  contentType: string
-}
+import type { BoardDto } from '@/domain/board/types/board'
 
 export default function PostNewPage() {
   const navigate = useNavigate()

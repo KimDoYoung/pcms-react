@@ -8,23 +8,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import SpecEditor from '@/shared/components/editor/SpecEditor'
 import { formatFileSize } from '@/lib/utils'
-
-interface AttachmentDto {
-  fileId: number
-  orgFileName: string
-  fileSize: number
-}
-
-interface JangbiDto {
-  id: number
-  ymd: string
-  item: string
-  location: string | null
-  cost: number | null
-  spec: string | null
-  lvl: string
-  attachments: AttachmentDto[]
-}
+import type { AttachmentDto, JangbiDto } from '@/domain/jangbi/types/jangbi'
 
 export default function JangbiEditPage() {
   const { id } = useParams<{ id: string }>()

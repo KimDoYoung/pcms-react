@@ -6,15 +6,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-
-interface BoardDto {
-  id: number
-  boardCode: string
-  boardNameKor: string
-  contentType: string
-  description: string | null
-  createdAt: string | null
-}
+import type { BoardDetailDto } from '@/domain/board/types/board'
 
 const CONTENT_TYPE_LABEL: Record<string, string> = {
   html: 'HTML',
@@ -40,9 +32,9 @@ export default function BoardsPage() {
   const [form, setForm] = useState({ ...emptyForm })
   const [saving, setSaving] = useState(false)
 
-  const { data, isLoading, isError, error } = useQuery<BoardDto[]>({
+  const { data, isLoading, isError, error } = useQuery<BoardDetailDto[]>({
     queryKey: ['boards'],
-    queryFn: () => apiClient.get<BoardDto[]>('/boards'),
+    queryFn: () => apiClient.get<BoardDetailDto[]>('/boards'),
   })
   const boards = Array.isArray(data) ? data : []
 
@@ -52,7 +44,7 @@ export default function BoardsPage() {
     setShowModal(true)
   }
 
-  function openEdit(board: BoardDto) {
+  function openEdit(board: BoardDetailDto) {
     setIsEdit(true)
     setForm({ id: board.id, boardCode: board.boardCode, boardNameKor: board.boardNameKor, contentType: board.contentType, description: board.description ?? '' })
     setShowModal(true)
@@ -82,7 +74,7 @@ export default function BoardsPage() {
     }
   }
 
-  async function handleDelete(board: BoardDto) {
+  async function handleDelete(board: BoardDetailDto) {
     if (!confirm(`"${board.boardNameKor}" 게시판을 삭제하시겠습니까?\n관련된 모든 게시글도 함께 삭제됩니다.`)) return
     try {
       await apiClient.delete(`/boards/${board.id}`)

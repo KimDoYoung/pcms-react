@@ -4,16 +4,7 @@ import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/shared/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatDate, getDayOfWeek } from '@/lib/utils'
-
-interface DiaryDto {
-  id: number
-  ymd: string
-  summary: string | null
-}
-
-interface PageResponse {
-  dtoList: DiaryDto[]
-}
+import type { DiarySummaryDto, DiarySummaryPageResponse } from '@/domain/diary/types/diary'
 
 
 function buildRange(weekOffset: number): { startYmd: string; endYmd: string; days: Date[] } {
@@ -45,7 +36,7 @@ export default function DiarySummaryList({ onSelect }: Props) {
 
   const { startYmd, endYmd, days } = buildRange(weekOffset)
 
-  const { data, isLoading } = useQuery<PageResponse>({
+  const { data, isLoading } = useQuery<DiarySummaryPageResponse>({
     queryKey: ['diary-summary', startYmd, endYmd],
     queryFn: () =>
       apiClient.get<PageResponse>('/diary', {
@@ -53,7 +44,7 @@ export default function DiarySummaryList({ onSelect }: Props) {
       }),
   })
 
-  const entryMap = new Map<string, DiaryDto>()
+  const entryMap = new Map<string, DiarySummaryDto>()
   data?.dtoList?.forEach((d) => entryMap.set(d.ymd, d))
 
   return (

@@ -8,23 +8,7 @@ import { Input } from '@/shared/components/ui/input'
 import { Search, Plus, Pencil, Trash2 } from 'lucide-react'
 import StarRating from '@/shared/components/StarRating'
 import { formatDate } from '@/lib/utils'
-
-interface JangbiDto {
-  id: number
-  ymd: string
-  item: string
-  location: string | null
-  cost: number | null
-  lvl: string
-  attachmentCount: number
-}
-
-interface PageResponse {
-  dtoList: JangbiDto[]
-  total: number
-  page: number
-  size: number
-}
+import type { JangbiListDto, JangbiPageResponse } from '@/domain/jangbi/types/jangbi'
 
 const PAGE_SIZE = 10
 
@@ -39,7 +23,7 @@ export default function JangbiPage() {
   const [form, setForm] = useState({ keyword: '', lvl: '', startYmd: '', endYmd: '' })
   const [search, setSearch] = useState({ keyword: '', lvl: '', startYmd: '', endYmd: '', page: 1 })
 
-  const { data, isLoading } = useQuery<PageResponse>({
+  const { data, isLoading } = useQuery<JangbiPageResponse>({
     queryKey: ['jangbi-list', search],
     queryFn: () => {
       const params: Record<string, string | number> = { size: PAGE_SIZE, page: search.page }
@@ -47,7 +31,7 @@ export default function JangbiPage() {
       if (search.lvl) params.lvl = search.lvl
       if (search.startYmd) params.startYmd = search.startYmd
       if (search.endYmd) params.endYmd = search.endYmd
-      return apiClient.get<PageResponse>('/jangbi', { params })
+      return apiClient.get<JangbiPageResponse>('/jangbi', { params })
     },
   })
 

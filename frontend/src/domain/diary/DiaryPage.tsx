@@ -7,32 +7,11 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Search, ChevronDown, ChevronUp, Pencil, Eye } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
-
-interface DiaryDto {
-  id: number
-  ymd: string
-  summary: string | null
-  content: string | null
-  attachmentCount: number
-}
-
-interface PageResponse {
-  dtoList: DiaryDto[]
-  total: number
-  page: number
-  size: number
-}
-
-interface SearchParams {
-  startYmd: string
-  endYmd: string
-  keyword: string
-  page: number
-}
+import type { DiaryListDto, DiaryPageResponse, DiarySearchParams } from '@/domain/diary/types/diary'
 
 const PAGE_SIZE = 14
 
-function DiaryItem({ item }: { item: DiaryDto }) {
+function DiaryItem({ item }: { item: DiaryListDto }) {
   const [expanded, setExpanded] = useState(false)
   const navigate = useNavigate()
   const ymd = item.ymd  // yyyymmdd
@@ -92,16 +71,16 @@ function DiaryItem({ item }: { item: DiaryDto }) {
 
 function DiaryPage() {
   const [form, setForm] = useState({ startYmd: '', endYmd: '', keyword: '' })
-  const [search, setSearch] = useState<SearchParams>({ startYmd: '', endYmd: '', keyword: '', page: 1 })
+  const [search, setSearch] = useState<DiarySearchParams>({ startYmd: '', endYmd: '', keyword: '', page: 1 })
 
-  const { data, isLoading } = useQuery<PageResponse>({
+  const { data, isLoading } = useQuery<DiaryPageResponse>({
     queryKey: ['diary-list', search],
     queryFn: () => {
       const params: Record<string, string | number> = { size: PAGE_SIZE, page: search.page }
       if (search.startYmd) params.startYmd = search.startYmd.replace(/-/g, '')
       if (search.endYmd)   params.endYmd   = search.endYmd.replace(/-/g, '')
       if (search.keyword)  params.keyword  = search.keyword
-      return apiClient.get<PageResponse>('/diary', { params })
+      return apiClient.get<DiaryPageResponse>('/diary', { params })
     },
   })
 

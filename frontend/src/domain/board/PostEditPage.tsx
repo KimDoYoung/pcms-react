@@ -9,28 +9,7 @@ import { Input } from '@/shared/components/ui/input'
 import SpecEditor from '@/shared/components/editor/SpecEditor'
 import MilkdownEditor from '@/domain/board/components/MilkdownEditor'
 import { formatFileSize } from '@/lib/utils'
-
-interface AttachmentDto {
-  fileId: number
-  orgFileName: string
-  fileSize: number
-}
-
-interface PostDto {
-  id: number
-  boardId: number
-  title: string
-  author: string | null
-  content: string | null
-  baseYmd: string
-  attachments: AttachmentDto[]
-}
-
-interface BoardDto {
-  id: number
-  boardNameKor: string
-  contentType: string
-}
+import type { AttachmentDto, BoardDto, PostDto } from '@/domain/board/types/board'
 
 export default function PostEditPage() {
   const { id } = useParams<{ id: string }>()

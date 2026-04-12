@@ -12,21 +12,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/shared/components/ui/select'
-
-interface CalendarEventItem {
-  id: number
-  gubun: string  // Y/M/S
-  sorl: string
-  ymd: string
-  content: string
-}
-
-interface FormValues {
-  gubun: string
-  sorl: string
-  ymd: string
-  content: string
-}
+import type { CalendarEventItem, CalendarCalendarFormValues } from '@/domain/calendar/types/calendar'
 
 const GUBUN_LABEL: Record<string, string> = { Y: '매년', M: '매달', S: '특정일' }
 const GUBUN_COLOR: Record<string, string> = {
@@ -51,7 +37,7 @@ export default function AnniversaryPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<CalendarEventItem | null>(null)
 
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<CalendarFormValues>({
     defaultValues: { gubun: 'Y', sorl: 'S', ymd: '', content: '' },
   })
   const gubun = watch('gubun')
@@ -73,7 +59,7 @@ export default function AnniversaryPage() {
     setDialogOpen(true)
   }
 
-  async function onSubmit(data: FormValues) {
+  async function onSubmit(data: CalendarFormValues) {
     if (editTarget) {
       await apiClient.put(`/calendar/my/${editTarget.id}`, data)
     } else {
