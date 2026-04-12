@@ -1,10 +1,10 @@
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Trash2, ArrowLeft, Paperclip, Download } from 'lucide-react'
+import { Pencil, Trash2, ArrowLeft } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
-import { formatFileSize } from '@/lib/utils'
+import AttachmentList from '@/shared/components/AttachmentList'
 import type { BoardDto, PostDto } from '@/domain/board/types/board'
 
 function formatYmd(ymd: string) {
@@ -110,32 +110,7 @@ export default function PostViewPage() {
         </div>
 
         {/* 첨부파일 */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5 mb-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1">
-            <Paperclip className="w-4 h-4" /> 첨부파일
-          </h2>
-          {(!post.attachments || post.attachments.length === 0) ? (
-            <p className="text-sm text-gray-400">첨부된 파일이 없습니다.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {post.attachments.map((att) => (
-                <li key={att.fileId} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Paperclip className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                    <span className="text-sm text-gray-700 truncate">{att.orgFileName}</span>
-                    <span className="text-xs text-gray-400 shrink-0">({formatFileSize(att.fileSize)})</span>
-                  </div>
-                  <a
-                    href={`/pcms/file/download/${att.fileId}`}
-                    className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 shrink-0 ml-2"
-                  >
-                    <Download className="w-3.5 h-3.5" /> 다운로드
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <AttachmentList attachments={post.attachments ?? []} className="mb-6" />
 
       </main>
     </div>

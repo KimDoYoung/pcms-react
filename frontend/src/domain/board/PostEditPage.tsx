@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Paperclip, X, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import SpecEditor from '@/shared/components/editor/SpecEditor'
 import MilkdownEditor from '@/domain/board/components/MilkdownEditor'
-import { formatFileSize } from '@/lib/utils'
+import AttachmentUploader from '@/shared/components/AttachmentUploader'
 import type { AttachmentDto, BoardDto, PostDto } from '@/domain/board/types/board'
 
 export default function PostEditPage() {

@@ -1,11 +1,12 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Paperclip, Download, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
-import { formatDate, formatFileSize } from '@/lib/utils'
-import type { AttachmentDto, DiaryDto } from '@/domain/diary/types/diary'
+import { formatDate } from '@/lib/utils'
+import AttachmentList from '@/shared/components/AttachmentList'
+import type { DiaryDto } from '@/domain/diary/types/diary'
 
 function shiftYmd(ymd: string, days: number): string {
   const date = new Date(`${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`)
@@ -105,33 +106,7 @@ export default function DiaryViewPage() {
         </div>
 
         {/* 첨부파일 */}
-        {diary.attachments && diary.attachments.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1">
-              <Paperclip className="w-4 h-4" /> 첨부파일
-            </h2>
-            <ul className="flex flex-col gap-2">
-              {diary.attachments.map((att) => (
-                <li
-                  key={att.fileId}
-                  className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-200"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Paperclip className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                    <span className="text-sm text-gray-700 truncate">{att.orgFileName}</span>
-                    <span className="text-xs text-gray-400 shrink-0">({formatFileSize(att.fileSize)})</span>
-                  </div>
-                  <a
-                    href={`/pcms/file/download/${att.fileId}`}
-                    className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 shrink-0 ml-2"
-                  >
-                    <Download className="w-3.5 h-3.5" /> 다운로드
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <AttachmentList attachments={diary.attachments ?? []} hideIfEmpty />
 
         {/* 이전 / 이후 네비게이션 */}
         <div className="flex justify-between mt-4">
