@@ -6,7 +6,7 @@ import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Search, ChevronDown, ChevronUp, Pencil, Eye } from 'lucide-react'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatYmd } from '@/lib/utils'
 import type { DiaryListDto, DiaryPageResponse, DiarySearchParams } from '@/domain/diary/types/diary'
 
 const PAGE_SIZE = 14
@@ -77,8 +77,8 @@ function DiaryPage() {
     queryKey: ['diary-list', search],
     queryFn: () => {
       const params: Record<string, string | number> = { size: PAGE_SIZE, page: search.page }
-      if (search.startYmd) params.startYmd = search.startYmd.replace(/-/g, '')
-      if (search.endYmd)   params.endYmd   = search.endYmd.replace(/-/g, '')
+      if (search.startYmd) params.startYmd = formatYmd(search.startYmd)
+      if (search.endYmd)   params.endYmd   = formatYmd(search.endYmd)
       if (search.keyword)  params.keyword  = search.keyword
       return apiClient.get<DiaryPageResponse>('/diary', { params })
     },

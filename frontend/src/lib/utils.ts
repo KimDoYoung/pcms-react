@@ -80,6 +80,20 @@ export const getDayOfWeek = (dateStr: string, short = false, english = false) =>
 }
 
 /**
+ * Date 또는 날짜 문자열을 yyyymmdd 형식으로 변환합니다.
+ * @param input - Date 객체, 'yyyy-mm-dd', 또는 'yyyymmdd' 형식의 문자열
+ * @returns 'yyyymmdd' 형식의 날짜 문자열 (예: '20260412')
+ */
+export const formatYmd = (input: Date | string): string => {
+  if (input instanceof Date) {
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    return `${input.getFullYear()}${pad(input.getMonth() + 1)}${pad(input.getDate())}`
+  }
+  // 숫자가 아닌 문자 제거 → yyyymmdd
+  return input.replace(/\D/g, '')
+}
+
+/**
  * 파일 크기를 사람이 읽기 쉬운 문자열로 변환합니다.
  * @param bytes - 바이트 단위의 파일 크기
  * @returns 포맷팅된 파일 크기 문자열 (예: '1.5 MB', '320.0 KB')

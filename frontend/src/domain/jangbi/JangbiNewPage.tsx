@@ -4,12 +4,12 @@ import { Paperclip, X } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
-import { Input } from '@/shared/components/ui/input'
+import { formatDate, formatYmd } from '@/lib/utils'
 import SpecEditor from '@/shared/components/editor/SpecEditor'
 
 export default function JangbiNewPage() {
   const navigate = useNavigate()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = formatDate(new Date(), false)
 
   const [form, setForm] = useState({
     ymd: today,
@@ -33,7 +33,7 @@ export default function JangbiNewPage() {
     setSaving(true)
     try {
       const payload = {
-        ymd: form.ymd.replace(/-/g, ''),
+        ymd: formatYmd(form.ymd),
         item: form.item,
         location: form.location || null,
         cost: form.cost ? Number(form.cost) : null,

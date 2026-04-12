@@ -7,7 +7,7 @@ import { Color } from '@tiptap/extension-color'
 import { useState, useRef, useEffect } from 'react'
 import TipTapMenuBar from '@/shared/components/editor/TipTapMenuBar'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { getDayOfWeek } from '@/lib/utils'
+import { getDayOfWeek, formatYmd } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Paperclip, X, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import Toolbar from '@/shared/components/Toolbar'
@@ -77,7 +77,7 @@ function DiaryRegisterPage() {
   useEffect(() => {
     async function fetchDiary() {
       try {
-        const ymd = diaryDate.replace(/-/g, '')
+        const ymd = formatYmd(diaryDate)
         const res = await apiClient.get(`/diary/date/${ymd}`)
         
         if (res && typeof res === 'object' && 'id' in res) {
@@ -140,7 +140,7 @@ function DiaryRegisterPage() {
   
     const diaryPayload = {
       id: diaryId,
-      ymd: diaryDate.replace(/-/g, ''),
+      ymd: formatYmd(diaryDate),
       summary: title,
       content,
       deletedAttachmentIds,

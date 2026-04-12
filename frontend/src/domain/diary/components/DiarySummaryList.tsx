@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/shared/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { formatDate, getDayOfWeek } from '@/lib/utils'
+import { formatDate, formatYmd } from '@/lib/utils'
 import type { DiarySummaryDto, DiarySummaryPageResponse } from '@/domain/diary/types/diary'
 
 
@@ -24,7 +24,11 @@ function buildRange(weekOffset: number): { startYmd: string; endYmd: string; day
     cur.setDate(cur.getDate() + 1)
   }
 
-  return { startYmd: formatDate(start).replace(/-/g, ''), endYmd: formatDate(end).replace(/-/g, ''), days }
+  return { 
+    startYmd: formatYmd(start), 
+    endYmd: formatYmd(end), 
+    days 
+  }
 }
 
 interface Props {
@@ -39,7 +43,7 @@ export default function DiarySummaryList({ onSelect }: Props) {
   const { data, isLoading } = useQuery<DiarySummaryPageResponse>({
     queryKey: ['diary-summary', startYmd, endYmd],
     queryFn: () =>
-      apiClient.get<PageResponse>('/diary', {
+      apiClient.get<DiarySummaryPageResponse>('/diary', {
         params: { startYmd, endYmd, size: 14, page: 1 },
       }),
   })
@@ -55,17 +59,17 @@ export default function DiarySummaryList({ onSelect }: Props) {
 
       <ul className="flex flex-col">
         {days.map((day) => {
-          const display = formatDate(day)               // yyyy-mm-dd (화면 표시)
-          const ymd = display.replace(/-/g, '')         // yyyymmdd (API/map key)
+          const displayDate = formatDate(day)               // yyyy-mm-dd (요일) (화면 표시용)
+          const pureDate = formatDate(day, false)           // yyyy-mm-dd (값 전달용)
+          const ymd = formatYmd(day)                        // yyyymmdd (API/map key)
           const entry = entryMap.get(ymd)
-          const dayName = getDayOfWeek(display, true)
           const isSun = day.getDay() === 0
           const isSat = day.getDay() === 6
 
           return (
             <li
               key={ymd}
-              onClick={() => onSelect?.(display, entry?.id)}
+              onClick={() => onSelect?.(pureDate, entry?.id)}
               className={[
                 'flex items-baseline gap-2 px-2 py-1 rounded text-sm cursor-pointer',
                 'hover:bg-accent transition-colors',
@@ -83,7 +87,7 @@ export default function DiarySummaryList({ onSelect }: Props) {
                   .filter(Boolean)
                   .join(' ')}
               >
-                {display} ({dayName})
+                {displayDate}
               </span>
               <span className="truncate text-xs">
                 {entry?.summary ?? ''}

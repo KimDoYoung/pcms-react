@@ -76,7 +76,7 @@ export default function PostEditPage() {
         boardId,
         title: form.title,
         author: form.author || null,
-        baseYmd: form.baseYmd.replace(/-/g, ''),
+        baseYmd: formatYmd(form.baseYmd),
         content: form.content || null,
         deletedAttachmentIds: deletedIds,
       }
@@ -264,6 +264,13 @@ export default function PostEditPage() {
             <Button onClick={handleSubmit} disabled={saving || !form.title.trim()}>
               {saving ? '저장 중...' : '저장'}
             </Button>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+  </Button>
           </div>
         </div>
       </main>

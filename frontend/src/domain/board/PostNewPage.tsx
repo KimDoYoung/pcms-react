@@ -51,7 +51,7 @@ export default function PostNewPage() {
         boardId,
         title: form.title,
         author: form.author || null,
-        baseYmd: form.baseYmd.replace(/-/g, ''),
+        baseYmd: formatYmd(form.baseYmd),
         content: form.content || null,
       }
       const formData = new FormData()
@@ -211,6 +211,12 @@ export default function PostNewPage() {
           <Button onClick={handleSubmit} disabled={saving || !form.title.trim()}>
             {saving ? '저장 중...' : '저장'}
           </Button>
+        </div>
+      </main>
+    </div>
+  )
+}
+ton>
         </div>
       </main>
     </div>
