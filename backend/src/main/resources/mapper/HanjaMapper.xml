@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.kalpa.pcms.utility.hanja.mapper.HanjaMapper">
+
+    <select id="findByKorean" resultType="kr.co.kalpa.pcms.utility.hanja.dto.HanjaDto">
+        SELECT korean, hanja, meaning
+        FROM hanja_dic
+        WHERE korean = #{korean}
+        ORDER BY id
+    </select>
+
+    <insert id="insertBatch">
+        INSERT INTO hanja_dic (korean, hanja, meaning) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.korean}, #{item.hanja}, #{item.meaning})
+        </foreach>
+        ON CONFLICT DO NOTHING
+    </insert>
+
+</mapper>

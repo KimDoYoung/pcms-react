@@ -234,3 +234,14 @@ CREATE TRIGGER trg_update_ap_node_modify_dt
     BEFORE UPDATE ON ap_node
     FOR EACH ROW
     EXECUTE FUNCTION update_modify_dt_column();
+
+-- 한자 사전 캐시 테이블 (Naver 한자 사전 조회 결과를 저장해 재호출 방지)
+DROP TABLE IF EXISTS hanja_dic CASCADE;
+CREATE TABLE hanja_dic (
+    id         BIGSERIAL PRIMARY KEY,
+    korean     VARCHAR(100) NOT NULL,   -- 검색한 한글 단어 (e.g. '운명')
+    hanja      VARCHAR(100) NOT NULL,   -- 한자 (e.g. '運命')
+    meaning    TEXT,                    -- 뜻풀이 (첫 번째 mean_item 텍스트)
+    created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX idx_hanja_dic_korean ON hanja_dic(korean);

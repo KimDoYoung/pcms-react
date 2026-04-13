@@ -4,16 +4,9 @@ import { ArrowLeft, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
-import { formatDate } from '@/lib/utils'
+import { formatDate, shiftYmd } from '@/lib/utils'
 import AttachmentList from '@/shared/components/AttachmentList'
 import type { DiaryDto } from '@/domain/diary/types/diary'
-
-function shiftYmd(ymd: string, days: number): string {
-  const date = new Date(`${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`)
-  date.setDate(date.getDate() + days)
-  const pad = (n: number) => n.toString().padStart(2, '0')
-  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`
-}
 
 export default function DiaryViewPage() {
   const { id } = useParams<{ id: string }>()
@@ -64,7 +57,7 @@ export default function DiaryViewPage() {
     )
   }
 
-  const displayDate = `${diary.ymd.slice(0, 4)}-${diary.ymd.slice(4, 6)}-${diary.ymd.slice(6, 8)}`
+  const displayDate =  formatDate(diary.ymd)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -74,7 +67,7 @@ export default function DiaryViewPage() {
         {/* 헤더 */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <p className="text-xl text-blue-500 mb-1 font-mono">{formatDate(displayDate)}</p>
+            <p className="text-xl text-blue-500 mb-1 font-mono">{displayDate}</p>
             <h1 className="text-xl font-bold text-gray-800">
               {diary.summary ?? <span className="text-gray-300 italic">제목 없음</span>}
             </h1>

@@ -20,6 +20,7 @@ import Calendar1Page from './domain/calendar/Calendar1Page'
 import AnniversaryPage from './domain/calendar/AnniversaryPage'
 import Practice01Flex from './practice/Practice01Flex'
 import Practice02Hooks from './practice/Practice02Hooks'
+import Practice03Hanja from './practice/Practice03Hanja'
 import MessageBox from './shared/components/MessageBox'
 
 function App() {
@@ -51,6 +52,7 @@ function App() {
         <Route path="/apnode" element={<ApNodePage />} />
         <Route path="/practice/tailwindcss" element={<Practice01Flex />} />
         <Route path="/practice/hooks" element={<Practice02Hooks />} />
+        <Route path="/practice/hanja" element={<Practice03Hanja />} />
       </Routes>
     </BrowserRouter>
   )

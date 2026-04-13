@@ -42,7 +42,8 @@ dependencies {
     // --- Documentation & Utilities ---
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0' // Swagger/OpenAPI UI (API 문서화) 
     implementation 'com.github.f4b6a3:uuid-creator:5.3.7'                  // 다양한 방식의 UUID 생성 도구 
-    implementation 'com.github.usingsky:KoreanLunarCalendar:0.3.1'         // 한국 음력/양력 변환 유틸리티 
+    implementation 'com.github.usingsky:KoreanLunarCalendar:0.3.1'         // 한국 음력/양력 변환 유틸리티
+    implementation 'org.jsoup:jsoup:1.17.2'                                // HTML 파싱 (Naver 한자 사전 스크래핑)
     
     // --- Lombok (Boilerplate Code Reduction) ---
     compileOnly 'org.projectlombok:lombok'                                 // 컴파일 시 Getter/Setter 등 생성 

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useEditor } from '@tiptap/react'
+import HanjaSearchModal from '@/shared/components/editor/HanjaSearchModal'
 
 const TEXT_COLORS = [
   { label: '기본', value: '' },
@@ -20,8 +21,27 @@ interface TipTapMenuBarProps {
 export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: TipTapMenuBarProps) {
   const [showColors, setShowColors] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [hanjaOpen, setHanjaOpen] = useState(false)
+  const [selectedWord, setSelectedWord] = useState('')
+  const selectionRef = useRef<{ from: number; to: number } | null>(null)
 
   if (!editor) return null
+
+  function handleHanjaClick() {
+    const { from, to } = editor.state.selection
+    const text = editor.state.doc.textBetween(from, to, ' ')
+    if (!text.trim()) return
+    selectionRef.current = { from, to }
+    setSelectedWord(text.trim())
+    setHanjaOpen(true)
+  }
+
+  function handleHanjaSelect(hanja: string) {
+    if (!selectionRef.current) return
+    const { from, to } = selectionRef.current
+    editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, hanja).run()
+    selectionRef.current = null
+  }
 
   function insertImageFile(file: File) {
     const reader = new FileReader()
@@ -131,6 +151,17 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
           if (file) insertImageFile(file)
           e.target.value = ''
         }}
+      />
+
+      <span className="w-px bg-gray-200 mx-1" />
+
+      {/* 한자 변환 */}
+      {btn('漢', () => { handleHanjaClick(); return false })}
+      <HanjaSearchModal
+        open={hanjaOpen}
+        selectedWord={selectedWord}
+        onClose={() => setHanjaOpen(false)}
+        onSelect={handleHanjaSelect}
       />
     </div>
   )

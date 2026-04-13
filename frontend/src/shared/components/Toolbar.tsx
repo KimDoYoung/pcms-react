@@ -49,6 +49,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { label: '✏️ Tailwind CSS 연습', to: '/practice/tailwindcss' },
       { label: '🪝 React Hooks 연습', to: '/practice/hooks' },
+      { label: '漢 한자 변환 연습', to: '/practice/hanja' },
     ],
   }
 ]

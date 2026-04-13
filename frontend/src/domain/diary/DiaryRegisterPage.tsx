@@ -3,10 +3,11 @@ import ContentEditor from '@/shared/components/editor/ContentEditor'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getDayOfWeek, formatYmd, formatDate } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Paperclip, X, PanelRightOpen, PanelRightClose } from 'lucide-react'
+import { ChevronLeft, ChevronRight, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import Toolbar from '@/shared/components/Toolbar'
 import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/shared/components/ui/button'
+import AttachmentUploader from '@/shared/components/AttachmentUploader'
 import DiarySummaryList from '@/domain/diary/components/DiarySummaryList'
 import { useMessage } from '@/shared/hooks/useMessage'
 
@@ -26,6 +27,8 @@ function DiaryRegisterPage() {
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [deletedAttachmentIds, setDeletedAttachmentIds] = useState<number[]>([])
   const [contentReady, setContentReady] = useState(false)
+  // 저장된 시점의 스냅샷 — 현재 값과 비교해 변경 여부 판단
+  const [savedSnapshot, setSavedSnapshot] = useState('')
 
   useEffect(() => {
     setContentReady(false)
@@ -35,15 +38,19 @@ function DiaryRegisterPage() {
         const res = await apiClient.get(`/diary/date/${ymd}`)
 
         if (res && typeof res === 'object' && 'id' in res) {
+          const loadedTitle = (res as any).summary || ''
+          const loadedContent = (res as any).content || ''
           setDiaryId((res as any).id)
-          setTitle((res as any).summary || '')
-          setContent((res as any).content || '')
+          setTitle(loadedTitle)
+          setContent(loadedContent)
           setAttachments((res as any).attachments || [])
+          setSavedSnapshot(JSON.stringify({ title: loadedTitle, content: loadedContent }))
         } else {
           setDiaryId(null)
           setTitle('')
           setContent('')
           setAttachments([])
+          setSavedSnapshot(JSON.stringify({ title: '', content: '' }))
         }
         setNewFiles([])
         setDeletedAttachmentIds([])
@@ -55,6 +62,7 @@ function DiaryRegisterPage() {
         setAttachments([])
         setNewFiles([])
         setDeletedAttachmentIds([])
+        setSavedSnapshot(JSON.stringify({ title: '', content: '' }))
       } finally {
         setContentReady(true)
       }
@@ -62,6 +70,11 @@ function DiaryRegisterPage() {
 
     fetchDiary()
   }, [diaryDate])
+
+  const isDirty =
+    JSON.stringify({ title, content }) !== savedSnapshot ||
+    newFiles.length > 0 ||
+    deletedAttachmentIds.length > 0
 
   const changeDate = (days: number) => {
     const d = new Date(diaryDate)
@@ -105,6 +118,7 @@ function DiaryRegisterPage() {
         setAttachments((res as any).attachments || [])
         setNewFiles([])
         setDeletedAttachmentIds([])
+        setSavedSnapshot(JSON.stringify({ title, content }))
       }
     } catch (e) {
       console.error(e)
@@ -117,7 +131,11 @@ function DiaryRegisterPage() {
       if (e.ctrlKey) {
         if (e.key === 's' || e.key === 'S') {
           e.preventDefault()
-          handleSubmit()
+          const dirty =
+            JSON.stringify({ title, content }) !== savedSnapshot ||
+            newFiles.length > 0 ||
+            deletedAttachmentIds.length > 0
+          if (dirty && title.trim()) handleSubmit()
         } else if (e.key === 'ArrowLeft') {
           e.preventDefault()
           changeDate(-1)
@@ -130,7 +148,7 @@ function DiaryRegisterPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [diaryDate, title, diaryId, attachments, newFiles, deletedAttachmentIds])
+  }, [diaryDate, title, content, savedSnapshot, diaryId, attachments, newFiles, deletedAttachmentIds])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -203,69 +221,18 @@ function DiaryRegisterPage() {
           )}
 
           {/* 첨부파일 영역 */}
-          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-xl flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              <h3 className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                <Paperclip className="w-4 h-4" /> 첨부파일
-              </h3>
-              <button 
-                onClick={() => document.getElementById('attachment-input')?.click()}
-                className="px-3 py-1 text-xs font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-100 text-gray-600 transition-colors shadow-sm"
-              >
-                + 파일 추가
-              </button>
-              <input
-                id="attachment-input"
-                type="file"
-                multiple
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) {
-                    const filesArray = Array.from(e.target.files);
-                    console.log('Selected files:', filesArray);
-                    setNewFiles(prev => [...prev, ...filesArray]);
-                  }
-                  e.target.value = '';
-                }}
-              />
-            </div>
-
-            {/* 첨부파일 목록 표시부 개선 */}
-            <div className="flex flex-wrap gap-2 min-h-[40px] p-1">
-              {attachments.length === 0 && newFiles.length === 0 && (
-                <span className="text-xs text-gray-300 italic py-2">첨부된 파일이 없습니다.</span>
-              )}
-              
-              {attachments.map(att => (
-                <div key={att.fileId} className="flex items-center gap-2 text-sm text-gray-600 bg-white px-2.5 py-1.5 border border-gray-200 rounded-md shadow-sm">
-                  <Paperclip className="w-3 h-3 text-gray-400" />
-                  <span className="truncate max-w-[150px]" title={att.orgFileName}>{att.orgFileName}</span>
-                  <button 
-                    onClick={() => {
-                      setDeletedAttachmentIds(prev => [...prev, att.fileId])
-                      setAttachments(prev => prev.filter(a => a.fileId !== att.fileId))
-                    }} 
-                    className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-0.5 rounded transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-
-              {newFiles.map((file, idx) => (
-                <div key={`new-${file.name}-${idx}`} className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 px-2.5 py-1.5 border border-blue-200 rounded-md shadow-sm animate-in fade-in slide-in-from-bottom-1">
-                  <Paperclip className="w-3 h-3 text-blue-400" />
-                  <span className="truncate max-w-[150px]" title={file.name}>{file.name}</span>
-                  <span className="text-[10px] text-blue-500 bg-blue-100 px-1 rounded font-bold">NEW</span>
-                  <button 
-                    onClick={() => setNewFiles(prev => prev.filter((_, i) => i !== idx))} 
-                    className="text-blue-400 hover:text-red-500 hover:bg-red-50 p-0.5 rounded transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
+          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+            <AttachmentUploader
+              attachments={attachments}
+              newFiles={newFiles}
+              onRemoveAttachment={(fileId) => {
+                setDeletedAttachmentIds((prev) => [...prev, fileId])
+                setAttachments((prev) => prev.filter((a) => a.fileId !== fileId))
+              }}
+              onAddFiles={(files) => setNewFiles((prev) => [...prev, ...files])}
+              onRemoveNewFile={(idx) => setNewFiles((prev) => prev.filter((_, i) => i !== idx))}
+              inputId="diary-attachment-input"
+            />
           </div>
         </div>{/* editor card end */}
 
@@ -274,7 +241,7 @@ function DiaryRegisterPage() {
           <Button variant="outline" onClick={() => navigate('/diary')}>
             취소
           </Button>
-          <Button variant="default" onClick={handleSubmit} disabled={!title.trim()}>
+          <Button variant="default" onClick={handleSubmit} disabled={!title.trim() || !isDirty}>
             저장
           </Button>
           <Button variant="ghost" onClick={() => navigate('/diary')}>

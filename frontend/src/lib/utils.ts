@@ -102,6 +102,20 @@ export function formatFileSize(bytes: number) {
 }
 
 /**
+ * yyyymmdd / yyyy-MM-dd / Date 입력값을 일 단위로 이동한 yyyymmdd 문자열로 반환합니다.
+ */
+export function shiftYmd(input: string | Date, days: number): string {
+  const normalizedYmd = formatYmd(input)
+  if (!/^\d{8}$/.test(normalizedYmd)) return ''
+
+  const date = parse(normalizedYmd, 'yyyyMMdd', new Date())
+  if (!isValid(date)) return ''
+
+  date.setDate(date.getDate() + days)
+  return format(date, 'yyyyMMdd')
+}
+
+/**
  * 천단위로 콤마를 추가하여 숫자를 포맷팅합니다.
  * @param count 숫자(number) 또는 undefined
  * @param defaultValue count가 undefined일 때 반환할 기본값
