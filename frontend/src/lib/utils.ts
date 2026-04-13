@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { format, parse, parseISO, isValid } from "date-fns";
+import { format, parse, parseISO, isToday, isValid } from "date-fns";
 import { ko, enUS } from "date-fns/locale";
 
 /**
@@ -120,4 +120,21 @@ export function formatCount(count: number | undefined, defaultValue = '-'): stri
 export function formatCost(cost: number | undefined, defaultValue = '0'): string {
   if (cost === undefined || cost === null) return defaultValue
   return cost.toLocaleString('en-US')
-} 
+}
+
+/**
+ * 게시글 목록 등에서 사용하는 날짜 포맷 유틸리티.
+ * 오늘 날짜면 시간(HH:mm), 그 외에는 yyyy. MM. dd. 형식으로 반환합니다.
+ */
+export function formatRelativeDateTime(dateInput: string | null | undefined): string {
+  if (!dateInput) return ''
+
+  const date = parseISO(dateInput)
+  if (!isValid(date)) return ''
+
+  if (isToday(date)) {
+    return format(date, 'HH:mm')
+  }
+
+  return format(date, 'yyyy. MM. dd.', { locale: ko })
+}

@@ -7,6 +7,7 @@ import { Button } from '@/shared/components/ui/button'
 import AttachmentList from '@/shared/components/AttachmentList'
 import type { BoardDto, PostDto } from '@/domain/board/types/board'
 import { formatDate } from '@/lib/utils'
+import MarkdownViewer from '@/domain/board/components/MarkdownViewer'
 
 export default function PostViewPage() {
   const { id } = useParams<{ id: string }>()
@@ -89,7 +90,7 @@ export default function PostViewPage() {
               <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
                 <Trash2 className="w-3.5 h-3.5 mr-1" /> 삭제
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/posts?boardId=${boardId}`)}>
                 <ArrowLeft className="w-3.5 h-3.5 mr-1" /> 목록으로
               </Button>
             </div>
@@ -100,6 +101,8 @@ export default function PostViewPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5 mb-4 min-h-[200px]">
           {contentType === 'html' ? (
             <div className="prose prose-sm max-w-none text-gray-800" dangerouslySetInnerHTML={{ __html: post.content ?? '' }} />
+          ) : contentType === 'markdown' ? (
+            <MarkdownViewer content={post.content ?? ''} />
           ) : (
             <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">{post.content ?? ''}</pre>
           )}

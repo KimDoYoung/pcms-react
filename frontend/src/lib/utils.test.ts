@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatDate, getDayOfWeek, formatFileSize, formatCount } from './utils'
+import { formatDate, getDayOfWeek, formatFileSize, formatCount, formatRelativeDateTime } from './utils'
 
 // 테스트 기준일: 2026-04-12 (일요일)
 const DATE_YYYY_MM_DD = '2026-04-12'
@@ -123,5 +123,24 @@ describe('formatCount', () => {
 
   it('음수도 콤마 표시', () => {
     expect(formatCount(-9876543)).toBe('-9,876,543')
+  })
+})
+
+describe('formatRelativeDateTime', () => {
+  it('null 입력 → 빈 문자열', () => {
+    expect(formatRelativeDateTime(null)).toBe('')
+  })
+
+  it('잘못된 문자열 → 빈 문자열', () => {
+    expect(formatRelativeDateTime('invalid')).toBe('')
+  })
+
+  it('오늘 날짜 입력 → HH:mm 형식', () => {
+    const nowIso = new Date().toISOString()
+    expect(formatRelativeDateTime(nowIso)).toMatch(/^\d{2}:\d{2}$/)
+  })
+
+  it('오늘이 아닌 날짜 입력 → yyyy. MM. dd. 형식', () => {
+    expect(formatRelativeDateTime('2026-04-12T10:20:30')).toBe('2026. 04. 12.')
   })
 })

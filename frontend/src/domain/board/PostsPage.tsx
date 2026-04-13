@@ -1,23 +1,15 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Plus, Paperclip, Trash2, Search, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Plus, Paperclip, Trash2, Pencil, Search, ChevronDown } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { formatRelativeDateTime } from '@/lib/utils'
 import type { BoardWithCodeDto, PostListDto, PostsPageResponse } from '@/domain/board/types/board'
-import { format, parseISO, isToday } from 'date-fns'
-import { ko } from 'date-fns/locale'
 
-const PAGE_SIZE = 20
-
-function formatDate(dt: string | null) {
-  if (!dt) return ''
-  const d = parseISO(dt)
-  if (isToday(d)) return format(d, 'HH:mm')
-  return format(d, 'yyyy. MM. dd.', { locale: ko })
-}
+const PAGE_SIZE = 10
 
 export default function PostsPage() {
   const navigate = useNavigate()
@@ -170,7 +162,7 @@ export default function PostsPage() {
                       <th className="px-4 py-3 text-center font-medium w-24">작성자</th>
                       <th className="px-4 py-3 text-center font-medium w-16">조회</th>
                       <th className="px-4 py-3 text-center font-medium w-28">작성일</th>
-                      <th className="px-4 py-3 text-center font-medium w-14">삭제</th>
+                      <th className="px-4 py-3 text-center font-medium w-20"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -196,15 +188,26 @@ export default function PostsPage() {
                           </td>
                           <td className="px-4 py-3 text-center text-gray-500">{post.author || '관리자'}</td>
                           <td className="px-4 py-3 text-center text-gray-400 text-xs">{post.viewCount}</td>
-                          <td className="px-4 py-3 text-center text-gray-400 text-xs">{formatDate(post.createdAt)}</td>
+                          <td className="px-4 py-3 text-center text-gray-400 text-xs">{formatRelativeDateTime(post.createdAt)}</td>
                           <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleDelete(post) }}
-                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                              title="삭제"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); navigate(`/posts/${post.id}/edit`, { state: { boardId: post.boardId } }) }}
+                                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
+                                title="수정"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleDelete(post) }}
+                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                title="삭제"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )
