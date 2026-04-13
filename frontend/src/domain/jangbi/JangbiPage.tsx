@@ -8,7 +8,7 @@ import { Input } from '@/shared/components/ui/input'
 import { Search, Plus, Pencil, Trash2 } from 'lucide-react'
 import StarRating from '@/shared/components/StarRating'
 import { formatDate } from '@/lib/utils'
-import type { JangbiListDto, JangbiPageResponse } from '@/domain/jangbi/types/jangbi'
+import type { JangbiPageResponse } from '@/domain/jangbi/types/jangbi'
 
 const PAGE_SIZE = 10
 

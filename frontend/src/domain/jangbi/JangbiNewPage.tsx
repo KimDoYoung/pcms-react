@@ -6,7 +6,7 @@ import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { formatDate, formatYmd } from '@/lib/utils'
-import SpecEditor from '@/shared/components/editor/SpecEditor'
+import ContentEditor from '@/shared/components/editor/ContentEditor'
 
 export default function JangbiNewPage() {
   const navigate = useNavigate()
@@ -135,7 +135,7 @@ export default function JangbiNewPage() {
           {/* 스펙/특징 */}
           <div className="px-6 py-5 flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700">스펙 / 특징</label>
-            <SpecEditor
+            <ContentEditor
               value={form.spec}
               onChange={(html) => set('spec', html)}
               placeholder="장비 스펙이나 특징을 입력하세요..."

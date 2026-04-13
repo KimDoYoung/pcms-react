@@ -68,9 +68,11 @@ redis-cli -h jskn.iptime.org -p 6379 -a "kalpa987!"
 
 ## React Page를 만들때 원칙
 
+- Page의 파일명은 추가: <domain>RegisterPage, 리스트: <domain>ListPage, 수정: <domain>EditPage, 삭제 : <domain>DeletePage와 같은 형태로 작성한다.
 - 날짜,숫자표현등 format과 관련된 함수는 lib/Utils.ts에 있는 함수를 우선적으로 사용한다.
 - 페이지의 main div는  `<main className="container mx-auto px-4 py-6">`  을 사용한다.
 - 버튼의 이름은 : '찾기','초기화','수정','삭제'를 사용하며, '검색' 버튼 옆에는 항상 '초기화' 버튼을 둔다.
+
 
 ## React Component를 만들 때 원치
 

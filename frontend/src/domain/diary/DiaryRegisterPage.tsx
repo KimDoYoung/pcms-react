@@ -1,11 +1,5 @@
-import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
-import ResizableImage from 'tiptap-extension-resize-image'
-import { TextStyle } from '@tiptap/extension-text-style'
-import { Color } from '@tiptap/extension-color'
-import { useState, useRef, useEffect } from 'react'
-import TipTapMenuBar from '@/shared/components/editor/TipTapMenuBar'
+import { useState, useEffect } from 'react'
+import ContentEditor from '@/shared/components/editor/ContentEditor'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getDayOfWeek, formatYmd, formatDate } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
@@ -26,53 +20,11 @@ function DiaryRegisterPage() {
   const [showList, setShowList] = useState(true)
   const [title, setTitle] = useState('')
   const [diaryId, setDiaryId] = useState<number | null>(null)
+  const [content, setContent] = useState('')
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [attachments, setAttachments] = useState<any[]>([])
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [deletedAttachmentIds, setDeletedAttachmentIds] = useState<number[]>([])
-
-  const editorRef = useRef<ReturnType<typeof useEditor>>(null)
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({ placeholder: '오늘의 일지를 작성하세요...' }),
-      //@ts-ignore
-      ResizableImage.configure({ inline: false, allowBase64: true }),
-      TextStyle,
-      Color,
-    ],
-    content: '',
-    editorProps: {
-      attributes: {
-        class: 'min-h-[400px] px-4 py-3 focus:outline-none',
-      },
-      handlePaste(_view, event) {
-        const items = event.clipboardData?.items
-        if (!items) return false
-        for (const item of Array.from(items)) {
-          if (item.type.startsWith('image/')) {
-            event.preventDefault()
-            const file = item.getAsFile()
-            if (!file) continue
-            const reader = new FileReader()
-            reader.onload = (e) => {
-              const src = e.target?.result as string
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ;(editorRef.current?.chain().focus() as any)?.setImage({ src }).run()
-            }
-            reader.readAsDataURL(file)
-            return true
-          }
-        }
-        return false
-      },
-    },
-  })
-
-  useEffect(() => {
-    editorRef.current = editor
-  }, [editor])
 
   useEffect(() => {
     async function fetchDiary() {
@@ -83,12 +35,12 @@ function DiaryRegisterPage() {
         if (res && typeof res === 'object' && 'id' in res) {
           setDiaryId((res as any).id)
           setTitle((res as any).summary || '')
-          editor?.commands.setContent((res as any).content || '')
+          setContent((res as any).content || '')
           setAttachments((res as any).attachments || [])
         } else {
           setDiaryId(null)
           setTitle('')
-          editor?.commands.setContent('')
+          setContent('')
           setAttachments([])
         }
         setNewFiles([])
@@ -97,17 +49,15 @@ function DiaryRegisterPage() {
         console.error('Failed to fetch diary', e)
         setDiaryId(null)
         setTitle('')
-        editor?.commands.setContent('')
+        setContent('')
         setAttachments([])
         setNewFiles([])
         setDeletedAttachmentIds([])
       }
     }
     
-    if (editor) {
-      fetchDiary()
-    }
-  }, [diaryDate, editor])
+    fetchDiary()
+  }, [diaryDate])
 
   const changeDate = (days: number) => {
     const d = new Date(diaryDate)
@@ -116,8 +66,6 @@ function DiaryRegisterPage() {
   }
 
   async function handleSubmit() {
-    const content = editor?.getHTML() ?? ''
-  
     const diaryPayload = {
       id: diaryId,
       ymd: formatYmd(diaryDate),
@@ -178,7 +126,7 @@ function DiaryRegisterPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [diaryDate, title, diaryId, attachments, newFiles, deletedAttachmentIds, editor])
+  }, [diaryDate, title, diaryId, attachments, newFiles, deletedAttachmentIds])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -234,22 +182,19 @@ function DiaryRegisterPage() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Tab') {
-                  e.preventDefault()
-                  editor?.commands.focus()
-                }
-              }}
               placeholder="제목을 입력하세요"
               className="flex-1 w-full text-lg font-semibold focus:outline-none placeholder:text-gray-300 bg-transparent"
             />
           </div>
 
-          {/* 에디터 툴바 */}
-          <TipTapMenuBar editor={editor} />
-
           {/* 에디터 본문 */}
-          <EditorContent editor={editor} className="flex-1" />
+          <ContentEditor
+            key={diaryDate}
+            value={content}
+            onChange={setContent}
+            placeholder="오늘의 일지를 작성하세요..."
+            minHeight="400px"
+          />
 
           {/* 첨부파일 영역 */}
           <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-xl flex flex-col gap-3">

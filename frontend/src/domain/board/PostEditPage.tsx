@@ -6,9 +6,9 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-import SpecEditor from '@/shared/components/editor/SpecEditor'
+import ContentEditor from '@/shared/components/editor/ContentEditor'
 import MilkdownEditor from '@/domain/board/components/MilkdownEditor'
-import { formatDate, formatYmd, formatFileSize } from '@/lib/utils'
+import { formatYmd, formatFileSize } from '@/lib/utils'
 import type { AttachmentDto, BoardDto, PostDto } from '@/domain/board/types/board'
 
 export default function PostEditPage() {
@@ -177,7 +177,7 @@ export default function PostEditPage() {
               {board && <span className="ml-2 text-xs text-gray-400">({board.contentType})</span>}
             </label>
             {isHtml ? (
-              <SpecEditor
+              <ContentEditor
                 value={form.content}
                 onChange={(html) => set('content', html)}
                 placeholder="내용을 입력하세요..."
