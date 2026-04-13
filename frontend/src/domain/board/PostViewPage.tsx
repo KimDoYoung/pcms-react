@@ -6,11 +6,7 @@ import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import AttachmentList from '@/shared/components/AttachmentList'
 import type { BoardDto, PostDto } from '@/domain/board/types/board'
-
-function formatYmd(ymd: string) {
-  if (!ymd || ymd.length !== 8) return ymd
-  return `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`
-}
+import { formatDate } from '@/lib/utils'
 
 export default function PostViewPage() {
   const { id } = useParams<{ id: string }>()
@@ -78,7 +74,7 @@ export default function PostViewPage() {
               👤 <span className="font-medium text-gray-700">{post.author || '관리자'}</span>
             </span>
             <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full">
-              📌 {formatYmd(post.baseYmd)}
+              📌 {formatDate(post.baseYmd, false)}
             </span>
             <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full">
               👁️ {post.viewCount}

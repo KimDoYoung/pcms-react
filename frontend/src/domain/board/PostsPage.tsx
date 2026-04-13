@@ -7,16 +7,16 @@ import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import type { BoardWithCodeDto, PostListDto, PostsPageResponse } from '@/domain/board/types/board'
+import { format, parseISO, isToday } from 'date-fns'
+import { ko } from 'date-fns/locale'
 
 const PAGE_SIZE = 20
 
 function formatDate(dt: string | null) {
   if (!dt) return ''
-  const d = new Date(dt)
-  const today = new Date()
-  const isToday = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()
-  if (isToday) return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  const d = parseISO(dt)
+  if (isToday(d)) return format(d, 'HH:mm')
+  return format(d, 'yyyy. MM. dd.', { locale: ko })
 }
 
 export default function PostsPage() {

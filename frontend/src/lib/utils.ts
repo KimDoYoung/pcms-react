@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { format, parse, parseISO, isValid } from "date-fns";
+import { ko, enUS } from "date-fns/locale";
 
 /**
  * Tailwind CSS 클래스 합치기 유틸리티
@@ -27,31 +29,27 @@ export function formatDate(
 ): string {
   if (!dateInput) return "-";
 
-  const normalized =
-    typeof dateInput === "string" && dateInput.length === 8
-      ? `${dateInput.slice(0, 4)}-${dateInput.slice(4, 6)}-${dateInput.slice(6, 8)}`
-      : dateInput;
-  const date = typeof normalized === "string" ? new Date(normalized) : normalized;
+  let date: Date;
+  if (dateInput instanceof Date) {
+    date = dateInput;
+  } else if (dateInput.length === 8) {
+    date = parse(dateInput, "yyyyMMdd", new Date());
+  } else {
+    date = parseISO(dateInput);
+  }
 
-  if (isNaN(date.getTime())) return "Invalid Date : " + dateInput;
+  if (!isValid(date)) return "Invalid Date : " + dateInput;
 
-  const pad = (n: number) => n.toString().padStart(2, "0");
-
-  const yyyy = date.getFullYear();
-  const mm = pad(date.getMonth() + 1);
-  const dd = pad(date.getDate());
-
-  let result = `${yyyy}-${mm}-${dd}`;
+  let result = format(date, "yyyy-MM-dd");
 
   if (time_display) {
-    const hh = pad(date.getHours());
-    const min = pad(date.getMinutes());
-    const ss = pad(date.getSeconds());
-    result += ` ${hh}:${min}:${ss}`;
+    result += " " + format(date, "HH:mm:ss");
   }
 
   if (dayofweek) {
-    result += ` (${getDayOfWeek(`${yyyy}-${mm}-${dd}`, short, english)})`;
+    const pattern = short ? "EEE" : "EEEE";
+    const locale = english ? enUS : ko;
+    result += ` (${format(date, pattern, { locale })})`;
   }
 
   return result;
@@ -63,19 +61,18 @@ export function formatDate(
  * @param short - true이면 단축 요일 (토 / Sat), false이면 전체 (토요일 / Saturday)
  * @param english - true이면 영어, false이면 한국어
  */
-export const getDayOfWeek = (dateStr: string, short = false, english = false) => {
+export const getDayOfWeek = (dateStr: string, short = false, english = false): string => {
   try {
-    // yyyymmdd → yyyy-mm-dd 정규화
-    const normalized = dateStr.length === 8
-      ? `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`
-      : dateStr
-    const d = new Date(normalized)
-    return d.toLocaleDateString(english ? 'en-US' : 'ko-KR', {
-      weekday: short ? 'short' : 'long',
-    })
+    const d = dateStr.length === 8
+      ? parse(dateStr, "yyyyMMdd", new Date())
+      : parseISO(dateStr);
+    if (!isValid(d)) return "";
+    const pattern = short ? "EEE" : "EEEE";
+    const locale = english ? enUS : ko;
+    return format(d, pattern, { locale });
   } catch (e) {
-    console.error('Invalid date format', e)
-    return ''
+    console.error("Invalid date format", e);
+    return "";
   }
 }
 
@@ -86,11 +83,9 @@ export const getDayOfWeek = (dateStr: string, short = false, english = false) =>
  */
 export const formatYmd = (input: Date | string): string => {
   if (input instanceof Date) {
-    const pad = (n: number) => n.toString().padStart(2, '0')
-    return `${input.getFullYear()}${pad(input.getMonth() + 1)}${pad(input.getDate())}`
+    return format(input, "yyyyMMdd");
   }
-  // 숫자가 아닌 문자 제거 → yyyymmdd
-  return input.replace(/\D/g, '')
+  return input.replace(/\D/g, "");
 }
 
 /**
