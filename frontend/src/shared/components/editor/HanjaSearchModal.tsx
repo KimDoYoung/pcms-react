@@ -101,7 +101,7 @@ export default function HanjaSearchModal({ open, selectedWord, onClose, onSelect
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent>
+      <DialogContent className="flex flex-col max-h-[85vh]">
         <DialogHeader>
           <DialogTitle>
             <span className="text-gray-500 font-normal">한자 검색 — </span>
@@ -110,7 +110,7 @@ export default function HanjaSearchModal({ open, selectedWord, onClose, onSelect
         </DialogHeader>
 
         {/* 검색 결과 — 높이 고정 + 스크롤 */}
-        <div className="min-h-[80px] max-h-[260px] overflow-y-auto overflow-x-hidden rounded border border-gray-100 [scrollbar-gutter:stable]">
+        <div className="min-h-[80px] flex-1 overflow-y-auto overflow-x-hidden rounded border border-gray-100 [scrollbar-gutter:stable]">
           {loading && (
             <div className="flex items-center justify-center py-8 text-gray-400 text-sm">
               검색 중…
