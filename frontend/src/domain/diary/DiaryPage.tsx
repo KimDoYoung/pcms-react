@@ -26,7 +26,10 @@ function DiaryItem({ item }: { item: DiaryListDto }) {
         <span className="shrink-0 text-xs font-mono text-gray-400 w-36">
           {formatDate(displayDate)}
         </span>
-        <span className="flex-1 text-sm text-gray-800 truncate">
+        <span
+          className="flex-1 text-sm text-gray-800 truncate hover:text-blue-600 hover:underline cursor-pointer"
+          onClick={(e) => { e.stopPropagation(); navigate(`/diary/${item.id}`) }}
+        >
           {item.summary ?? <span className="text-gray-300 italic">제목 없음</span>}
         </span>
         <div className="flex items-center gap-2 shrink-0">

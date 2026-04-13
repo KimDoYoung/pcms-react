@@ -1,4 +1,4 @@
-import { Paperclip, X } from 'lucide-react'
+import { Paperclip, Plus, X } from 'lucide-react'
 import { formatFileSize } from '@/lib/utils'
 
 interface AttachmentItem {
@@ -33,9 +33,9 @@ export default function AttachmentUploader({
         <button
           type="button"
           onClick={() => document.getElementById(inputId)?.click()}
-          className="px-3 py-1 text-xs font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-100 text-gray-600 transition-colors shadow-sm"
+          className="px-3 py-1 text-xs font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-100 text-gray-600 transition-colors shadow-sm inline-flex items-center gap-1"
         >
-          + 파일 추가
+          <Plus className="w-3.5 h-3.5" /> 파일 추가
         </button>
         <input
           id={inputId}

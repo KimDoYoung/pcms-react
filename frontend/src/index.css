@@ -224,3 +224,10 @@
     @apply bg-background text-foreground;
     }
 }
+
+/* TipTap 빈 paragraph 렌더링 - prose 및 ProseMirror 모두 적용 */
+.prose p:empty::before,
+.ProseMirror p:empty::before {
+  content: '\00a0';
+  display: block;
+}

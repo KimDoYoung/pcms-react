@@ -73,3 +73,4 @@
 5. frontend부분을 backend 즉 springboot 의 resource/static으로 복사하는 것에 따른 영향을 고려해야한다.
     1. security가 static부분을 차단하지 않도록 해야함.
     2. rendering시점에 따라서 dataset이 null 이 될 수 있다.
+6. SpaFallbackController에 의해서 서버 배포시 유효
