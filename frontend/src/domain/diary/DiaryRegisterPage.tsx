@@ -25,13 +25,15 @@ function DiaryRegisterPage() {
   const [attachments, setAttachments] = useState<any[]>([])
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [deletedAttachmentIds, setDeletedAttachmentIds] = useState<number[]>([])
+  const [contentReady, setContentReady] = useState(false)
 
   useEffect(() => {
+    setContentReady(false)
     async function fetchDiary() {
       try {
         const ymd = formatYmd(diaryDate)
         const res = await apiClient.get(`/diary/date/${ymd}`)
-        
+
         if (res && typeof res === 'object' && 'id' in res) {
           setDiaryId((res as any).id)
           setTitle((res as any).summary || '')
@@ -53,9 +55,11 @@ function DiaryRegisterPage() {
         setAttachments([])
         setNewFiles([])
         setDeletedAttachmentIds([])
+      } finally {
+        setContentReady(true)
       }
     }
-    
+
     fetchDiary()
   }, [diaryDate])
 
@@ -188,13 +192,15 @@ function DiaryRegisterPage() {
           </div>
 
           {/* 에디터 본문 */}
-          <ContentEditor
-            key={diaryDate}
-            value={content}
-            onChange={setContent}
-            placeholder="오늘의 일지를 작성하세요..."
-            minHeight="400px"
-          />
+          {contentReady && (
+            <ContentEditor
+              key={diaryDate}
+              value={content}
+              onChange={setContent}
+              placeholder="오늘의 일지를 작성하세요..."
+              minHeight="400px"
+            />
+          )}
 
           {/* 첨부파일 영역 */}
           <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-xl flex flex-col gap-3">
