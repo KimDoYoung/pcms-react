@@ -50,6 +50,13 @@ public class HanjaServiceImpl implements HanjaService {
         return results;
     }
 
+    @Override
+    @Transactional
+    public void add(HanjaDto dto) {
+        hanjaMapper.insertOne(dto);
+        log.info("한자 수동 추가: {} → {}", dto.getKorean(), dto.getHanja());
+    }
+
     private List<HanjaDto> fetchFromNaver(String korean) {
         List<HanjaDto> results = new ArrayList<>();
         try {

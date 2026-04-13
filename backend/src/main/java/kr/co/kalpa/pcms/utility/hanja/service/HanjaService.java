@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface HanjaService {
     List<HanjaDto> search(String korean);
+    void add(HanjaDto dto);
 }

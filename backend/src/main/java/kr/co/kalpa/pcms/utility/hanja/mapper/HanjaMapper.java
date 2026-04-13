@@ -10,4 +10,5 @@ import java.util.List;
 public interface HanjaMapper {
     List<HanjaDto> findByKorean(@Param("korean") String korean);
     void insertBatch(@Param("list") List<HanjaDto> list);
+    void insertOne(HanjaDto dto);
 }

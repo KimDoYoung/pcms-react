@@ -11,6 +11,12 @@
         ORDER BY id
     </select>
 
+    <insert id="insertOne">
+        INSERT INTO hanja_dic (korean, hanja, meaning)
+        VALUES (#{korean}, #{hanja}, #{meaning})
+        ON CONFLICT DO NOTHING
+    </insert>
+
     <insert id="insertBatch">
         INSERT INTO hanja_dic (korean, hanja, meaning) VALUES
         <foreach collection="list" item="item" separator=",">

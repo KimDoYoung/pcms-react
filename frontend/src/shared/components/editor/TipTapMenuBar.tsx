@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useEditor } from '@tiptap/react'
 import HanjaSearchModal from '@/shared/components/editor/HanjaSearchModal'
 
@@ -26,6 +26,17 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
   const selectionRef = useRef<{ from: number; to: number } | null>(null)
 
   if (!editor) return null
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.shiftKey && e.key === 'H') {
+        e.preventDefault()
+        handleHanjaClick()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  })
 
   function handleHanjaClick() {
     const { from, to } = editor.state.selection
