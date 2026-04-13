@@ -47,7 +47,8 @@ const menuGroups: MenuGroup[] = [
     key: 'practice',
     label: '📝 실습',
     items: [
-      { label: '✏️ Tailwind CSS 연습', to: '/practice/tailwindcss'},
+      { label: '✏️ Tailwind CSS 연습', to: '/practice/tailwindcss' },
+      { label: '🪝 React Hooks 연습', to: '/practice/hooks' },
     ],
   }
 ]
