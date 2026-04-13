@@ -74,3 +74,9 @@ redis-cli -h jskn.iptime.org -p 6379 -a "kalpa987!"
 - 버튼의 이름은 : '찾기','초기화','수정','삭제'를 사용하며, '검색' 버튼 옆에는 항상 '초기화' 버튼을 둔다.
 - 각 domain 폴더는 domain에서 사용되는 types를 types폴더에 <domain lowcase>.ts에 보관한다.
 - 각 domain 폴더는 domain에서 사용되는 components를 components 폴더에 작성한다.
+- Ymd는 날짜이고 문자이고 yyyyMMdd 이다.
+
+## React Component를 만들 때 원칙
+
+- component의 목적(용도)를 기술한다.
+- component의 사용법을 기술한다.

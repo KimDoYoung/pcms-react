@@ -10,4 +10,5 @@ public class DiarySearchDto extends PageRequestDto {
     private String startYmd;
     private String endYmd;
     private String keyword;
+    private String sort = "desc"; // asc | desc
 }

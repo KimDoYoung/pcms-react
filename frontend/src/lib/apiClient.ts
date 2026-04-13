@@ -2,9 +2,9 @@ import axios from 'axios'
 import { useAuthStore } from '@/shared/store/authStore'
 
 // 개발: http://localhost:8585/pcms (로컬 백엔드 직접)
-// 배포: /pcms (nginx가 same-origin proxy_pass)
+// 배포: /pcms (Tomcat same-origin, context-path /pcms)
 const instance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8585/pcms',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? '/pcms' : 'http://localhost:8585/pcms'),
   headers: { Accept: 'application/json' },
 })
 

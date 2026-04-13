@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-import { Search, ChevronDown, ChevronUp, Pencil, Eye, CalendarRange } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp, Pencil, Eye, CalendarRange, ArrowDownUp } from 'lucide-react'
 import { formatCount, formatDate, formatYmd } from '@/lib/utils'
 import { format } from 'date-fns'
 import type { DiaryListDto, DiaryPageResponse } from '@/domain/diary/types/diary'
@@ -81,14 +81,15 @@ export default function DiaryPage() {
   const keyword = searchParams.get('keyword') ?? ''
   const startYmd = searchParams.get('startYmd') ?? ''
   const endYmd = searchParams.get('endYmd') ?? ''
+  const sort = (searchParams.get('sort') ?? 'desc') as 'asc' | 'desc'
 
-  const [form, setForm] = useState({ startYmd, endYmd, keyword })
+  const [form, setForm] = useState({ startYmd, endYmd, keyword, sort })
   const [showPicker, setShowPicker] = useState(false)
 
   const { data, isLoading } = useQuery<DiaryPageResponse>({
-    queryKey: ['diary-list', { keyword, startYmd, endYmd, page }],
+    queryKey: ['diary-list', { keyword, startYmd, endYmd, sort, page }],
     queryFn: () => {
-      const params: Record<string, string | number> = { size: PAGE_SIZE, page }
+      const params: Record<string, string | number> = { size: PAGE_SIZE, page, sort }
       if (startYmd) params.startYmd = formatYmd(startYmd)
       if (endYmd)   params.endYmd   = formatYmd(endYmd)
       if (keyword)  params.keyword  = keyword
@@ -99,7 +100,7 @@ export default function DiaryPage() {
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0
 
   function handleSearch() {
-    const next: Record<string, string> = { page: '1' }
+    const next: Record<string, string> = { page: '1', sort: form.sort }
     if (form.startYmd) next.startYmd = form.startYmd
     if (form.endYmd) next.endYmd = form.endYmd
     if (form.keyword) next.keyword = form.keyword
@@ -107,7 +108,7 @@ export default function DiaryPage() {
   }
 
   function handleReset() {
-    setForm({ startYmd: '', endYmd: '', keyword: '' })
+    setForm({ startYmd: '', endYmd: '', keyword: '', sort: 'desc' })
     setSearchParams({})
   }
 
@@ -177,6 +178,16 @@ export default function DiaryPage() {
               className="text-sm"
             />
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setForm((f) => ({ ...f, sort: f.sort === 'desc' ? 'asc' : 'desc' }))}
+            className="shrink-0 gap-1.5"
+            title={form.sort === 'desc' ? '최신순' : '오래된순'}
+          >
+            <ArrowDownUp className="w-3.5 h-3.5" />
+            <span className="text-xs">{form.sort === 'desc' ? '최신순' : '오래된순'}</span>
+          </Button>
           <Button onClick={handleSearch} className="shrink-0">
             <Search className="w-4 h-4 mr-1" /> 찾기
           </Button>

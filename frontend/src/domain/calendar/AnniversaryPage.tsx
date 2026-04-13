@@ -12,7 +12,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/shared/components/ui/select'
-import type { CalendarEventItem, CalendarCalendarFormValues } from '@/domain/calendar/types/calendar'
+import type { CalendarEventItem, CalendarFormValues } from '@/domain/calendar/types/calendar'
 
 const GUBUN_LABEL: Record<string, string> = { Y: '매년', M: '매달', S: '특정일' }
 const GUBUN_COLOR: Record<string, string> = {

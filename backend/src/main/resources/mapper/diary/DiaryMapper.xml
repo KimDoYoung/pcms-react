@@ -64,7 +64,16 @@
                   AND fm.file_type = 'attachment') as attachmentCount
         FROM cms.diary d
         <include refid="search"></include>
-        ORDER BY ymd DESC, id DESC
+        ORDER BY ymd
+        <choose>
+            <when test="sort == 'asc'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
+        , id
+        <choose>
+            <when test="sort == 'asc'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
         LIMIT #{size} OFFSET #{skip}
     </select>
 
