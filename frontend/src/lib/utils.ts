@@ -100,3 +100,24 @@ export function formatFileSize(bytes: number) {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`
 }
+
+/**
+ * 천단위로 콤마를 추가하여 숫자를 포맷팅합니다.
+ * @param count 숫자(number) 또는 undefined
+ * @param defaultValue count가 undefined일 때 반환할 기본값
+ * @returns 포맷팅된 숫자 문자열 또는 기본값
+ */
+export function formatCount(count: number | undefined, defaultValue = '-'): string {
+  if (count === undefined || count === null) return defaultValue
+  return count.toLocaleString('en-US')
+}
+/**
+ * 비용(cost) 숫자를 천단위로 콤마를 추가하여 포맷팅합니다.
+ * @param cost 숫자(number) 또는 undefined
+ * @param defaultValue cost가 undefined일 때 반환할 기본값 (기본값은 '0')
+ * @returns 포맷팅된 비용 문자열 또는 기본값
+ */
+export function formatCost(cost: number | undefined, defaultValue = '0'): string {
+  if (cost === undefined || cost === null) return defaultValue
+  return cost.toLocaleString('en-US')
+} 

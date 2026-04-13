@@ -5,10 +5,12 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-import { Search, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, CalendarRange } from 'lucide-react'
 import StarRating from '@/shared/components/StarRating'
 import { formatDate } from '@/lib/utils'
 import type { JangbiPageResponse } from '@/domain/jangbi/types/jangbi'
+import { DateRangePicker } from '@/shared/components/DateRangePicker'
+import { format } from 'date-fns'
 
 const PAGE_SIZE = 10
 
@@ -21,6 +23,7 @@ export default function JangbiPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
+  const [showPicker, setShowPicker] = useState(false)
 
   const page = Number(searchParams.get('page') ?? 1)
   const keyword = searchParams.get('keyword') ?? ''
@@ -108,6 +111,25 @@ export default function JangbiPage() {
               onChange={(e) => setForm((f) => ({ ...f, endYmd: e.target.value }))}
               className="text-sm w-36"
             />
+          </div>
+          <div className="relative">
+            <Button variant="outline" size="sm"
+              onClick={() => setShowPicker((v) => !v)}
+              title="기간 빠른 선택">
+              <CalendarRange className="w-4 h-4" />
+            </Button>
+            {showPicker && (
+              <DateRangePicker
+                onRangeChange={(start, end) => {
+                  setForm((f) => ({
+                    ...f,
+                    startYmd: format(start, 'yyyy-MM-dd'),
+                    endYmd: format(end, 'yyyy-MM-dd'),
+                  }))
+                }}
+                onClose={() => setShowPicker(false)}
+              />
+            )}
           </div>
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500 shrink-0">만족도</label>

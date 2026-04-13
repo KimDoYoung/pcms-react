@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatDate, getDayOfWeek, formatFileSize } from './utils'
+import { formatDate, getDayOfWeek, formatFileSize, formatCount } from './utils'
 
 // 테스트 기준일: 2026-04-12 (일요일)
 const DATE_YYYY_MM_DD = '2026-04-12'
@@ -105,5 +105,23 @@ describe('formatFileSize', () => {
 
   it('1 GB (1024^3 bytes)', () => {
     expect(formatFileSize(1024 ** 3)).toBe('1.0 GB')
+  })
+})
+
+describe('formatCount', () => {
+  it('undefined 입력 → "-"', () => {
+    expect(formatCount(undefined)).toBe('-')
+  })
+
+  it('0은 콤마 없이 표시', () => {
+    expect(formatCount(0)).toBe('0')
+  })
+
+  it('천 단위 콤마 표시', () => {
+    expect(formatCount(1234567)).toBe('1,234,567')
+  })
+
+  it('음수도 콤마 표시', () => {
+    expect(formatCount(-9876543)).toBe('-9,876,543')
   })
 })

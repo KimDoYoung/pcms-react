@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Paperclip, X } from 'lucide-react'
+import { Paperclip, X, CalendarRange } from 'lucide-react'
+import { format } from 'date-fns'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { formatDate, formatYmd } from '@/lib/utils'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
+import { DateRangePicker } from '@/shared/components/DateRangePicker'
 
 export default function JangbiNewPage() {
   const navigate = useNavigate()
@@ -22,6 +24,7 @@ export default function JangbiNewPage() {
   })
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [saving, setSaving] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -72,11 +75,32 @@ export default function JangbiNewPage() {
               <label className="text-sm font-medium text-gray-700">
                 구입일 <span className="text-red-500">*</span>
               </label>
-              <Input
-                type="date"
-                value={form.ymd}
-                onChange={(e) => set('ymd', e.target.value)}
-              />
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="date"
+                  value={form.ymd}
+                  onChange={(e) => set('ymd', e.target.value)}
+                />
+                <div className="relative">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowPicker((v) => !v)}
+                    title="날짜 빠른 선택"
+                  >
+                    <CalendarRange className="w-4 h-4" />
+                  </Button>
+                  {showPicker && (
+                    <DateRangePicker
+                      onRangeChange={(start) => {
+                        set('ymd', format(start, 'yyyy-MM-dd'))
+                      }}
+                      onClose={() => setShowPicker(false)}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* 만족감 */}

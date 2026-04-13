@@ -26,6 +26,7 @@ export default function PostEditPage() {
   const [deletedIds, setDeletedIds] = useState<number[]>([])
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [saving, setSaving] = useState(false)
+  const [formReady, setFormReady] = useState(false)
 
   const { data: post, isLoading } = useQuery<PostDto>({
     queryKey: ['post', id],
@@ -51,6 +52,7 @@ export default function PostEditPage() {
       content: post.content ?? '',
     })
     setAttachments(post.attachments ?? [])
+    setFormReady(true)
   }, [post])
 
   function set(field: string, value: string) {
@@ -177,18 +179,22 @@ export default function PostEditPage() {
               {board && <span className="ml-2 text-xs text-gray-400">({board.contentType})</span>}
             </label>
             {isHtml ? (
-              <ContentEditor
-                value={form.content}
-                onChange={(html) => set('content', html)}
-                placeholder="내용을 입력하세요..."
-              />
+              formReady && (
+                <ContentEditor
+                  value={form.content}
+                  onChange={(html) => set('content', html)}
+                  placeholder="내용을 입력하세요..."
+                />
+              )
             ) : isMarkdown ? (
-              <MilkdownEditor
-                key={String(id)}
-                defaultValue={form.content}
-                onChange={(md) => set('content', md)}
-                placeholder="마크다운으로 내용을 입력하세요..."
-              />
+              formReady && (
+                <MilkdownEditor
+                  key={String(id)}
+                  defaultValue={form.content}
+                  onChange={(md) => set('content', md)}
+                  placeholder="마크다운으로 내용을 입력하세요..."
+                />
+              )
             ) : (
               <textarea
                 rows={16}

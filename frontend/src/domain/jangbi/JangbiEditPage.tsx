@@ -31,6 +31,7 @@ export default function JangbiEditPage() {
   const [deletedIds, setDeletedIds] = useState<number[]>([])
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [saving, setSaving] = useState(false)
+  const [formReady, setFormReady] = useState(false)
 
   // 데이터 로드 후 폼 세팅
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function JangbiEditPage() {
       spec: jangbi.spec ?? '',
     })
     setAttachments(jangbi.attachments ?? [])
+    setFormReady(true)
   }, [jangbi])
 
   function set(field: string, value: string) {
@@ -186,11 +188,13 @@ export default function JangbiEditPage() {
           {/* 스펙/특징 */}
           <div className="px-6 py-5 flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700">스펙 / 특징</label>
-            <ContentEditor
-              value={form.spec}
-              onChange={(html) => set('spec', html)}
-              placeholder="장비 스펙이나 특징을 입력하세요..."
-            />
+            {formReady && (
+              <ContentEditor
+                value={form.spec}
+                onChange={(html) => set('spec', html)}
+                placeholder="장비 스펙이나 특징을 입력하세요..."
+              />
+            )}
           </div>
 
           {/* 첨부파일 */}

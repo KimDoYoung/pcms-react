@@ -5,9 +5,11 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-import { Search, ChevronDown, ChevronUp, Pencil, Eye } from 'lucide-react'
-import { formatDate, formatYmd } from '@/lib/utils'
+import { Search, ChevronDown, ChevronUp, Pencil, Eye, CalendarRange } from 'lucide-react'
+import { formatCount, formatDate, formatYmd } from '@/lib/utils'
+import { format } from 'date-fns'
 import type { DiaryListDto, DiaryPageResponse } from '@/domain/diary/types/diary'
+import { DateRangePicker } from '@/shared/components/DateRangePicker'
 
 const PAGE_SIZE = 14
 
@@ -81,6 +83,7 @@ export default function DiaryPage() {
   const endYmd = searchParams.get('endYmd') ?? ''
 
   const [form, setForm] = useState({ startYmd, endYmd, keyword })
+  const [showPicker, setShowPicker] = useState(false)
 
   const { data, isLoading } = useQuery<DiaryPageResponse>({
     queryKey: ['diary-list', { keyword, startYmd, endYmd, page }],
@@ -140,6 +143,29 @@ export default function DiaryPage() {
               className="w-38 text-sm"
             />
           </div>
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPicker((v) => !v)}
+              className="shrink-0"
+              title="기간 빠른 선택"
+            >
+              <CalendarRange className="w-4 h-4" />
+            </Button>
+            {showPicker && (
+              <DateRangePicker
+                onRangeChange={(start, end) => {
+                  setForm((f) => ({
+                    ...f,
+                    startYmd: format(start, 'yyyy-MM-dd'),
+                    endYmd: format(end, 'yyyy-MM-dd'),
+                  }))
+                }}
+                onClose={() => setShowPicker(false)}
+              />
+            )}
+          </div>
           <div className="flex items-center gap-2 flex-1 min-w-40">
             <label className="text-xs text-gray-500 shrink-0">검색어</label>
             <Input
@@ -165,7 +191,7 @@ export default function DiaryPage() {
         ) : (
           <>
             <div className="text-xs text-gray-400 mb-2 px-1">
-              총 {data?.total ?? 0}건
+              총 {formatCount(data?.total) ?? 0}건
             </div>
             <ul className="flex flex-col gap-2">
               {data?.dtoList?.length === 0 && (
