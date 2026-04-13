@@ -9,6 +9,37 @@ import { useState, useEffect, useRef } from 'react'
 import Toolbar from '@/shared/components/Toolbar'
 
 // ──────────────────────────────────────────
+// 실습 0: 배열 상태 및 init 를 함수로
+// ──────────────────────────────────────────
+const heavyWork = () => {
+    // 무거운 작업 시뮬레이션 (예: 복잡한 계산, API 호출 등)
+    console.log('heavyWork 실행 중...')
+    return ['Alice', 'Bob', 'Charlie']
+}
+
+function ArrayState() {
+    const [names, setNames] = useState(() => {
+        console.log('초기값 계산 중...')
+        return heavyWork();
+    });
+    const [input, setInput] = useState('')
+    const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInput(e.target.value)
+    }
+
+    return (
+        <section className="p-6 border rounded-xl bg-white shadow-sm">
+            <input type="text" value={input} onChange={handleInput}  />
+            <button onClick={() => setNames([...names, input])}>추가</button>
+            <ul>
+                {names.map((name, index) => <li key={index}>{name}</li>)}
+            </ul>
+        </section>
+    )
+
+}
+
+// ──────────────────────────────────────────
 // 실습 1: useState — 카운터
 // ──────────────────────────────────────────
 function Counter() {
@@ -227,6 +258,7 @@ export default function Practice02Hooks() {
         </div>
 
         <div className="grid grid-cols-1 gap-6">
+          <ArrayState />
           <Counter />
           <MemberForm />
           <Timer />
