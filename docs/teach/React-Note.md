@@ -18,3 +18,12 @@ export const TodoAddModal: React.FC<Props> = ({ onClose }) => {
 두 번째 코드 `export const TodoAddModal: React.FC<Props> = ({ onClose }) => {`는 명명된 내보내기를 사용합니다. 이렇게 하면 컴포넌트를 가져올 때 반드시 `TodoAddModal`이라는 이름으로 가져와야 합니다.
 
 따라서, 두 방식은 동일한 기능을 수행하지만, 모듈에서 컴포넌트를 가져오는 방식에 차이가 있습니다.
+
+## useRef
+
+useRef에 대한 설명
+useRef는 React에서 제공하는 Hook 중 하나로, 컴포넌트의 상태(state)가 아닌 참조(reference)를 저장할 수 있는 방법을 제공합니다. 주요 특징은 다음과 같습니다:
+
+DOM 요소 접근: DOM 노드나 생성된 React 요소에 직접적으로 접근할 때 사용됩니다.
+값 유지: 렌더링 사이에 값이 유지되며, 컴포넌트가 다시 렌더링되어도 값이 초기화되지 않습니다.
+상태 변경 시 재렌더링 방지: useState와 달리 값을 변경해도 컴포넌트를 리렌더링하지 않습니다.
