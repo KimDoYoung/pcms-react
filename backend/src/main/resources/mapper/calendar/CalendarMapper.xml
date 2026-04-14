@@ -20,12 +20,21 @@
     <insert id="insertCalendarPublic">
         INSERT INTO cms.calendar_public (data_type, ymd, content)
         VALUES (#{dataType}, #{ymd}, #{content})
+        ON CONFLICT (ymd, data_type) DO NOTHING
     </insert>
 
     <select id="selectPublicDataByRange" resultType="kr.co.kalpa.pcms.domain.calendar.entity.CalendarPublic">
         SELECT id, data_type, ymd, content, created_dt
         FROM cms.calendar_public
         WHERE data_type = 'Data'
+          AND ymd BETWEEN #{start} AND #{end}
+        ORDER BY ymd ASC
+    </select>
+
+    <select id="selectSolar24ByRange" resultType="kr.co.kalpa.pcms.domain.calendar.entity.CalendarPublic">
+        SELECT id, data_type, ymd, content, created_dt
+        FROM cms.calendar_public
+        WHERE data_type = 'Solar24'
           AND ymd BETWEEN #{start} AND #{end}
         ORDER BY ymd ASC
     </select>

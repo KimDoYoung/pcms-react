@@ -1,7 +1,7 @@
 // Calendar1Page - API 응답
 export interface CalendarEvent {
   id: string
-  type: 'HOLIDAY' | 'EVENT'
+  type: 'HOLIDAY' | 'EVENT' | 'SEASONAL'
   ymd: string
   content: string
   gubun?: string
@@ -18,6 +18,7 @@ export interface CalendarDay {
   isSunday: boolean
   isSaturday: boolean
   holidays: CalendarEvent[]
+  seasonal: CalendarEvent[]
   events: CalendarEvent[]
 }
 
@@ -29,6 +30,14 @@ export interface CalendarEventItem {
   ymd: string
   content: string
   color: string
+}
+
+// toLunar API 응답
+export interface LunarDateDto {
+  solar: string
+  lunar: string
+  display: string
+  leapMonth: boolean
 }
 
 // AnniversaryPage - 기념일 등록/수정 폼

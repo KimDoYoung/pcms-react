@@ -19,6 +19,8 @@ public interface CalendarMapper {
 
     List<CalendarPublic> selectPublicDataByRange(@Param("start") String start, @Param("end") String end);
 
+    List<CalendarPublic> selectSolar24ByRange(@Param("start") String start, @Param("end") String end);
+
     List<CalendarEvent> selectAllCalendarEvents();
 
     // cms.calendar CRUD

@@ -1,6 +1,7 @@
 package kr.co.kalpa.pcms.domain.calendar.service;
 
 import kr.co.kalpa.pcms.domain.calendar.dto.CalendarEventDto;
+import kr.co.kalpa.pcms.domain.calendar.dto.LunarDateDto;
 import kr.co.kalpa.pcms.domain.calendar.entity.CalendarEvent;
 import kr.co.kalpa.pcms.domain.calendar.entity.CalendarPublic;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -103,12 +105,78 @@ public class CalendarServiceImpl implements CalendarService {
         }
     }
 
+    @Override
+    @Transactional
+    public void fetchSolar24ForMonth(int year, int month) {
+        String ym = String.format("%04d%02d", year, month);
+
+        if (calendarMapper.countAction("Action24", ym) > 0) {
+            log.info("Solar24 for {} already fetched. Skipping.", ym);
+            return;
+        }
+
+        try {
+            String url = String.format(
+                "https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/get24DivisionsInfo?serviceKey=%s&solYear=%d&solMonth=%02d&numOfRows=10&_type=xml",
+                apiKey, year, month
+            );
+
+            log.debug("Requesting solar24 URL: {}", url);
+            byte[] responseBytes = restTemplate.getForObject(url, byte[].class);
+            String responseXml = responseBytes != null ? new String(responseBytes, StandardCharsets.UTF_8) : null;
+
+            log.info("Solar24 raw response for {}: {}", ym, responseXml);
+
+            calendarMapper.deleteDataByYm("Solar24", ym);
+            calendarMapper.deleteDataByYm("Action24", ym);
+
+            if (responseXml == null || responseXml.trim().isEmpty()) {
+                log.warn("Empty solar24 response for {}", ym);
+                saveAction24(ym);
+                return;
+            }
+
+            if (responseXml.contains("<items/>") || responseXml.contains("<items></items>") || !responseXml.contains("<item>")) {
+                log.info("No solar24 items in response for {}", ym);
+                saveAction24(ym);
+                return;
+            }
+
+            List<HolidayItem> items = parseSolar24Xml(responseXml);
+            log.info("Parsed solar24 items for {}: count={}", ym, items.size());
+            for (HolidayItem item : items) {
+                log.debug("Inserting solar24: {} on {}", item.dateName, item.locdate);
+                calendarMapper.insertCalendarPublic(CalendarPublic.builder()
+                        .dataType("Solar24")
+                        .ymd(item.locdate)
+                        .content(item.dateName)
+                        .build());
+            }
+
+            saveAction24(ym);
+            log.info("Processed solar24 for {}. Items: {}", ym, items.size());
+
+        } catch (Exception e) {
+            log.error("Failed to fetch solar24 for {}", ym, e);
+            throw new RuntimeException("24절기 정보 취득 실패: " + ym, e);
+        }
+    }
+
     private void saveAction(String ym) {
         calendarMapper.deleteDataByYm("Action", ym);
         calendarMapper.insertCalendarPublic(CalendarPublic.builder()
                 .dataType("Action")
                 .ymd(ym)
                 .content("데이터취득")
+                .build());
+    }
+
+    private void saveAction24(String ym) {
+        calendarMapper.deleteDataByYm("Action24", ym);
+        calendarMapper.insertCalendarPublic(CalendarPublic.builder()
+                .dataType("Action24")
+                .ymd(ym)
+                .content("데이터취득24")
                 .build());
     }
 
@@ -142,6 +210,17 @@ public class CalendarServiceImpl implements CalendarService {
                     .content(e.getContent())
                     .gubun(e.getGubun())
                     .color(e.getColor())
+                    .build());
+        }
+
+        // 24절기
+        List<CalendarPublic> solar24List = calendarMapper.selectSolar24ByRange(start, end);
+        for (CalendarPublic p : solar24List) {
+            result.add(CalendarEventDto.builder()
+                    .id("S24_" + p.getId())
+                    .type("SEASONAL")
+                    .ymd(p.getYmd())
+                    .content(p.getContent())
                     .build());
         }
 
@@ -198,6 +277,32 @@ public class CalendarServiceImpl implements CalendarService {
      * gubun='S': ymd=YYYYMMDD → 해당 연도 1회 변환
      * gubun='M': 음력 매달은 미지원, 빈 리스트 반환
      */
+    @Override
+    public List<LunarDateDto> toLunar(List<String> solarDates) {
+        KoreanLunarCalendar cal = KoreanLunarCalendar.getInstance();
+        return solarDates.stream().map(solar -> {
+            try {
+                int y = Integer.parseInt(solar.substring(0, 4));
+                int m = Integer.parseInt(solar.substring(4, 6));
+                int d = Integer.parseInt(solar.substring(6, 8));
+                cal.setSolarDate(y, m, d);
+                String iso = cal.getLunarIsoFormat(); // "YYYY-MM-DD"
+                String lunar = iso.replace("-", "");
+                int lm = Integer.parseInt(lunar.substring(4, 6));
+                int ld = Integer.parseInt(lunar.substring(6, 8));
+                boolean leap = cal.isIntercalation();
+                String display = (leap ? "윤" : "음") + lm + "/" + ld;
+                return LunarDateDto.builder()
+                        .solar(solar).lunar(lunar)
+                        .display(display).leapMonth(leap)
+                        .build();
+            } catch (Exception e) {
+                log.warn("Solar to lunar conversion failed for: {}", solar, e);
+                return LunarDateDto.builder().solar(solar).lunar("").display("").build();
+            }
+        }).collect(Collectors.toList());
+    }
+
     private List<String> resolveLunarToSolar(String gubun, String ymd, int startYear, int endYear) {
         List<String> result = new ArrayList<>();
         KoreanLunarCalendar cal = KoreanLunarCalendar.getInstance();
@@ -220,6 +325,24 @@ public class CalendarServiceImpl implements CalendarService {
             }
         } catch (Exception e) {
             log.warn("Lunar to solar conversion failed: gubun={}, ymd={}", gubun, ymd, e);
+        }
+        return result;
+    }
+
+    private List<HolidayItem> parseSolar24Xml(String xml) throws Exception {
+        List<HolidayItem> result = new ArrayList<>();
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+
+        NodeList nodeList = doc.getElementsByTagName("item");
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Element element = (Element) nodeList.item(i);
+            String dateName = getTagValue("dateName", element);
+            String locdate  = getTagValue("locdate",  element);
+            if (dateName != null && locdate != null) {
+                result.add(new HolidayItem(dateName, locdate));
+            }
         }
         return result;
     }

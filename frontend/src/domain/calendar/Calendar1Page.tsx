@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useForm } from 'react-hook-form'
@@ -14,7 +14,7 @@ import {
 } from '@/shared/components/ui/dialog'
 import AnniversaryFormDialog from '@/domain/calendar/component/AnniversaryFormDialog'
 import { COLOR_MAP, DEFAULT_COLOR } from '@/domain/calendar/component/eventColors'
-import type { CalendarEvent, CalendarDay } from '@/domain/calendar/types/calendar'
+import type { CalendarEvent, CalendarDay, LunarDateDto } from '@/domain/calendar/types/calendar'
 
 function getStartEndYmd(year: number, month: number): [string, string] {
   const firstDate = new Date(year, month - 1, 1)
@@ -85,7 +85,8 @@ function Calendar1Page() {
       
       const dayEvents = events.filter(e => e.ymd === ymd)
       const holidays = dayEvents.filter(e => e.type === 'HOLIDAY')
-      const normalEvents = dayEvents.filter(e => e.type !== 'HOLIDAY')
+      const seasonal = dayEvents.filter(e => e.type === 'SEASONAL')
+      const normalEvents = dayEvents.filter(e => e.type !== 'HOLIDAY' && e.type !== 'SEASONAL')
 
       const isHoliday = holidays.length > 0
       const isSunday = index % 7 === 0
@@ -102,6 +103,7 @@ function Calendar1Page() {
         isSunday,
         isSaturday,
         holidays,
+        seasonal,
         events: normalEvents
       })
 
@@ -110,6 +112,37 @@ function Calendar1Page() {
     }
     return result
   }, [currentYear, currentMonth, startYmd, endYmd, events])
+
+  // 음력 표시용 3개 날짜 선택:
+  // 1~5 중 랜덤 offset → days[offset], days[offset+7], days[offset+16]
+  // 월 변경 시에만 재추첨 (useRef로 startYmd 변경 감지)
+  const lunarOffsetRef = useRef(Math.floor(Math.random() * 5) + 1)
+  const prevStartYmdRef = useRef(startYmd)
+  if (prevStartYmdRef.current !== startYmd) {
+    prevStartYmdRef.current = startYmd
+    lunarOffsetRef.current = Math.floor(Math.random() * 5) + 1
+  }
+
+  const selectedLunarDates = useMemo(() => {
+    if (days.length === 0) return []
+    const offset = lunarOffsetRef.current
+    return [offset, offset + 7, offset + 16, offset + 22]
+      .map(i => days[i]?.ymd)
+      .filter((ymd): ymd is string => !!ymd)
+  }, [days])
+
+  const { data: lunarList = [] } = useQuery<LunarDateDto[]>({
+    queryKey: ['lunar-dates', selectedLunarDates],
+    queryFn: () => {
+      const params = selectedLunarDates.map(s => `S=${s}`).join('&')
+      return apiClient.get<LunarDateDto[]>(`/calendar/toLunar?${params}`)
+    },
+    enabled: selectedLunarDates.length > 0,
+  })
+  const lunarMap = useMemo(
+    () => Object.fromEntries(lunarList.map(l => [l.solar, l])),
+    [lunarList]
+  )
 
   const prevMonth = () => {
     if (currentMonth === 1) {
@@ -212,13 +245,31 @@ function Calendar1Page() {
                     ${day.isToday ? 'bg-yellow-50/50' : ''}`}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full transition-colors
-                      ${!day.isThisMonth ? (day.isSunday || day.isHoliday ? 'text-red-200' : day.isSaturday ? 'text-blue-200' : 'text-gray-300') :
-                        (day.isSunday || day.isHoliday ? 'text-red-500' : day.isSaturday ? 'text-blue-500' : 'text-gray-700')}
-                      ${day.isToday ? 'bg-indigo-600 text-white shadow-md' : ''}`}
-                    >
-                      {day.day}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full transition-colors
+                        ${!day.isThisMonth ? (day.isSunday || day.isHoliday ? 'text-red-200' : day.isSaturday ? 'text-blue-200' : 'text-gray-300') :
+                          (day.isSunday || day.isHoliday ? 'text-red-500' : day.isSaturday ? 'text-blue-500' : 'text-gray-700')}
+                        ${day.isToday ? 'bg-indigo-600 text-white shadow-md' : ''}`}
+                      >
+                        {day.day}
+                      </span>
+                      {(() => {
+                        const l = lunarMap[day.ymd]
+                        if (!l || !l.lunar) return null
+                        const lm = parseInt(l.lunar.substring(4, 6))
+                        const ld = parseInt(l.lunar.substring(6, 8))
+                        return (
+                          <span className="text-[10px] text-gray-400 italic leading-none">
+                            ({lm}/{ld})
+                          </span>
+                        )
+                      })()}
+                      {day.seasonal.length > 0 && (
+                        <span className="text-[10px] text-teal-600 italic leading-none">
+                          {day.seasonal[0].content}
+                        </span>
+                      )}
+                    </div>
                     <button
                       onClick={() => openAddDialog(day.ymd)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 rounded-full bg-rose-200 hover:bg-rose-300 flex items-center justify-center"

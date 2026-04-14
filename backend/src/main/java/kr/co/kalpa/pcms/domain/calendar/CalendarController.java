@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import kr.co.kalpa.pcms.domain.calendar.dto.CalendarEventDto;
+import kr.co.kalpa.pcms.domain.calendar.dto.LunarDateDto;
 import kr.co.kalpa.pcms.domain.calendar.entity.CalendarEvent;
 import kr.co.kalpa.pcms.domain.calendar.service.CalendarService;
 import lombok.RequiredArgsConstructor;
@@ -43,16 +45,24 @@ public class CalendarController {
         ));
     }
 
-    /** 특정 연월의 공휴일 정보 취득 */
+    /** 특정 연월의 공휴일 + 24절기 정보 취득 */
     @PostMapping("/fetch-public-holiday/{year}/{month}")
     public ResponseEntity<Map<String, Object>> fetchMonthlyHolidays(
             @PathVariable("year") int year,
             @PathVariable("month") int month) {
         calendarService.fetchHolidaysForMonth(year, month);
+        calendarService.fetchSolar24ForMonth(year, month);
         return ResponseEntity.ok(Map.of(
             "success", true,
-            "message", String.format("%04d년 %02d월 공휴일 정보 처리가 완료되었습니다.", year, month)
+            "message", String.format("%04d년 %02d월 공휴일·절기 정보 처리가 완료되었습니다.", year, month)
         ));
+    }
+
+    /** 양력→음력 변환. 예: GET /calendar/toLunar?S=20260201&S=20260210 */
+    @GetMapping("/toLunar")
+    public ResponseEntity<List<LunarDateDto>> toLunar(
+            @RequestParam("S") List<String> solarDates) {
+        return ResponseEntity.ok(calendarService.toLunar(solarDates));
     }
 
     /** 개인 일정 전체 목록 */
