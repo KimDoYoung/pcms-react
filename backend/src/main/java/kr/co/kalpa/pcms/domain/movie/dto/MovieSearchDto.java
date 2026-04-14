@@ -12,4 +12,5 @@ public class MovieSearchDto extends PageRequestDto {
     private String gamdok;
     private String makeYear;
     private String gubun;
+    private String nara;
 }

@@ -22,6 +22,7 @@ export interface MovieSearchDto {
   gamdok?: string;
   makeYear?: string;
   gubun?: string;
+  nara?: string;
 }
 
 export interface MovieReviewDto {

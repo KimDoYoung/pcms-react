@@ -10,14 +10,16 @@
                 AND (title1 LIKE CONCAT('%', #{keyword}, '%')
                     OR title2 LIKE CONCAT('%', #{keyword}, '%')
                     OR title3 LIKE CONCAT('%', #{keyword}, '%')
-                    OR gamdok LIKE CONCAT('%', #{keyword}, '%')
                     OR mid LIKE CONCAT('%', #{keyword}, '%'))
             </if>
             <if test="category != null and category != ''">
-                AND category = #{category}
+                AND category LIKE CONCAT('%', #{category}, '%')
             </if>
             <if test="gamdok != null and gamdok != ''">
                 AND gamdok LIKE CONCAT('%', #{gamdok}, '%')
+            </if>
+            <if test="nara != null and nara != ''">
+                AND nara LIKE CONCAT('%', #{nara}, '%')
             </if>
             <if test="makeYear != null and makeYear != ''">
                 AND make_year = #{makeYear}

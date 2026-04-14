@@ -1,7 +1,14 @@
-import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo, useRef } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { AllCommunityModule, ModuleRegistry, ColDef } from 'ag-grid-community';
+import { 
+  AllCommunityModule, 
+  ModuleRegistry, 
+  ColDef, 
+  GridReadyEvent, 
+  IDatasource, 
+  IGetRowsParams,
+  GridApi
+} from 'ag-grid-community';
 import { apiClient } from '@/lib/apiClient';
 import { MovieReviewDto, MovieReviewSearchDto } from './types/movie';
 import { Button } from '@/shared/components/ui/button';
@@ -11,23 +18,45 @@ import Toolbar from '@/shared/components/Toolbar';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
+const PAGE_SIZE = 10;
+
 /**
  * MovieReviewPage 컴포넌트
- * 용도: 영화 감상평(Review) 데이터를 CRUD 관리함. AG Grid로 목록을 표시하고 검색 기능 제공함
+ * 용도: 영화 감상평(Review) 데이터를 AG Grid의 Infinite Row Model을 사용하여 내장 페이징과 함께 표시함
  */
 const MovieReviewPage = () => {
+  const gridApiRef = useRef<GridApi | null>(null);
   const [searchParams, setSearchParams] = useState<MovieReviewSearchDto>({
-    page: 1,
-    size: 100,
     keyword: '',
   });
 
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['movieReviews', searchParams],
-    queryFn: async () => {
-      return await apiClient.get('/movie/review', { params: searchParams });
-    },
-  });
+  const dataSource: IDatasource = useMemo(() => ({
+    getRows: async (params: IGetRowsParams) => {
+      try {
+        const page = Math.floor(params.startRow / PAGE_SIZE) + 1;
+        const response = await apiClient.get<any>('/movie/review', { 
+          params: { ...searchParams, page, size: PAGE_SIZE } 
+        });
+        params.successCallback(response.dtoList, response.total);
+      } catch (e) {
+        console.error('Fetch error', e);
+        params.failCallback();
+      }
+    }
+  }), [searchParams]);
+
+  const onGridReady = (params: GridReadyEvent) => {
+    gridApiRef.current = params.api;
+    params.api.setGridOption('datasource', dataSource);
+  };
+
+  const handleSearch = () => {
+    gridApiRef.current?.setGridOption('datasource', dataSource);
+  };
+
+  const handleReset = () => {
+    setSearchParams({ keyword: '' });
+  };
 
   const columnDefs = useMemo<ColDef<MovieReviewDto>[]>(() => [
     { field: 'id', headerName: 'ID', width: 80 },
@@ -53,14 +82,6 @@ const MovieReviewPage = () => {
     }
   ], []);
 
-  const handleSearch = () => {
-    refetch();
-  };
-
-  const handleReset = () => {
-    setSearchParams({ page: 1, size: 100, keyword: '' });
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
@@ -85,14 +106,16 @@ const MovieReviewPage = () => {
           </div>
 
           {/* 그리드 영역 */}
-          <div className="ag-theme-alpine w-full h-[600px]">
+          <div className="ag-theme-alpine w-full">
             <AgGridReact
-              rowData={data?.dtoList || []}
               columnDefs={columnDefs}
-              loading={isLoading}
+              rowModelType="infinite"
               pagination={true}
-              paginationPageSize={100}
-              domLayout="normal"
+              paginationPageSize={PAGE_SIZE}
+              paginationPageSizeSelector={[10, 20, 50, 100]}
+              cacheBlockSize={PAGE_SIZE}
+              onGridReady={onGridReady}
+              domLayout="autoHeight"
             />
           </div>
         </div>
