@@ -19,6 +19,14 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        action:
+          "border border-blue-200 bg-transparent text-blue-600 hover:bg-blue-200 hover:text-blue-500 hover:border-blue-400",
+        cancel:
+          "border border-gray-300 bg-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700 hover:border-gray-400",
+        delete:
+          "border border-red-200 bg-transparent text-red-500 hover:bg-red-100 hover:text-red-600 hover:border-red-300",
+        init:
+          "border border-yellow-200 bg-transparent text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700 hover:border-yellow-300",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
@@ -29,6 +37,7 @@ const buttonVariants = cva(
         "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8",
         "icon-lg": "size-10",
+        pill: "h-auto min-w-[4.5rem] px-3 py-1.5 rounded-full text-xs",
       },
     },
     defaultVariants: {

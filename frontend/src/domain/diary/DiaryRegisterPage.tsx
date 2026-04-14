@@ -238,14 +238,14 @@ function DiaryRegisterPage() {
 
         {/* 저장 버튼 */}
         <div className="mt-4 flex justify-end gap-2">
-          <Button variant="outline" onClick={() => navigate('/diary')}>
+          <Button variant="cancel" size="pill" onClick={() => navigate('/diary')}>
             취소
           </Button>
-          <Button variant="default" onClick={handleSubmit} disabled={!title.trim() || !isDirty}>
+          <Button variant="action" size="pill" onClick={handleSubmit} disabled={!title.trim() || !isDirty}>
             저장
           </Button>
-          <Button variant="ghost" onClick={() => navigate('/diary')}>
-            목록으로
+          <Button variant="init"  size="pill" onClick={() => navigate('/diary')}>
+            일지찾기
           </Button>
         </div>
 

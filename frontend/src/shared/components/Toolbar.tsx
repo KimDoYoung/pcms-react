@@ -36,8 +36,8 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
-    key: 'tech',
-    label: '🔧 Tech',
+    key: '',
+    label: '🔧 취미',
     items: [
       { label: '🖥️ 장비', to: '/jangbi' },
       { label: '📂 파일관리', to: '/apnode' },
