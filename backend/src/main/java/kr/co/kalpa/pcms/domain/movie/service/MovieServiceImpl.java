@@ -44,6 +44,11 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
+    public void batchModify(List<MovieDto> movieDtoList) {
+        movieDtoList.forEach(dto -> movieMapper.update(toEntity(dto)));
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public MovieDto get(Long id) {
         Movie movie = movieMapper.selectOne(id);

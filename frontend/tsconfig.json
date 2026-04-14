@@ -3,6 +3,7 @@
     /* OS 간 대소문자 일관성 보장 - 필수 설정 */
     "forceConsistentCasingInFileNames": true,
     "strict": true,
+    "ignoreDeprecations": "6.0",
     
     /* shadcn/ui 초기화 에러 해결을 위한 별칭 선언 */
     "baseUrl": ".",

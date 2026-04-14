@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -33,6 +34,13 @@ public class MovieController {
     public ResponseEntity<MovieDto> getMovie(@PathVariable Long id) {
         log.info("getMovie: {}", id);
         return ResponseEntity.ok(movieService.get(id));
+    }
+
+    @PutMapping("/batch/update")
+    public ResponseEntity<Map<String, String>> batchModifyMovie(@RequestBody List<MovieDto> movieDtoList) {
+        log.info("batchModifyMovie: {} rows", movieDtoList.size());
+        movieService.batchModify(movieDtoList);
+        return ResponseEntity.ok(Map.of("result", "success"));
     }
 
     @PutMapping("/{id:[0-9]+}")
