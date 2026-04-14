@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.domain.movie.service.MovieReviewMapper">
+
+    <sql id="search">
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (title LIKE CONCAT('%', #{keyword}, '%')
+                    OR content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="startYmd != null and startYmd != ''">
+                AND ymd &gt;= #{startYmd}
+            </if>
+            <if test="endYmd != null and endYmd != ''">
+                AND ymd &lt;= #{endYmd}
+            </if>
+            <if test="minLvl != null">
+                AND lvl &gt;= #{minLvl}
+            </if>
+        </where>
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO cms.movie_review (title, nara, year, lvl, ymd, content, lastmodify_dt)
+        VALUES (#{title}, #{nara}, #{year}, #{lvl}, #{ymd}, #{content}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <select id="selectOne" resultType="kr.co.kalpa.pcms.domain.movie.entity.MovieReview">
+        SELECT id, title, nara, year, lvl, ymd, content, 
+               lastmodify_dt as lastmodifyDt
+        FROM cms.movie_review
+        WHERE id = #{id}
+    </select>
+
+    <update id="update">
+        UPDATE cms.movie_review
+        SET title = #{title},
+            nara = #{nara},
+            year = #{year},
+            lvl = #{lvl},
+            ymd = #{ymd},
+            content = #{content},
+            lastmodify_dt = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM cms.movie_review WHERE id = #{id}
+    </delete>
+
+    <select id="selectList" resultType="kr.co.kalpa.pcms.domain.movie.entity.MovieReview">
+        SELECT id, title, nara, year, lvl, ymd, content, 
+               lastmodify_dt as lastmodifyDt
+        FROM cms.movie_review
+        <include refid="search"/>
+        ORDER BY ymd DESC, id DESC
+        LIMIT #{size} OFFSET #{skip}
+    </select>
+
+    <select id="selectCount" resultType="int">
+        SELECT count(*)
+        FROM cms.movie_review
+        <include refid="search"/>
+    </select>
+
+</mapper>

@@ -44,6 +44,15 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
+    key: '',
+    label: '📽️ 영화',
+    items: [
+      { label: '📀 수집(DVD)', to: '/movie/collection' },
+      { label: '🎬 감상', to: '/movie/review' },
+      { label: '🎞️ 하드디스크', to: '/movie/hdd' },
+    ],
+  },  
+  {
     key: 'practice',
     label: '📝 실습',
     items: [

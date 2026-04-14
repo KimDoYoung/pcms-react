@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.domain.movie.service.MovieMapper">
+
+    <sql id="search">
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (title1 LIKE CONCAT('%', #{keyword}, '%')
+                    OR title2 LIKE CONCAT('%', #{keyword}, '%')
+                    OR title3 LIKE CONCAT('%', #{keyword}, '%')
+                    OR gamdok LIKE CONCAT('%', #{keyword}, '%')
+                    OR mid LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            <if test="gamdok != null and gamdok != ''">
+                AND gamdok LIKE CONCAT('%', #{gamdok}, '%')
+            </if>
+            <if test="makeYear != null and makeYear != ''">
+                AND make_year = #{makeYear}
+            </if>
+            <if test="gubun != null and gubun != ''">
+                AND gubun = #{gubun}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectList" resultType="kr.co.kalpa.pcms.domain.movie.entity.Movie">
+        SELECT id, mid, gubun, title1, title2, title3, category, gamdok, 
+               make_year as makeYear, nara, dvd_id as dvdId, 
+               title1num, title1title2
+        FROM cms.movie
+        <include refid="search"/>
+        ORDER BY id DESC
+        LIMIT #{size} OFFSET #{skip}
+    </select>
+
+    <select id="selectCount" resultType="int">
+        SELECT count(*)
+        FROM cms.movie
+        <include refid="search"/>
+    </select>
+
+    <select id="selectOne" resultType="kr.co.kalpa.pcms.domain.movie.entity.Movie">
+        SELECT id, mid, gubun, title1, title2, title3, category, gamdok, 
+               make_year as makeYear, nara, dvd_id as dvdId, 
+               title1num, title1title2
+        FROM cms.movie
+        WHERE id = #{id}
+    </select>
+
+    <update id="update">
+        UPDATE cms.movie
+        <set>
+            <if test="mid != null">mid = #{mid},</if>
+            <if test="gubun != null">gubun = #{gubun},</if>
+            <if test="title1 != null">title1 = #{title1},</if>
+            <if test="title2 != null">title2 = #{title2},</if>
+            <if test="title3 != null">title3 = #{title3},</if>
+            <if test="category != null">category = #{category},</if>
+            <if test="gamdok != null">gamdok = #{gamdok},</if>
+            <if test="makeYear != null">make_year = #{makeYear},</if>
+            <if test="nara != null">nara = #{nara},</if>
+            <if test="dvdId != null">dvd_id = #{dvdId},</if>
+            <if test="title1num != null">title1num = #{title1num},</if>
+            <if test="title1title2 != null">title1title2 = #{title1title2},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+</mapper>

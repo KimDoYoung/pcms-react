@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.domain.movie.service.HddMapper">
+
+    <sql id="search">
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (name LIKE CONCAT('%', #{keyword}, '%')
+                    OR file_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR path LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="volumnName != null and volumnName != ''">
+                AND volumn_name = #{volumnName}
+            </if>
+            <if test="extension != null and extension != ''">
+                AND extension = #{extension}
+            </if>
+            <if test="gubun != null and gubun != ''">
+                AND gubun = #{gubun}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectList" resultType="kr.co.kalpa.pcms.domain.movie.entity.Hdd">
+        SELECT id, volumn_name as volumnName, gubun, path, file_name as fileName, 
+               name, pdir, extension, size, sha1_cd as sha1Cd, 
+               srch_key as srchKey, last_modified_ymd as lastModifiedYmd, 
+               pid, right_pid as rightPid
+        FROM cms.hdd
+        <include refid="search"/>
+        ORDER BY id DESC
+        LIMIT #{size} OFFSET #{skip}
+    </select>
+
+    <select id="selectCount" resultType="int">
+        SELECT count(*)
+        FROM cms.hdd
+        <include refid="search"/>
+    </select>
+
+    <select id="selectOne" resultType="kr.co.kalpa.pcms.domain.movie.entity.Hdd">
+        SELECT id, volumn_name as volumnName, gubun, path, file_name as fileName, 
+               name, pdir, extension, size, sha1_cd as sha1Cd, 
+               srch_key as srchKey, last_modified_ymd as lastModifiedYmd, 
+               pid, right_pid as rightPid
+        FROM cms.hdd
+        WHERE id = #{id}
+    </select>
+
+    <update id="update">
+        UPDATE cms.hdd
+        <set>
+            <if test="volumnName != null">volumn_name = #{volumnName},</if>
+            <if test="gubun != null">gubun = #{gubun},</if>
+            <if test="path != null">path = #{path},</if>
+            <if test="fileName != null">file_name = #{fileName},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="pdir != null">pdir = #{pdir},</if>
+            <if test="extension != null">extension = #{extension},</if>
+            <if test="size != null">size = #{size},</if>
+            <if test="sha1Cd != null">sha1_cd = #{sha1Cd},</if>
+            <if test="srchKey != null">srch_key = #{srchKey},</if>
+            <if test="lastModifiedYmd != null">last_modified_ymd = #{lastModifiedYmd},</if>
+            <if test="pid != null">pid = #{pid},</if>
+            <if test="rightPid != null">right_pid = #{rightPid},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+</mapper>
