@@ -1,18 +1,14 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
-import { useForm } from 'react-hook-form'
 import { format, parse, startOfWeek, endOfWeek, addDays } from 'date-fns'
 
 import { apiClient } from '@/lib/apiClient'
 import { formatYmd } from '@/lib/utils'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
-import { Input } from '@/shared/components/ui/input'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/shared/components/ui/dialog'
 import AnniversaryFormDialog from '@/domain/calendar/component/AnniversaryFormDialog'
+import SpecialDayFormDialog from '@/domain/calendar/component/SpecialDayFormDialog'
 import { COLOR_MAP, DEFAULT_COLOR } from '@/domain/calendar/component/eventColors'
 import type { CalendarEvent, CalendarDay, LunarDateDto } from '@/domain/calendar/types/calendar'
 
@@ -32,19 +28,9 @@ function Calendar1Page() {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [selectedYmd, setSelectedYmd] = useState('')
 
-  // 날짜 셀 클릭 - 특정일(S) 빠른 추가
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<{ content: string }>()
-
   function openAddDialog(ymd: string) {
     setSelectedYmd(ymd)
-    reset({ content: '' })
     setAddDialogOpen(true)
-  }
-
-  async function onAddSubmit(data: { content: string }) {
-    await apiClient.post('/calendar/my', { gubun: 'S', sorl: 'S', ymd: selectedYmd, content: data.content })
-    queryClient.invalidateQueries({ queryKey: ['calendar-events'] })
-    setAddDialogOpen(false)
   }
 
   // 헤더 추가 버튼 - 전체 폼 (Y/M/S)
@@ -307,30 +293,12 @@ function Calendar1Page() {
       </main>
     </div>
 
-      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>
-              일정 추가 — {selectedYmd.substring(0,4)}-{selectedYmd.substring(4,6)}-{selectedYmd.substring(6,8)}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onAddSubmit)} className="space-y-4 pt-2">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">내용</label>
-              <Input
-                placeholder="일정 내용을 입력하세요"
-                autoFocus
-                {...register('content', { required: '내용을 입력하세요' })}
-              />
-              {errors.content && <p className="text-xs text-red-500">{errors.content.message}</p>}
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>취소</Button>
-              <Button type="submit">추가</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <SpecialDayFormDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        selectedYmd={selectedYmd}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['calendar-events'] })}
+      />
 
       <AnniversaryFormDialog
         open={fullDialogOpen}
