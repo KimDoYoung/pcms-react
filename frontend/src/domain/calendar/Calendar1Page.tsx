@@ -2,7 +2,9 @@ import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useForm } from 'react-hook-form'
+import { format, parse, startOfWeek, endOfWeek, addDays } from 'date-fns'
 import { apiClient } from '@/lib/apiClient'
+import { formatYmd } from '@/lib/utils'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -20,26 +22,12 @@ const YMD_PLACEHOLDER: Record<string, string> = {
   S: 'YYYYMMDD (예: 20260420)',
 }
 
-function zeroPad(num: number): string {
-  return num < 10 ? '0' + num : num.toString()
-}
-
 function getStartEndYmd(year: number, month: number): [string, string] {
   const firstDate = new Date(year, month - 1, 1)
-  const startYoil = firstDate.getDay() // 0=Sunday
-
   const lastDate = new Date(year, month, 0)
-  const endYoil = lastDate.getDay()
-
-  const tempStart = new Date(firstDate)
-  tempStart.setDate(tempStart.getDate() - startYoil)
-  const startYmd = tempStart.getFullYear() + zeroPad(tempStart.getMonth() + 1) + zeroPad(tempStart.getDate())
-
-  const tempEnd = new Date(lastDate)
-  tempEnd.setDate(tempEnd.getDate() + (6 - endYoil))
-  const endYmd = tempEnd.getFullYear() + zeroPad(tempEnd.getMonth() + 1) + zeroPad(tempEnd.getDate())
-
-  return [startYmd, endYmd]
+  const startDate = startOfWeek(firstDate, { weekStartsOn: 0 })
+  const endDate = endOfWeek(lastDate, { weekStartsOn: 0 })
+  return [format(startDate, 'yyyyMMdd'), format(endDate, 'yyyyMMdd')]
 }
 
 function Calendar1Page() {
@@ -108,23 +96,15 @@ function Calendar1Page() {
 
   const days = useMemo(() => {
     const result: CalendarDay[] = []
-    let currentDate = new Date(
-      parseInt(startYmd.substring(0, 4)),
-      parseInt(startYmd.substring(4, 6)) - 1,
-      parseInt(startYmd.substring(6, 8))
-    )
-    const endDt = new Date(
-      parseInt(endYmd.substring(0, 4)),
-      parseInt(endYmd.substring(4, 6)) - 1,
-      parseInt(endYmd.substring(6, 8))
-    )
+    let currentDate = parse(startYmd, 'yyyyMMdd', new Date())
+    const endDt = parse(endYmd, 'yyyyMMdd', new Date())
 
-    const todayYmd = todayDate.getFullYear() + zeroPad(todayDate.getMonth() + 1) + zeroPad(todayDate.getDate())
-    const thisYm = currentYear + zeroPad(currentMonth)
+    const todayYmd = formatYmd(todayDate)
+    const thisYm = format(new Date(currentYear, currentMonth - 1), 'yyyyMM')
 
     let index = 0
     while (currentDate <= endDt) {
-      const ymd = currentDate.getFullYear() + zeroPad(currentDate.getMonth() + 1) + zeroPad(currentDate.getDate())
+      const ymd = formatYmd(currentDate)
       
       const dayEvents = events.filter(e => e.ymd === ymd)
       const holidays = dayEvents.filter(e => e.type === 'HOLIDAY')
@@ -148,7 +128,7 @@ function Calendar1Page() {
         events: normalEvents
       })
 
-      currentDate.setDate(currentDate.getDate() + 1)
+      currentDate = addDays(currentDate, 1)
       index++
     }
     return result

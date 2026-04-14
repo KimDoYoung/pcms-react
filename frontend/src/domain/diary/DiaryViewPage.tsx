@@ -4,7 +4,7 @@ import { ArrowLeft, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
-import { formatDate, shiftYmd } from '@/lib/utils'
+import { formatDate, addYmd } from '@/lib/utils'
 import AttachmentList from '@/shared/components/AttachmentList'
 import type { DiaryDto } from '@/domain/diary/types/diary'
 
@@ -21,8 +21,8 @@ export default function DiaryViewPage() {
   type AdjacentItem = { id: number; ymd: string; summary: string | null }
   type DiaryPage = { dtoList: AdjacentItem[] }
 
-  const prevYmd = diary ? shiftYmd(diary.ymd, -1) : ''
-  const nextYmd = diary ? shiftYmd(diary.ymd, 1) : ''
+  const prevYmd = diary ? addYmd(diary.ymd, -1) : ''
+  const nextYmd = diary ? addYmd(diary.ymd, 1) : ''
 
   const { data: prevData } = useQuery<DiaryPage>({
     queryKey: ['diary-adj', prevYmd],

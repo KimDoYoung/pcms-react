@@ -104,15 +104,25 @@ export function formatFileSize(bytes: number) {
 /**
  * yyyymmdd / yyyy-MM-dd / Date 입력값을 일 단위로 이동한 yyyymmdd 문자열로 반환합니다.
  */
-export function shiftYmd(input: string | Date, days: number): string {
-  const normalizedYmd = formatYmd(input)
-  if (!/^\d{8}$/.test(normalizedYmd)) return ''
-
-  const date = parse(normalizedYmd, 'yyyyMMdd', new Date())
+export function addYmd(input: string | Date, days: number): string {
+  const date = addDate(input, days)
   if (!isValid(date)) return ''
 
-  date.setDate(date.getDate() + days)
   return format(date, 'yyyyMMdd')
+}
+
+/**
+ * yyyymmdd / yyyy-MM-dd / Date 입력값을 일 단위로 이동한 Date 객체로 반환합니다.
+ */
+export function addDate(input: string | Date, days: number): Date {
+  const normalizedYmd = formatYmd(input)
+  if (!/^\d{8}$/.test(normalizedYmd)) return new Date(NaN)
+
+  const date = parse(normalizedYmd, 'yyyyMMdd', new Date())
+  if (!isValid(date)) return new Date(NaN)
+
+  date.setDate(date.getDate() + days)
+  return date
 }
 
 /**

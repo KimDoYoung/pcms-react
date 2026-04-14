@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatDate, getDayOfWeek, formatFileSize, formatCount, formatRelativeDateTime, shiftYmd } from './utils'
+import { formatDate, getDayOfWeek, formatFileSize, formatCount, formatRelativeDateTime, addYmd } from './utils'
 
 // 테스트 기준일: 2026-04-12 (일요일)
 const DATE_YYYY_MM_DD = '2026-04-12'
@@ -147,18 +147,18 @@ describe('formatRelativeDateTime', () => {
 
 describe('shiftYmd', () => {
   it('yyyymmdd 문자열 입력을 이동한다', () => {
-    expect(shiftYmd('20260412', 1)).toBe('20260413')
+    expect(addYmd('20260412', 1)).toBe('20260413')
   })
 
   it('yyyy-MM-dd 문자열 입력을 이동한다', () => {
-    expect(shiftYmd('2026-04-12', -2)).toBe('20260410')
+    expect(addYmd('2026-04-12', -2)).toBe('20260410')
   })
 
   it('Date 입력을 이동한다', () => {
-    expect(shiftYmd(new Date('2026-04-12T00:00:00'), 5)).toBe('20260417')
+    expect(addYmd(new Date('2026-04-12T00:00:00'), 5)).toBe('20260417')
   })
 
   it('잘못된 입력이면 빈 문자열을 반환한다', () => {
-    expect(shiftYmd('invalid', 1)).toBe('')
+    expect(addYmd('invalid', 1)).toBe('')
   })
 })
