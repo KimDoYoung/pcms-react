@@ -18,6 +18,9 @@ import UserInfoPage from './user/UserInfoPage'
 import SettingsPage from './user/SettingsPage'
 import Calendar1Page from './domain/calendar/Calendar1Page'
 import AnniversaryPage from './domain/calendar/AnniversaryPage'
+import MoviePage from './domain/movie/MoviePage'
+import MovieReviewPage from './domain/movie/MovieReviewPage'
+import HddPage from './domain/movie/HddPage'
 import Practice01Flex from './practice/Practice01Flex'
 import Practice02Hooks from './practice/Practice02Hooks'
 import Practice03Hanja from './practice/Practice03Hanja'
@@ -50,6 +53,9 @@ function App() {
         <Route path="/posts/:id" element={<PostViewPage />} />
         <Route path="/posts/:id/edit" element={<PostEditPage />} />
         <Route path="/apnode" element={<ApNodePage />} />
+        <Route path="/movie/collection" element={<MoviePage />} />
+        <Route path="/movie/review" element={<MovieReviewPage />} />
+        <Route path="/movie/hdd" element={<HddPage />} />
         <Route path="/practice/tailwindcss" element={<Practice01Flex />} />
         <Route path="/practice/hooks" element={<Practice02Hooks />} />
         <Route path="/practice/hanja" element={<Practice03Hanja />} />

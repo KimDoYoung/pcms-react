@@ -44,7 +44,7 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
-    key: '',
+    key: 'movie',
     label: '📽️ 영화',
     items: [
       { label: '📀 수집(DVD)', to: '/movie/collection' },
