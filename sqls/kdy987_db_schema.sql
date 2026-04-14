@@ -142,6 +142,7 @@ CREATE TABLE calendar (
     sorl CHAR(1) NOT NULL DEFAULT 'S',
     ymd VARCHAR(8) NOT NULL,
     content VARCHAR(200) NOT NULL,
+    color VARCHAR(20) NOT NULL DEFAULT 'blue' CHECK (color IN ('blue','red','green','purple','orange','pink','yellow','teal','indigo','gray','rose','sky')),
     created_dt TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_calendar_gubun_ymd ON calendar(gubun, ymd);

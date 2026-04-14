@@ -31,10 +31,10 @@
     </select>
 
     <select id="selectCalendarByRange" resultType="kr.co.kalpa.pcms.domain.calendar.entity.CalendarEvent">
-        SELECT id, gubun, sorl, resolved_ymd AS ymd, content, created_dt
+        SELECT id, gubun, sorl, resolved_ymd AS ymd, content, color, created_dt
         FROM (
             -- 특정일(S): BETWEEN 직접 적용
-            SELECT id, gubun, sorl, ymd AS resolved_ymd, content, created_dt
+            SELECT id, gubun, sorl, ymd AS resolved_ymd, content, color, created_dt
             FROM cms.calendar
             WHERE sorl = 'S' AND gubun = 'S'
               AND ymd BETWEEN #{start} AND #{end}
@@ -44,7 +44,7 @@
             -- 매년(Y): 범위 내 연도별로 확장 후 BETWEEN
             SELECT c.id, c.gubun, c.sorl,
                    TO_CHAR(yr, 'FM0000') || c.ymd AS resolved_ymd,
-                   c.content, c.created_dt
+                   c.content, c.color, c.created_dt
             FROM cms.calendar c
             CROSS JOIN generate_series(
                 EXTRACT(YEAR FROM TO_DATE(#{start}, 'YYYYMMDD'))::int,
@@ -58,7 +58,7 @@
             -- 매달(M): 범위 내 연월별로 확장 후 BETWEEN + 유효일 체크
             SELECT c.id, c.gubun, c.sorl,
                    TO_CHAR(ym, 'YYYYMM') || c.ymd AS resolved_ymd,
-                   c.content, c.created_dt
+                   c.content, c.color, c.created_dt
             FROM cms.calendar c
             CROSS JOIN generate_series(
                 DATE_TRUNC('month', TO_DATE(#{start}, 'YYYYMMDD'))::date,
@@ -72,20 +72,27 @@
         ORDER BY resolved_ymd ASC
     </select>
 
+    <select id="selectLunarCalendarEvents" resultType="kr.co.kalpa.pcms.domain.calendar.entity.CalendarEvent">
+        SELECT id, gubun, sorl, ymd, content, color, created_dt
+        FROM cms.calendar
+        WHERE sorl = 'L'
+        ORDER BY gubun, ymd
+    </select>
+
     <select id="selectAllCalendarEvents" resultType="kr.co.kalpa.pcms.domain.calendar.entity.CalendarEvent">
-        SELECT id, gubun, sorl, ymd, content, created_dt
+        SELECT id, gubun, sorl, ymd, content, color, created_dt
         FROM cms.calendar
         ORDER BY gubun, ymd
     </select>
 
     <insert id="insertCalendarEvent" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO cms.calendar (gubun, sorl, ymd, content)
-        VALUES (#{gubun}, #{sorl}, #{ymd}, #{content})
+        INSERT INTO cms.calendar (gubun, sorl, ymd, content, color)
+        VALUES (#{gubun}, #{sorl}, #{ymd}, #{content}, #{color})
     </insert>
 
     <update id="updateCalendarEvent">
         UPDATE cms.calendar
-        SET gubun = #{gubun}, sorl = #{sorl}, ymd = #{ymd}, content = #{content}
+        SET gubun = #{gubun}, sorl = #{sorl}, ymd = #{ymd}, content = #{content}, color = #{color}
         WHERE id = #{id}
     </update>
 
@@ -94,7 +101,7 @@
     </delete>
 
     <select id="selectCalendarEventById" resultType="kr.co.kalpa.pcms.domain.calendar.entity.CalendarEvent">
-        SELECT id, gubun, sorl, ymd, content, created_dt
+        SELECT id, gubun, sorl, ymd, content, color, created_dt
         FROM cms.calendar
         WHERE id = #{id}
     </select>

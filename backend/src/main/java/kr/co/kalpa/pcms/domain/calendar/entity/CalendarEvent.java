@@ -17,5 +17,6 @@ public class CalendarEvent {
     private String sorl;   // S/L
     private String ymd;
     private String content;
+    private String color;
     private OffsetDateTime createdDt;
 }

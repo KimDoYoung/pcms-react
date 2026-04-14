@@ -14,5 +14,6 @@ public class CalendarEventDto {
     private String type; // HOLIDAY, EVENT, etc.
     private String ymd;
     private String content;
-    private String gubun; // From original gubun
+    private String gubun;
+    private String color;
 }

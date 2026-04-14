@@ -13,6 +13,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import com.github.usingsky.calendar.KoreanLunarCalendar;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
@@ -130,7 +132,7 @@ public class CalendarServiceImpl implements CalendarService {
                     .build());
         }
 
-        // 개인 일정 — SQL에서 Y/M 날짜 확장 및 BETWEEN 필터링 완료
+        // 개인 일정 (양력) — SQL에서 Y/M 날짜 확장 및 BETWEEN 필터링 완료
         List<CalendarEvent> myEvents = calendarMapper.selectCalendarByRange(start, end);
         for (CalendarEvent e : myEvents) {
             result.add(CalendarEventDto.builder()
@@ -139,7 +141,27 @@ public class CalendarServiceImpl implements CalendarService {
                     .ymd(e.getYmd())
                     .content(e.getContent())
                     .gubun(e.getGubun())
+                    .color(e.getColor())
                     .build());
+        }
+
+        // 음력 기념일 — KoreanLunarCalendar로 양력 변환 후 범위 필터
+        int startYear = Integer.parseInt(start.substring(0, 4));
+        int endYear   = Integer.parseInt(end.substring(0, 4));
+        List<CalendarEvent> lunarEvents = calendarMapper.selectLunarCalendarEvents();
+        for (CalendarEvent lunar : lunarEvents) {
+            for (String solarYmd : resolveLunarToSolar(lunar.getGubun(), lunar.getYmd(), startYear, endYear)) {
+                if (solarYmd.compareTo(start) >= 0 && solarYmd.compareTo(end) <= 0) {
+                    result.add(CalendarEventDto.builder()
+                            .id("C_" + lunar.getId())
+                            .type("EVENT")
+                            .ymd(solarYmd)
+                            .content(lunar.getContent())
+                            .gubun(lunar.getGubun())
+                            .color(lunar.getColor())
+                            .build());
+                }
+            }
         }
 
         return result;
@@ -168,6 +190,38 @@ public class CalendarServiceImpl implements CalendarService {
     @Override
     public CalendarEvent getCalendarEventById(int id) {
         return calendarMapper.selectCalendarEventById(id);
+    }
+
+    /**
+     * 음력 기념일을 양력 날짜(yyyyMMdd) 목록으로 변환한다.
+     * gubun='Y': ymd=MMDD → startYear~endYear 각 연도에 대해 변환
+     * gubun='S': ymd=YYYYMMDD → 해당 연도 1회 변환
+     * gubun='M': 음력 매달은 미지원, 빈 리스트 반환
+     */
+    private List<String> resolveLunarToSolar(String gubun, String ymd, int startYear, int endYear) {
+        List<String> result = new ArrayList<>();
+        KoreanLunarCalendar cal = KoreanLunarCalendar.getInstance();
+        try {
+            if ("Y".equals(gubun)) {
+                int month = Integer.parseInt(ymd.substring(0, 2));
+                int day   = Integer.parseInt(ymd.substring(2, 4));
+                for (int year = startYear; year <= endYear; year++) {
+                    if (cal.setLunarDate(year, month, day, false)) {
+                        result.add(cal.getSolarIsoFormat().replace("-", ""));
+                    }
+                }
+            } else if ("S".equals(gubun)) {
+                int year  = Integer.parseInt(ymd.substring(0, 4));
+                int month = Integer.parseInt(ymd.substring(4, 6));
+                int day   = Integer.parseInt(ymd.substring(6, 8));
+                if (cal.setLunarDate(year, month, day, false)) {
+                    result.add(cal.getSolarIsoFormat().replace("-", ""));
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Lunar to solar conversion failed: gubun={}, ymd={}", gubun, ymd, e);
+        }
+        return result;
     }
 
     private List<HolidayItem> parseHolidayXml(String xml) throws Exception {

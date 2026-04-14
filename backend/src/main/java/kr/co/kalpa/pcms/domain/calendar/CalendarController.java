@@ -77,6 +77,7 @@ public class CalendarController {
                 .sorl(e.getSorl())
                 .ymd(e.getYmd())
                 .content(e.getContent())
+                .color(e.getColor())
                 .build();
         calendarService.updateCalendarEvent(updated);
         return ResponseEntity.ok().build();

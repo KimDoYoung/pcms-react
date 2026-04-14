@@ -34,4 +34,6 @@ public interface CalendarMapper {
     void deleteCalendarEvent(@Param("id") int id);
 
     CalendarEvent selectCalendarEventById(@Param("id") int id);
+
+    List<CalendarEvent> selectLunarCalendarEvents();
 }

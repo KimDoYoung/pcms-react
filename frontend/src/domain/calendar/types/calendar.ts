@@ -5,6 +5,7 @@ export interface CalendarEvent {
   ymd: string
   content: string
   gubun?: string
+  color?: string
 }
 
 // Calendar1Page - 뷰 모델 (API 데이터 가공 후)
@@ -27,6 +28,7 @@ export interface CalendarEventItem {
   sorl: string
   ymd: string
   content: string
+  color: string
 }
 
 // AnniversaryPage - 기념일 등록/수정 폼
@@ -35,4 +37,5 @@ export interface CalendarFormValues {
   sorl: string
   ymd: string
   content: string
+  color: string
 }

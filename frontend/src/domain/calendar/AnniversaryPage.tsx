@@ -1,18 +1,12 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
-import { useForm } from 'react-hook-form'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
 import { Button } from '@/shared/components/ui/button'
-import { Input } from '@/shared/components/ui/input'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/shared/components/ui/dialog'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/shared/components/ui/select'
-import type { CalendarEventItem, CalendarFormValues } from '@/domain/calendar/types/calendar'
+import AnniversaryFormDialog from '@/domain/calendar/component/AnniversaryFormDialog'
+import { COLOR_MAP, DEFAULT_COLOR } from '@/domain/calendar/component/eventColors'
+import type { CalendarEventItem } from '@/domain/calendar/types/calendar'
 
 const GUBUN_LABEL: Record<string, string> = { Y: '매년', M: '매달', S: '특정일' }
 const GUBUN_COLOR: Record<string, string> = {
@@ -20,10 +14,10 @@ const GUBUN_COLOR: Record<string, string> = {
   M: 'bg-blue-100 text-blue-700',
   S: 'bg-gray-100 text-gray-600',
 }
-const YMD_PLACEHOLDER: Record<string, string> = {
-  Y: 'MMDD (예: 0405)',
-  M: 'DD (예: 01)',
-  S: 'YYYYMMDD (예: 20260420)',
+const SORL_LABEL: Record<string, string> = { S: '양력', L: '음력' }
+const SORL_COLOR: Record<string, string> = {
+  S: 'bg-orange-50 text-orange-500',
+  L: 'bg-purple-50 text-purple-500',
 }
 
 function formatYmd(gubun: string, ymd: string): string {
@@ -37,11 +31,6 @@ export default function AnniversaryPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<CalendarEventItem | null>(null)
 
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<CalendarFormValues>({
-    defaultValues: { gubun: 'Y', sorl: 'S', ymd: '', content: '' },
-  })
-  const gubun = watch('gubun')
-
   const { data: items = [] } = useQuery<CalendarEventItem[]>({
     queryKey: ['calendar-my-list'],
     queryFn: () => apiClient.get('/calendar/my/list'),
@@ -49,24 +38,12 @@ export default function AnniversaryPage() {
 
   function openAdd() {
     setEditTarget(null)
-    reset({ gubun: 'Y', sorl: 'S', ymd: '', content: '' })
     setDialogOpen(true)
   }
 
   function openEdit(item: CalendarEventItem) {
     setEditTarget(item)
-    reset({ gubun: item.gubun, sorl: item.sorl, ymd: item.ymd, content: item.content })
     setDialogOpen(true)
-  }
-
-  async function onSubmit(data: CalendarFormValues) {
-    if (editTarget) {
-      await apiClient.put(`/calendar/my/${editTarget.id}`, data)
-    } else {
-      await apiClient.post('/calendar/my', data)
-    }
-    queryClient.invalidateQueries({ queryKey: ['calendar-my-list'] })
-    setDialogOpen(false)
   }
 
   async function onDelete(id: number) {
@@ -107,8 +84,12 @@ export default function AnniversaryPage() {
                   <div className="space-y-1">
                     {grouped[g].map(item => (
                       <div key={item.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 group">
+                        <span className={`w-3 h-3 rounded-full shrink-0 ${(COLOR_MAP[item.color ?? DEFAULT_COLOR] ?? COLOR_MAP[DEFAULT_COLOR]).dot}`} />
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${GUBUN_COLOR[item.gubun]}`}>
                           {GUBUN_LABEL[item.gubun]}
+                        </span>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${SORL_COLOR[item.sorl] ?? SORL_COLOR['S']}`}>
+                          {SORL_LABEL[item.sorl] ?? '양력'}
                         </span>
                         <span className="text-sm text-gray-500 w-28 shrink-0">{formatYmd(item.gubun, item.ymd)}</span>
                         <span className="text-sm font-medium text-gray-800 flex-1">{item.content}</span>
@@ -133,48 +114,12 @@ export default function AnniversaryPage() {
         </div>
       </main>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{editTarget ? '기념일 수정' : '기념일 추가'}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">유형</label>
-              <Select value={gubun} onValueChange={v => setValue('gubun', v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Y">매년</SelectItem>
-                  <SelectItem value="M">매달</SelectItem>
-                  <SelectItem value="S">특정일</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">날짜</label>
-              <Input
-                placeholder={YMD_PLACEHOLDER[gubun]}
-                {...register('ymd', { required: '날짜를 입력하세요' })}
-              />
-              {errors.ymd && <p className="text-xs text-red-500">{errors.ymd.message}</p>}
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">내용</label>
-              <Input
-                placeholder="내용을 입력하세요"
-                {...register('content', { required: '내용을 입력하세요' })}
-              />
-              {errors.content && <p className="text-xs text-red-500">{errors.content.message}</p>}
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>취소</Button>
-              <Button type="submit">{editTarget ? '수정' : '추가'}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <AnniversaryFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        editTarget={editTarget}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['calendar-my-list'] })}
+      />
     </div>
   )
 }
