@@ -1,16 +1,9 @@
 import { useState, useMemo, useRef } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { 
-  AllCommunityModule, 
-  ModuleRegistry, 
-  ColDef, 
-  GridReadyEvent, 
-  IDatasource, 
-  IGetRowsParams,
-  GridApi
-} from 'ag-grid-community';
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+import type { ColDef, GridReadyEvent, IDatasource, IGetRowsParams, GridApi } from 'ag-grid-community';
 import { apiClient } from '@/lib/apiClient';
-import { HddDto, HddSearchDto } from './types/movie';
+import type { HddDto, HddSearchDto } from './types/movie';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import Toolbar from '@/shared/components/Toolbar';

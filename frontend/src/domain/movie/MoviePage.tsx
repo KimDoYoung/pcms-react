@@ -1,18 +1,9 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import {
-  AllCommunityModule,
-  ModuleRegistry,
-  ColDef,
-  GridReadyEvent,
-  IDatasource,
-  IGetRowsParams,
-  GridApi,
-  CellValueChangedEvent,
-  RowStyle,
-} from 'ag-grid-community';
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+import type { ColDef, GridReadyEvent, IDatasource, IGetRowsParams, GridApi, CellValueChangedEvent, RowStyle } from 'ag-grid-community';
 import { apiClient } from '@/lib/apiClient';
-import { MovieDto, MovieSearchDto } from './types/movie';
+import type { MovieDto, MovieSearchDto } from './types/movie';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton';
@@ -103,13 +94,13 @@ const MoviePage = () => {
   };
 
   const onCellValueChanged = useCallback((params: CellValueChangedEvent<MovieDto>) => {
-    changedRowsRef.current.set(params.data.id, { ...params.data });
+    changedRowsRef.current.set(params.data.id!, { ...params.data });
     setChangedCount(changedRowsRef.current.size);
     params.api.redrawRows({ rowNodes: [params.node] });
   }, []);
 
   const getRowStyle = useCallback((params: { data?: MovieDto }): RowStyle | undefined => {
-    if (params.data && changedRowsRef.current.has(params.data.id)) {
+    if (params.data && changedRowsRef.current.has(params.data.id!)) {
       return { backgroundColor: '#fef9c3' };
     }
   }, []);
@@ -187,7 +178,7 @@ const MoviePage = () => {
               <label className="text-xs font-medium text-gray-500">제작국가</label>
               <InputWithIcon
                 placeholder="국가"
-                value={searchParams.nara}
+                value={searchParams.nara ?? ''}
                 onChange={(nara) => setSearchParams({ ...searchParams, nara })}
                 onIconClick={() => setShowCountryPanel((v) => !v)}
                 className="w-24"
@@ -205,7 +196,7 @@ const MoviePage = () => {
               <label className="text-xs font-medium text-gray-500">장르</label>
               <InputWithIcon
                 placeholder="장르"
-                value={searchParams.category}
+                value={searchParams.category ?? ''}
                 onChange={(category) => setSearchParams({ ...searchParams, category })}
                 onIconClick={() => setShowGenrePanel((v) => !v)}
                 className="w-24"
