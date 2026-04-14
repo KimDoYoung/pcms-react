@@ -246,3 +246,87 @@ CREATE TABLE hanja_dic (
     created_at TIMESTAMP DEFAULT NOW()
 );
 CREATE INDEX idx_hanja_dic_korean ON hanja_dic(korean);
+
+-- -----------------------------------------------------------
+
+CREATE TABLE hdd (
+  id integer NOT NULL,
+  volumn_name varchar(50) DEFAULT NULL,
+  gubun char(1) NOT NULL,
+  path varchar(500) DEFAULT NULL,
+  file_name varchar(300) DEFAULT NULL,
+  name varchar(300) NOT NULL,
+  pdir varchar(300) DEFAULT NULL,
+  extension varchar(50) DEFAULT NULL,
+  size double precision DEFAULT NULL,
+  sha1_cd varchar(100) DEFAULT NULL,
+  srch_key varchar(300) DEFAULT NULL,
+  last_modified_ymd varchar(20) DEFAULT NULL,
+  pid integer DEFAULT NULL,
+  right_pid integer DEFAULT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE INDEX idx_hdd_vol_name ON hdd (volumn_name);
+CREATE INDEX idx_hdd_pid ON hdd (pid);
+
+
+CREATE TABLE movie (
+  id SERIAL PRIMARY KEY,
+  mid varchar(10) DEFAULT NULL,
+  gubun char(1) NOT NULL,
+  title1 varchar(200) NOT NULL,
+  title2 varchar(200) DEFAULT NULL,
+  title3 varchar(200) DEFAULT NULL,
+  category varchar(100) DEFAULT NULL,
+  gamdok varchar(100) DEFAULT NULL,
+  make_year varchar(10) DEFAULT NULL,
+  nara varchar(50) DEFAULT NULL,
+  dvd_id varchar(5) DEFAULT NULL,
+  title1num varchar(100) DEFAULT NULL,
+  title1title2 varchar(400) DEFAULT NULL
+);
+
+-- 컬럼 코멘트 설정
+COMMENT ON TABLE movie IS '영화';
+COMMENT ON COLUMN movie.id IS 'ID';
+COMMENT ON COLUMN movie.mid IS '영화id';
+COMMENT ON COLUMN movie.gubun IS '구분';
+COMMENT ON COLUMN movie.title1 IS '제목(한글)';
+COMMENT ON COLUMN movie.title2 IS '제목(영어)';
+COMMENT ON COLUMN movie.title3 IS '제목(제작국언엉)';
+COMMENT ON COLUMN movie.category IS '분야';
+COMMENT ON COLUMN movie.gamdok IS '감독';
+COMMENT ON COLUMN movie.make_year IS '제작년';
+COMMENT ON COLUMN movie.nara IS '제작국적';
+COMMENT ON COLUMN movie.dvd_id IS 'DVD ID';
+COMMENT ON COLUMN movie.title1num IS '검색문자열';
+COMMENT ON COLUMN movie.title1title2 IS '검색어';
+
+
+CREATE TABLE movie_review (
+  id SERIAL PRIMARY KEY,
+  title varchar(200) NOT NULL,
+  nara varchar(30) DEFAULT NULL,
+  year char(4) DEFAULT NULL,
+  lvl integer DEFAULT NULL,
+  ymd varchar(8) DEFAULT NULL,
+  content text DEFAULT NULL,
+  lastmodify_dt timestamp DEFAULT NULL
+);
+
+-- 컬럼 코멘트 설정
+COMMENT ON COLUMN movie_review.id IS '일련번호';
+COMMENT ON COLUMN movie_review.title IS '제목';
+COMMENT ON COLUMN movie_review.nara IS '제작국가';
+COMMENT ON COLUMN movie_review.year IS '제작년도';
+COMMENT ON COLUMN movie_review.lvl IS '총평점수';
+COMMENT ON COLUMN movie_review.ymd IS '본일자';
+COMMENT ON COLUMN movie_review.content IS '감상';
+COMMENT ON COLUMN movie_review.lastmodify_dt IS '최종수정일시';
+
+
+
+select * from cms.hdd limit 100;
+select * from cms.movie limit 100;
+select * from cms.movie_review  limit 100;
