@@ -7,7 +7,7 @@ import type { MovieReviewDto, MovieReviewSearchDto } from './types/movie';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { formatDate } from '@/lib/utils';
-import Toolbar from '@/shared/components/Toolbar';
+import Toolbar from '@/shared/layout/Toolbar';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 

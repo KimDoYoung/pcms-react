@@ -5,7 +5,7 @@ import { format, parse, startOfWeek, endOfWeek, addDays } from 'date-fns'
 
 import { apiClient } from '@/lib/apiClient'
 import { formatYmd } from '@/lib/utils'
-import Toolbar from '@/shared/components/Toolbar'
+import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import AnniversaryFormDialog from '@/domain/calendar/component/AnniversaryFormDialog'
 import SpecialDayFormDialog from '@/domain/calendar/component/SpecialDayFormDialog'

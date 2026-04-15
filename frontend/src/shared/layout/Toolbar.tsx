@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Settings } from 'lucide-react'
 import { useAuthStore } from '@/shared/store/authStore'
-import { useTabStore } from '@/shared/store/tabStore'
-import { useTabContext } from '@/shared/context/TabContext'
+import { useTabStore } from '@/shared/layout/tabStore'
+import { useTabContext } from '@/shared/layout/TabContext'
 import { apiClient } from '@/lib/apiClient'
 import wizardImg from '@/assets/wizard.png'
 
@@ -120,7 +120,7 @@ function Toolbar() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const navigate = useNavigate()
   const { accessToken, userNm, clearAuth } = useAuthStore()
-  const { openTab, activateTab } = useTabStore()
+  useTabStore()
 
   const { data: health } = useQuery<{ version: string }>({
     queryKey: ['health'],

@@ -11,7 +11,7 @@
  */
 import { X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useTabStore, type TabItem } from '@/shared/store/tabStore'
+import { useTabStore, type TabItem } from '@/shared/layout/tabStore'
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 

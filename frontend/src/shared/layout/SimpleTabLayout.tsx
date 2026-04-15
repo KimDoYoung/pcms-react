@@ -9,10 +9,10 @@
  */
 import { useEffect, useRef, type ComponentType } from 'react'
 import { useLocation, matchPath } from 'react-router-dom'
-import { TabContext, TabRouteParamsContext } from '@/shared/context/TabContext'
-import { useTabStore } from '@/shared/store/tabStore'
-import { SimpleTabBar } from '@/shared/components/SimpleTabBar'
-import Toolbar from '@/shared/components/Toolbar'
+import { TabContext, TabRouteParamsContext } from '@/shared/layout/TabContext'
+import { useTabStore } from '@/shared/layout/tabStore'
+import { SimpleTabBar } from '@/shared/layout/SimpleTabBar'
+import Toolbar from '@/shared/layout/Toolbar'
 
 import HomePage from '@/home/HomePage'
 import DiaryPage from '@/domain/diary/DiaryPage'

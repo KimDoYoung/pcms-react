@@ -1,4 +1,4 @@
-import { useTabStore } from '@/shared/store/tabStore'
+import { useTabStore } from '@/shared/layout/tabStore'
 
 /**
  * useTabReturnPath

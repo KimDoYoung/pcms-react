@@ -10,7 +10,7 @@ import { GroupRadioButton } from '@/shared/components/GroupRadioButton';
 import { InputWithIcon } from '@/shared/components/InputWithIcon';
 import { CountrySelectPanel } from '@/shared/components/CountrySelectPanel';
 import { BadgeSelectPanel } from '@/shared/components/BadgeSelectPanel';
-import Toolbar from '@/shared/components/Toolbar';
+import Toolbar from '@/shared/layout/Toolbar';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 

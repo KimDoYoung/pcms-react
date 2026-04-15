@@ -1,4 +1,4 @@
-import Toolbar from "@/shared/components/Toolbar";
+import Toolbar from "@/shared/layout/Toolbar";
 
 export default function Practice01Flex() {
     return (

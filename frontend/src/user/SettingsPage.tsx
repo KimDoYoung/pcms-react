@@ -1,4 +1,4 @@
-import Toolbar from '@/shared/components/Toolbar'
+import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { apiClient } from '@/lib/apiClient'
 import { useState } from 'react'

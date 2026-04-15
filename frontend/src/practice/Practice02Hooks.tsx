@@ -6,7 +6,7 @@
  * 각 실습은 독립적으로 완성할 수 있습니다.
  */
 import { useState, useEffect, useRef } from 'react'
-import Toolbar from '@/shared/components/Toolbar'
+import Toolbar from '@/shared/layout/Toolbar'
 
 // ──────────────────────────────────────────
 // 실습 0: 배열 상태 및 init 를 함수로

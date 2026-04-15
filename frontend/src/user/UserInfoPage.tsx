@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Toolbar from '@/shared/components/Toolbar'
+import Toolbar from '@/shared/layout/Toolbar'
 import { useAuthStore } from '@/shared/store/authStore'
 import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/shared/components/ui/button'

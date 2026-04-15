@@ -4,7 +4,7 @@
  * 에디터에서 한글 단어를 선택 → 툴바의 漢 버튼 클릭 → 한자 선택 → 교체 확인
  */
 import { useState } from 'react'
-import Toolbar from '@/shared/components/Toolbar'
+import Toolbar from '@/shared/layout/Toolbar'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
 
 export default function Practice03Hanja() {

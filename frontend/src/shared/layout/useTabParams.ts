@@ -1,6 +1,6 @@
 import { useContext } from 'react'
 import { useParams } from 'react-router-dom'
-import { TabRouteParamsContext } from '@/shared/context/TabContext'
+import { TabRouteParamsContext } from '@/shared/layout/TabContext'
 
 /**
  * useTabParams

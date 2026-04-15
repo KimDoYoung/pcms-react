@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
-import Toolbar from '@/shared/components/Toolbar'
+import Toolbar from '@/shared/layout/Toolbar'
 import TodoAddModal from '@/domain/todo/TodoAddModal'
 import type { Todo } from '@/domain/todo/types/todo'
 import { TodoCard } from '@/domain/todo/TodoCard'
