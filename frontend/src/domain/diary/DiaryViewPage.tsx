@@ -1,4 +1,5 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { useTabParams } from '@/shared/hooks/useTabParams'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
@@ -9,7 +10,7 @@ import AttachmentList from '@/shared/components/AttachmentList'
 import type { DiaryDto } from '@/domain/diary/types/diary'
 
 export default function DiaryViewPage() {
-  const { id } = useParams<{ id: string }>()
+  const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
 
   const { data: diary, isLoading, isError } = useQuery<DiaryDto>({

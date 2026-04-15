@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Settings } from 'lucide-react'
 import { useAuthStore } from '@/shared/store/authStore'
+import { useTabStore } from '@/shared/store/tabStore'
+import { useTabContext } from '@/shared/context/TabContext'
 import { apiClient } from '@/lib/apiClient'
 import wizardImg from '@/assets/wizard.png'
 
@@ -48,7 +50,7 @@ const menuGroups: MenuGroup[] = [
     label: '📽️ 영화',
     items: [
       { label: '📀 수집(DVD)', to: '/movie/collection' },
-      { label: '🎬 감상', to: '/movie/review' },
+      { label: '🎬 영화감상평', to: '/movie/review' },
       { label: '🎞️ 하드디스크', to: '/movie/hdd' },
     ],
   },  
@@ -63,10 +65,11 @@ const menuGroups: MenuGroup[] = [
   }
 ]
 
-function DropdownMenu({ group, isOpen, onToggle }: {
+function DropdownMenu({ group, isOpen, onToggle, onOpenTab }: {
   group: MenuGroup
   isOpen: boolean
   onToggle: () => void
+  onOpenTab: (item: MenuItem) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
@@ -96,14 +99,13 @@ function DropdownMenu({ group, isOpen, onToggle }: {
         <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
           <div className="py-1.5">
             {group.items.map((item) => (
-              <Link
+              <button
                 key={item.to}
-                to={item.to}
-                onClick={onToggle}
-                className="block px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 font-medium transition-colors"
+                onClick={() => { onOpenTab(item); onToggle() }}
+                className="block w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 font-medium transition-colors"
               >
                 {item.label}
-              </Link>
+              </button>
             ))}
           </div>
         </div>
@@ -113,9 +115,12 @@ function DropdownMenu({ group, isOpen, onToggle }: {
 }
 
 function Toolbar() {
+  // 모든 훅을 early return 전에 호출 (Rules of Hooks)
+  const { isInsideTab } = useTabContext()
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const navigate = useNavigate()
   const { accessToken, userNm, clearAuth } = useAuthStore()
+  const { openTab, activateTab } = useTabStore()
 
   const { data: health } = useQuery<{ version: string }>({
     queryKey: ['health'],
@@ -124,8 +129,15 @@ function Toolbar() {
   })
   const isLoggedIn = !!accessToken
 
+  // 탭 내부에서는 렌더링하지 않음 (SimpleTabLayout의 Toolbar가 담당)
+  if (isInsideTab) return null
+
   function toggleMenu(key: string) {
     setActiveMenu((prev) => (prev === key ? null : key))
+  }
+
+  function handleOpenTab(item: MenuItem) {
+    openTab({ id: item.to, label: item.label, path: item.to })
   }
 
   async function handleLogout() {
@@ -135,7 +147,7 @@ function Toolbar() {
       // 실패해도 클라이언트 상태는 초기화
     }
     clearAuth()
-    navigate('/')
+    navigate('/login')
   }
 
   return (
@@ -144,12 +156,15 @@ function Toolbar() {
 
         {/* 왼쪽: 로고 + 메뉴 */}
         <div className="flex items-center gap-8">
-          <Link to="/" className="flex items-center gap-2.5 group">
+          <button
+            onClick={() => activateTab('/')}
+            className="flex items-center gap-2.5 group"
+          >
             <img src={wizardImg} alt="logo" className="w-9 h-9 rounded-full object-cover shadow-md" />
             <span className="text-xl font-bold text-gray-800 tracking-tight group-hover:text-blue-600 transition-colors">
               PCMS{health?.version && <span className="text-xs font-normal text-gray-400 ml-1">(ver:{health.version})</span>}
             </span>
-          </Link>
+          </button>
 
           {/* 로그인 시에만 메뉴 표시 */}
           {isLoggedIn && (
@@ -160,6 +175,7 @@ function Toolbar() {
                   group={group}
                   isOpen={activeMenu === group.key}
                   onToggle={() => toggleMenu(group.key)}
+                  onOpenTab={handleOpenTab}
                 />
               ))}
             </div>
@@ -170,12 +186,18 @@ function Toolbar() {
         <div className="flex items-center gap-4">
           {isLoggedIn ? (
             <div className="flex items-center gap-3 pl-6 border-l border-gray-100">
-              <Link to="/user-info" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
+              <button
+                onClick={() => openTab({ id: '/user-info', label: '👤 사용자정보', path: '/user-info' })}
+                className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+              >
                 {userNm}
-              </Link>
-              <Link to="/settings" className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+              </button>
+              <button
+                onClick={() => openTab({ id: '/settings', label: '⚙️ 설정', path: '/settings' })}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+              >
                 <Settings className="w-4 h-4" />
-              </Link>
+              </button>
               <button
                 onClick={handleLogout}
                 className="text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-50 hover:text-red-600 hover:border-red-200 transition-colors"
@@ -184,9 +206,12 @@ function Toolbar() {
               </button>
             </div>
           ) : (
-            <Link to="/login" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+            <button
+              onClick={() => navigate('/login')}
+              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+            >
               로그인
-            </Link>
+            </button>
           )}
         </div>
       </nav>

@@ -1,4 +1,5 @@
-import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useTabParams } from '@/shared/hooks/useTabParams'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Trash2, ArrowLeft } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
@@ -10,7 +11,7 @@ import { formatDate } from '@/lib/utils'
 import MarkdownViewer from '@/domain/board/components/MarkdownViewer'
 
 export default function PostViewPage() {
-  const { id } = useParams<{ id: string }>()
+  const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()

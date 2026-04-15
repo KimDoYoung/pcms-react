@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useTabParams } from '@/shared/hooks/useTabParams'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
@@ -12,7 +13,7 @@ import { formatYmd } from '@/lib/utils'
 import type { AttachmentDto, BoardDto, PostDto } from '@/domain/board/types/board'
 
 export default function PostEditPage() {
-  const { id } = useParams<{ id: string }>()
+  const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()

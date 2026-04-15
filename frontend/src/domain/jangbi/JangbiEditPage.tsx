@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { useTabParams } from '@/shared/hooks/useTabParams'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/components/Toolbar'
@@ -10,7 +11,7 @@ import AttachmentUploader from '@/shared/components/AttachmentUploader'
 import type { AttachmentDto, JangbiDto } from '@/domain/jangbi/types/jangbi'
 
 export default function JangbiEditPage() {
-  const { id } = useParams<{ id: string }>()
+  const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
