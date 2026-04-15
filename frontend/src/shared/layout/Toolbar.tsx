@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Settings } from 'lucide-react'
@@ -6,64 +6,8 @@ import { useAuthStore } from '@/shared/store/authStore'
 import { useTabStore } from '@/shared/layout/tabStore'
 import { useTabContext } from '@/shared/layout/TabContext'
 import { apiClient } from '@/lib/apiClient'
+import { getMenuGroups, type MenuItem, type MenuGroup } from '@/shared/layout/routeConfig'
 import wizardImg from '@/assets/wizard.png'
-
-interface MenuItem {
-  label: string
-  to: string
-}
-
-interface MenuGroup {
-  key: string
-  label: string
-  items: MenuItem[]
-}
-
-const menuGroups: MenuGroup[] = [
-  {
-    key: 'diary',
-    label: '📖 일지',
-    items: [
-      { label: '✏️ 일지기록', to: '/diary/register' },
-      { label: '🔍 일지찾기', to: '/diary' },
-      { label: '📅 달력', to: '/calendar' },
-      { label: '🎂 기념일', to: '/calendar/anniversary' },
-    ],
-  },
-  {
-    key: 'board',
-    label: '📝 게시판',
-    items: [
-      { label: '✍️ 게시판관리', to: '/boards' },
-    ],
-  },
-  {
-    key: '',
-    label: '🔧 취미',
-    items: [
-      { label: '🖥️ 장비', to: '/jangbi' },
-      { label: '📂 파일관리', to: '/apnode' },
-    ],
-  },
-  {
-    key: 'movie',
-    label: '📽️ 영화',
-    items: [
-      { label: '📀 수집(DVD)', to: '/movie/collection' },
-      { label: '🎬 영화감상평', to: '/movie/review' },
-      { label: '🎞️ 하드디스크', to: '/movie/hdd' },
-    ],
-  },  
-  {
-    key: 'practice',
-    label: '📝 실습',
-    items: [
-      { label: '✏️ Tailwind CSS 연습', to: '/practice/tailwindcss' },
-      { label: '🪝 React Hooks 연습', to: '/practice/hooks' },
-      { label: '漢 한자 변환 연습', to: '/practice/hanja' },
-    ],
-  }
-]
 
 function DropdownMenu({ group, isOpen, onToggle, onOpenTab }: {
   group: MenuGroup
@@ -115,12 +59,13 @@ function DropdownMenu({ group, isOpen, onToggle, onOpenTab }: {
 }
 
 function Toolbar() {
-  // 모든 훅을 early return 전에 호출 (Rules of Hooks)
   const { isInsideTab } = useTabContext()
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const navigate = useNavigate()
   const { accessToken, userNm, clearAuth } = useAuthStore()
-  useTabStore()
+
+  // routeConfig에서 동적으로 메뉴 그룹 생성
+  const menuGroups = useMemo(() => getMenuGroups(), [])
 
   const { data: health } = useQuery<{ version: string }>({
     queryKey: ['health'],
@@ -129,7 +74,6 @@ function Toolbar() {
   })
   const isLoggedIn = !!accessToken
 
-  // 탭 내부에서는 렌더링하지 않음 (SimpleTabLayout의 Toolbar가 담당)
   if (isInsideTab) return null
 
   function toggleMenu(key: string) {
