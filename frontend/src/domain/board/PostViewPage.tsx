@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTabParams } from '@/shared/hooks/useTabParams'
+import { useTabReturnPath } from '@/shared/hooks/useTabReturnPath'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Trash2, ArrowLeft } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useTabParams } from '@/shared/hooks/useTabParams'
+import { useTabReturnPath } from '@/shared/hooks/useTabReturnPath'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
@@ -12,6 +13,7 @@ import type { DiaryDto } from '@/domain/diary/types/diary'
 export default function DiaryViewPage() {
   const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
+  const returnPath = useTabReturnPath()
 
   const { data: diary, isLoading, isError } = useQuery<DiaryDto>({
     queryKey: ['diary', id],
@@ -81,7 +83,7 @@ export default function DiaryViewPage() {
             >
               <Pencil className="w-3.5 h-3.5 mr-1" /> 수정
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+            <Button variant="outline" size="sm" onClick={() => navigate(returnPath)}>
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> 목록
             </Button>
           </div>

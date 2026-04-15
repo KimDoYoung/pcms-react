@@ -1,5 +1,6 @@
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useTabParams } from '@/shared/hooks/useTabParams'
+import { useTabReturnPath } from '@/shared/hooks/useTabReturnPath'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Trash2, ArrowLeft } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
@@ -13,16 +14,10 @@ import type { JangbiDto } from '@/domain/jangbi/types/jangbi'
 export default function JangbiViewPage() {
   const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
-  const location = useLocation()
+  const returnPath = useTabReturnPath()
   const queryClient = useQueryClient()
 
-  const goBack = () => {
-    if (location.key !== 'default') {
-      navigate(-1)
-    } else {
-      navigate('/jangbi')
-    }
-  }
+  const goBack = () => navigate(returnPath)
 
   const { data: jangbi, isLoading, isError } = useQuery<JangbiDto>({
     queryKey: ['jangbi', id],

@@ -154,6 +154,10 @@ export function SimpleTabLayout() {
         // 같은 탭이 활성화 상태인데 path가 달라진 경우 (예: 뒤로가기)
         updateTab(existing.id, { path: pathname, params: found.params })
       }
+      // 탭 자신의 경로에서 search params가 바뀌면 기억해둠 (← 목록 복귀 시 복원용)
+      if (existing.search !== location.search) {
+        updateTab(existing.id, { search: location.search })
+      }
     } else if (activeTabId !== pathname) {
       openTab({
         id: pathname,

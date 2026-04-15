@@ -5,6 +5,7 @@ export interface TabItem {
   label: string
   path: string
   params?: Record<string, string>   // 동적 경로 파라미터 ex) { id: '123' }
+  search?: string                    // 목록 페이지의 search params ex) '?keyword=foo&page=2'
   closable: boolean
 }
 
