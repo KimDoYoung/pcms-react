@@ -77,7 +77,18 @@ export const useTabStore = create<TabState>((set, get) => ({
 
   updateTab: (tabId, updates) => {
     const { tabs } = get()
-    set({ tabs: tabs.map((t) => t.id === tabId ? { ...t, ...updates } : t) })
+    const target = tabs.find(t => t.id === tabId)
+    if (!target) return
+
+    const hasChange = Object.entries(updates).some(([key, value]) => {
+      return (target as any)[key] !== value
+    })
+
+    if (hasChange) {
+      set({
+        tabs: tabs.map((t) => t.id === tabId ? { ...t, ...updates } : t)
+      })
+    }
   },
 
   reorderTabs: (fromId, toId) => {

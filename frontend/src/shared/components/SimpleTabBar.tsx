@@ -11,8 +11,9 @@
  */
 import { X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useTabStore } from '@/shared/store/tabStore'
+import { useTabStore, type TabItem } from '@/shared/store/tabStore'
 import { cn } from '@/lib/utils'
+import { useNavigate } from 'react-router-dom'
 
 interface ContextMenuState {
   tabId: string
@@ -108,9 +109,15 @@ function TabContextMenu({
 
 export function SimpleTabBar() {
   const { tabs, activeTabId, activateTab, closeTab, reorderTabs } = useTabStore()
+  const navigate = useNavigate()
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
+
+  function handleTabClick(tab: TabItem) {
+    activateTab(tab.id)
+    navigate(tab.path + (tab.search || ''))
+  }
 
   function handleContextMenu(e: React.MouseEvent, tabId: string) {
     e.preventDefault()
@@ -156,7 +163,7 @@ export function SimpleTabBar() {
             <div
               key={tab.id}
               draggable={isDraggable}
-              onClick={() => activateTab(tab.id)}
+              onClick={() => handleTabClick(tab)}
               onContextMenu={(e) => handleContextMenu(e, tab.id)}
               onDragStart={(e) => handleDragStart(e, tab.id)}
               onDragOver={(e) => handleDragOver(e, tab.id)}

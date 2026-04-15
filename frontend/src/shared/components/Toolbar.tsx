@@ -137,7 +137,12 @@ function Toolbar() {
   }
 
   function handleOpenTab(item: MenuItem) {
-    openTab({ id: item.to, label: item.label, path: item.to })
+    const existing = useTabStore.getState().tabs.find(t => t.id === item.to)
+    if (existing) {
+      navigate(existing.path + (existing.search || ''))
+    } else {
+      navigate(item.to)
+    }
   }
 
   async function handleLogout() {
@@ -157,7 +162,7 @@ function Toolbar() {
         {/* 왼쪽: 로고 + 메뉴 */}
         <div className="flex items-center gap-8">
           <button
-            onClick={() => activateTab('/')}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2.5 group"
           >
             <img src={wizardImg} alt="logo" className="w-9 h-9 rounded-full object-cover shadow-md" />
@@ -187,13 +192,13 @@ function Toolbar() {
           {isLoggedIn ? (
             <div className="flex items-center gap-3 pl-6 border-l border-gray-100">
               <button
-                onClick={() => openTab({ id: '/user-info', label: '👤 사용자정보', path: '/user-info' })}
+                onClick={() => navigate('/user-info')}
                 className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
               >
                 {userNm}
               </button>
               <button
-                onClick={() => openTab({ id: '/settings', label: '⚙️ 설정', path: '/settings' })}
+                onClick={() => navigate('/settings')}
                 className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
               >
                 <Settings className="w-4 h-4" />

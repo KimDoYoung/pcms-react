@@ -11,7 +11,7 @@ import { format } from 'date-fns'
 import type { DiaryListDto, DiaryPageResponse } from '@/domain/diary/types/diary'
 import { DateRangePicker } from '@/shared/components/DateRangePicker'
 
-const PAGE_SIZE = 14
+const PAGE_SIZE = 10
 
 function DiaryItem({ item }: { item: DiaryListDto }) {
   const [expanded, setExpanded] = useState(false)
