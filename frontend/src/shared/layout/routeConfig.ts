@@ -6,7 +6,6 @@ import DiaryPage from '@/domain/diary/DiaryPage'
 import DiaryRegisterPage from '@/domain/diary/DiaryRegisterPage'
 import DiaryViewPage from '@/domain/diary/DiaryViewPage'
 import JangbiPage from '@/domain/jangbi/JangbiPage'
-import JangbiNewPage from '@/domain/jangbi/JangbiNewPage'
 import JangbiViewPage from '@/domain/jangbi/JangbiViewPage'
 import JangbiEditPage from '@/domain/jangbi/JangbiEditPage'
 import BoardsPage from '@/domain/board/BoardsPage'
@@ -19,6 +18,8 @@ import Calendar1Page from '@/domain/calendar/Calendar1Page'
 import AnniversaryPage from '@/domain/calendar/AnniversaryPage'
 import MoviePage from '@/domain/movie/MoviePage'
 import MovieReviewPage from '@/domain/movie/MovieReviewPage'
+import MovieReviewFormPage from '@/domain/movie/MovieReviewFormPage'
+import MovieReviewViewPage from '@/domain/movie/MovieReviewViewPage'
 import HddPage from '@/domain/movie/HddPage'
 import UserInfoPage from '@/user/UserInfoPage'
 import SettingsPage from '@/user/SettingsPage'
@@ -51,12 +52,12 @@ export const APP_ROUTES: AppRoute[] = [
 
   // 취미
   { path: '/jangbi', label: '🖥️ 장비', Component: JangbiPage, menuGroup: '🔧 취미' },
-  { path: '/jangbi/new', label: '🖥️ 장비등록', Component: JangbiNewPage, menuGroup: '🔧 취미' },
   { path: '/apnode', label: '📂 파일관리', Component: ApNodePage, menuGroup: '🔧 취미' },
 
   // 영화
   { path: '/movie/collection', label: '📀 수집(DVD)', Component: MoviePage, menuGroup: '📽️ 영화' },
   { path: '/movie/review', label: '🎬 영화감상평', Component: MovieReviewPage, menuGroup: '📽️ 영화' },
+  { path: '/movie/review/register', label: '🎬 영화감상평 등록', Component: MovieReviewFormPage },
   { path: '/movie/hdd', label: '🎞️ 하드디스크', Component: HddPage, menuGroup: '📽️ 영화' },
 
   // 실습
@@ -74,6 +75,8 @@ export const APP_ROUTES: AppRoute[] = [
   { path: '/jangbi/:id', label: '🖥️ 장비상세', Component: JangbiViewPage, isDynamic: true },
   { path: '/posts/:id/edit', label: '📝 게시글수정', Component: PostEditPage, isDynamic: true },
   { path: '/posts/:id', label: '📝 게시글', Component: PostViewPage, isDynamic: true },
+  { path: '/movie/review/:id/edit', label: '🎬 영화감상평 수정', Component: MovieReviewFormPage, isDynamic: true },
+  { path: '/movie/review/:id/view', label: '🎬 영화감상평 보기', Component: MovieReviewViewPage, isDynamic: true },
 ]
 
 export interface FoundRoute {

@@ -9,6 +9,7 @@ import java.util.List;
 @Mapper
 public interface MovieReviewMapper {
     void insert(MovieReview movieReview);
+    Long selectMaxId();
     MovieReview selectOne(Long id);
     void update(MovieReview movieReview);
     void delete(Long id);

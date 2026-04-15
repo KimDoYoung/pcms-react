@@ -22,14 +22,28 @@
         </where>
     </sql>
 
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO cms.movie_review (title, nara, year, lvl, ymd, content, lastmodify_dt)
-        VALUES (#{title}, #{nara}, #{year}, #{lvl}, #{ymd}, #{content}, CURRENT_TIMESTAMP)
+    <resultMap id="movieReviewMap" type="kr.co.kalpa.pcms.domain.movie.entity.MovieReview">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="nara" column="nara"/>
+        <result property="year" column="year"/>
+        <result property="lvl" column="lvl"/>
+        <result property="ymd" column="ymd"/>
+        <result property="content" column="content"/>
+        <result property="lastmodifyDt" column="lastmodify_dt"/>
+    </resultMap>
+
+    <insert id="insert">
+        INSERT INTO cms.movie_review (id, title, nara, year, lvl, ymd, content, lastmodify_dt)
+        VALUES (#{id}, #{title}, #{nara}, #{year}, #{lvl}, #{ymd}, #{content}, CURRENT_TIMESTAMP)
     </insert>
 
-    <select id="selectOne" resultType="kr.co.kalpa.pcms.domain.movie.entity.MovieReview">
-        SELECT id, title, nara, year, lvl, ymd, content, 
-               lastmodify_dt as lastmodifyDt
+    <select id="selectMaxId" resultType="long">
+        SELECT COALESCE(max(id), 0) FROM cms.movie_review
+    </select>
+
+    <select id="selectOne" resultMap="movieReviewMap">
+        SELECT id, title, nara, year, lvl, ymd, content, lastmodify_dt
         FROM cms.movie_review
         WHERE id = #{id}
     </select>
@@ -50,9 +64,8 @@
         DELETE FROM cms.movie_review WHERE id = #{id}
     </delete>
 
-    <select id="selectList" resultType="kr.co.kalpa.pcms.domain.movie.entity.MovieReview">
-        SELECT id, title, nara, year, lvl, ymd, content, 
-               lastmodify_dt as lastmodifyDt
+    <select id="selectList" resultMap="movieReviewMap">
+        SELECT id, title, nara, year, lvl, ymd, content, lastmodify_dt
         FROM cms.movie_review
         <include refid="search"/>
         ORDER BY ymd DESC, id DESC

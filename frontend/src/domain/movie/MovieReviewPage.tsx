@@ -2,12 +2,16 @@ import { useState, useMemo, useRef } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import type { ColDef, GridReadyEvent, IDatasource, IGetRowsParams, GridApi } from 'ag-grid-community';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/lib/apiClient';
 import type { MovieReviewDto, MovieReviewSearchDto } from './types/movie';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { formatDate } from '@/lib/utils';
+import { useMessage } from '@/shared/hooks/useMessage';
 import Toolbar from '@/shared/layout/Toolbar';
+import StarRating from '@/shared/components/StarRating';
+import { COUNTRY_EMOJI_MAP } from '@/shared/data/countries';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -18,6 +22,8 @@ const PAGE_SIZE = 10;
  * 용도: 영화 감상평(Review) 데이터를 AG Grid의 Infinite Row Model을 사용하여 내장 페이징과 함께 표시함
  */
 const MovieReviewPage = () => {
+  const navigate = useNavigate();
+  const { showMessage } = useMessage();
   const gridApiRef = useRef<GridApi | null>(null);
   const [searchParams, setSearchParams] = useState<MovieReviewSearchDto>({
     keyword: '',
@@ -51,29 +57,84 @@ const MovieReviewPage = () => {
     setSearchParams({ keyword: '' });
   };
 
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('정말 삭제하시겠습니까?')) return;
+    try {
+      await apiClient.delete(`/movie/review/${id}`);
+      showMessage('삭제되었습니다.', 'success');
+      handleSearch();
+    } catch (e) {
+      console.error('Delete error', e);
+      showMessage('삭제 중 오류가 발생했습니다.', 'error');
+    }
+  };
+
   const columnDefs = useMemo<ColDef<MovieReviewDto>[]>(() => [
     { field: 'id', headerName: 'ID', width: 80 },
-    { field: 'title', headerName: '제목', flex: 1, minWidth: 200 },
-    { field: 'nara', headerName: '국가', width: 100 },
+    { 
+      field: 'title', 
+      headerName: '제목', 
+      flex: 1, 
+      minWidth: 150,
+      cellRenderer: (params: any) => (
+        <span 
+          className="text-blue-600 hover:underline cursor-pointer font-medium"
+          onClick={() => navigate(`/movie/review/${params.data.id}/view`)}
+        >
+          {params.value}
+        </span>
+      )
+    },
+    { 
+      field: 'lvl', 
+      headerName: '평점', 
+      width: 110,
+      cellRenderer: (params: any) => (
+        <div className="flex h-full items-center">
+          <StarRating value={params.value ?? 0} max={5} size="sm" />
+        </div>
+      )
+    },    
+    { field: 'nara', headerName: '국가', width: 70,
+      cellRenderer: (params: any) => (
+        <span title={params.value}>
+          {COUNTRY_EMOJI_MAP.get(params.value) ?? params.value}
+        </span>
+      )
+    },
     { field: 'year', headerName: '제작년도', width: 100 },
-    { field: 'lvl', headerName: '평점', width: 80 },
+
     { 
       field: 'ymd', 
-      headerName: '본일자', 
-      width: 120,
+      headerName: '감상일자', 
+      width: 150,
       valueFormatter: (params) => params.value ? formatDate(params.value) : '' 
     },
     {
       headerName: '조작',
       width: 150,
-      cellRenderer: () => (
+      cellRenderer: (params: any) => (
         <div className="flex gap-1 h-full items-center">
-          <Button size="sm" variant="outline" className="h-7">수정</Button>
-          <Button size="sm" variant="destructive" className="h-7">삭제</Button>
+          <Button 
+            size="sm" 
+            variant="action" 
+            className="h-7"
+            onClick={() => navigate(`/movie/review/${params.data.id}/edit`)}
+          >
+            수정
+          </Button>
+          <Button 
+            size="sm" 
+            variant="delete" 
+            className="h-7"
+            onClick={() => handleDelete(params.data.id)}
+          >
+            삭제
+          </Button>
         </div>
       )
     }
-  ], []);
+  ], [navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -82,7 +143,7 @@ const MovieReviewPage = () => {
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-800">🎬 영화 감상평 관리</h1>
-            <Button>신규 등록</Button>
+            <Button variant="action" size="pill" onClick={() => navigate('/movie/review/register')}>신규 등록</Button>
           </div>
 
           {/* 검색 영역 */}
@@ -94,8 +155,8 @@ const MovieReviewPage = () => {
               className="max-w-xs"
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
-            <Button onClick={handleSearch}>찾기</Button>
-            <Button variant="outline" onClick={handleReset}>초기화</Button>
+            <Button variant="action" size="pill" onClick={handleSearch}>찾기</Button>
+            <Button variant="init" size="pill" onClick={handleReset}>초기화</Button>
           </div>
 
           {/* 그리드 영역 */}
