@@ -18,6 +18,8 @@ interface TabState {
   closeTabsToLeft: (tabId: string) => void
   closeAllTabs: () => void
   reorderTabs: (fromId: string, toId: string) => void
+  // 탭 내부 이동용: id는 유지하고 path/params만 교체
+  updateTab: (tabId: string, updates: Partial<Pick<TabItem, 'path' | 'params' | 'label'>>) => void
 }
 
 export const useTabStore = create<TabState>((set, get) => ({
@@ -70,6 +72,11 @@ export const useTabStore = create<TabState>((set, get) => ({
     const newTabs = tabs.filter((t) => !t.closable)
     const newActiveId = newTabs[newTabs.length - 1]?.id ?? '/'
     set({ tabs: newTabs, activeTabId: newActiveId })
+  },
+
+  updateTab: (tabId, updates) => {
+    const { tabs } = get()
+    set({ tabs: tabs.map((t) => t.id === tabId ? { ...t, ...updates } : t) })
   },
 
   reorderTabs: (fromId, toId) => {

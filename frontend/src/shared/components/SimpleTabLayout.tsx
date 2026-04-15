@@ -122,11 +122,10 @@ function findRoute(pathname: string): FoundRoute | null {
 }
 
 export function SimpleTabLayout() {
-  const { tabs, activeTabId, openTab, activateTab } = useTabStore()
+  const { tabs, activeTabId, openTab, activateTab, updateTab } = useTabStore()
   const location = useLocation()
 
-  // 내부 navigate() 호출 감지 → 탭 자동 오픈
-  // pathname 변화만 감지 (search 변화는 useSearchParams가 처리)
+  // 내부 navigate() 호출 감지 → 탭 자동 오픈 or 인-탭 이동
   useEffect(() => {
     const pathname = location.pathname
     if (pathname === '/login') return
@@ -134,9 +133,27 @@ export function SimpleTabLayout() {
     const found = findRoute(pathname)
     if (!found) return
 
+    // active 탭의 하위 경로면 새 탭 대신 현재 탭 내부에서 이동
+    // ex) /jangbi 탭 → /jangbi/new, /jangbi/5, /jangbi/5/edit 모두 인-탭
+    const isInTabNavigation =
+      activeTabId !== '/' &&
+      pathname !== activeTabId &&
+      pathname.startsWith(activeTabId + '/')
+
+    if (isInTabNavigation) {
+      // 현재 탭의 path/params만 교체 (탭 id, 위치는 유지)
+      updateTab(activeTabId, { path: pathname, params: found.params })
+      return
+    }
+
     const existing = tabs.find((t) => t.id === pathname)
     if (existing) {
-      if (activeTabId !== pathname) activateTab(pathname)
+      if (activeTabId !== existing.id) {
+        activateTab(existing.id)
+      } else if (existing.path !== pathname) {
+        // 같은 탭이 활성화 상태인데 path가 달라진 경우 (예: 뒤로가기)
+        updateTab(existing.id, { path: pathname, params: found.params })
+      }
     } else if (activeTabId !== pathname) {
       openTab({
         id: pathname,
