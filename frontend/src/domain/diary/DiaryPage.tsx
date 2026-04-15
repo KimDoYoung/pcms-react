@@ -100,11 +100,21 @@ export default function DiaryPage() {
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0
 
   function handleSearch() {
-    const next: Record<string, string> = { page: '1', sort: form.sort }
-    if (form.startYmd) next.startYmd = form.startYmd
-    if (form.endYmd) next.endYmd = form.endYmd
-    if (form.keyword) next.keyword = form.keyword
-    setSearchParams(next)
+    setSearchParams((p) => {
+      p.set('page', '1')
+      p.set('sort', form.sort)
+      
+      if (form.startYmd) p.set('startYmd', form.startYmd)
+      else p.delete('startYmd')
+      
+      if (form.endYmd) p.set('endYmd', form.endYmd)
+      else p.delete('endYmd')
+      
+      if (form.keyword) p.set('keyword', form.keyword)
+      else p.delete('keyword')
+      
+      return p
+    })
   }
 
   function handleReset() {

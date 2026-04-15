@@ -20,7 +20,7 @@ interface TabState {
   closeAllTabs: () => void
   reorderTabs: (fromId: string, toId: string) => void
   // 탭 내부 이동용: id는 유지하고 path/params만 교체
-  updateTab: (tabId: string, updates: Partial<Pick<TabItem, 'path' | 'params' | 'label'>>) => void
+  updateTab: (tabId: string, updates: Partial<Pick<TabItem, 'path' | 'params' | 'label' | 'search'>>) => void
 }
 
 export const useTabStore = create<TabState>((set, get) => ({

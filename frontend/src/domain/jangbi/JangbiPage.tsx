@@ -48,12 +48,22 @@ export default function JangbiPage() {
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0
 
   function handleSearch() {
-    const next: Record<string, string> = { page: '1' }
-    if (form.keyword) next.keyword = form.keyword
-    if (form.lvl) next.lvl = form.lvl
-    if (form.startYmd) next.startYmd = form.startYmd
-    if (form.endYmd) next.endYmd = form.endYmd
-    setSearchParams(next)
+    setSearchParams((p) => {
+      p.set('page', '1')
+      if (form.keyword) p.set('keyword', form.keyword)
+      else p.delete('keyword')
+      
+      if (form.lvl) p.set('lvl', form.lvl)
+      else p.delete('lvl')
+      
+      if (form.startYmd) p.set('startYmd', form.startYmd)
+      else p.delete('startYmd')
+      
+      if (form.endYmd) p.set('endYmd', form.endYmd)
+      else p.delete('endYmd')
+      
+      return p
+    })
   }
 
   function handleReset() {

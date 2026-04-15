@@ -127,36 +127,58 @@ export function SimpleTabLayout() {
 
   // 내부 navigate() 호출 감지 → 탭 자동 오픈 or 인-탭 이동
   useEffect(() => {
-    const pathname = location.pathname
+    const { pathname, search } = location
     if (pathname === '/login') return
 
     const found = findRoute(pathname)
     if (!found) return
 
+    // 렌더링 시점의 최신 상태를 getState()로 직접 참조 (의존성 최소화)
+    const state = useTabStore.getState()
+    const { tabs, activeTabId, openTab, activateTab, updateTab } = state
+
     // active 탭의 하위 경로면 새 탭 대신 현재 탭 내부에서 이동
-    // ex) /jangbi 탭 → /jangbi/new, /jangbi/5, /jangbi/5/edit 모두 인-탭
     const isInTabNavigation =
       activeTabId !== '/' &&
       pathname !== activeTabId &&
       pathname.startsWith(activeTabId + '/')
 
     if (isInTabNavigation) {
-      // 현재 탭의 path/params만 교체 (탭 id, 위치는 유지)
-      updateTab(activeTabId, { path: pathname, params: found.params })
+      const activeTab = tabs.find(t => t.id === activeTabId)
+      if (activeTab) {
+        const hasPathChanged = activeTab.path !== pathname
+        const hasLabelChanged = activeTab.label !== found.label
+        // 인-탭 이동시에는 search를 업데이트하지 않음 (목록 검색어 보존을 위해)
+        if (hasPathChanged || hasLabelChanged) {
+          updateTab(activeTabId, { 
+            path: pathname, 
+            params: found.params,
+            label: found.label
+          })
+        }
+      }
       return
     }
 
     const existing = tabs.find((t) => t.id === pathname)
     if (existing) {
+      // 1. 활성 탭이 다르면 해당 탭으로 전환
       if (activeTabId !== existing.id) {
         activateTab(existing.id)
-      } else if (existing.path !== pathname) {
-        // 같은 탭이 활성화 상태인데 path가 달라진 경우 (예: 뒤로가기)
-        updateTab(existing.id, { path: pathname, params: found.params })
-      }
-      // 탭 자신의 경로에서 search params가 바뀌면 기억해둠 (← 목록 복귀 시 복원용)
-      if (existing.search !== location.search) {
-        updateTab(existing.id, { search: location.search })
+      } 
+      
+      // 2. 경로 정보나 검색어, 라벨이 바뀌었으면 업데이트
+      const hasPathChanged = existing.path !== pathname
+      const hasSearchChanged = pathname === existing.id && (existing.search ?? '') !== (search ?? '')
+      const hasLabelChanged = existing.label !== found.label
+      
+      if (hasPathChanged || hasSearchChanged || hasLabelChanged) {
+        updateTab(existing.id, { 
+          path: pathname, 
+          params: found.params,
+          label: found.label,
+          ...(pathname === existing.id ? { search } : {})
+        })
       }
     } else if (activeTabId !== pathname) {
       openTab({
@@ -164,9 +186,10 @@ export function SimpleTabLayout() {
         label: found.label,
         path: pathname,
         params: found.params,
+        search: search
       })
     }
-  }, [location.pathname, location.search])
+  }, [location.pathname, location.search]) // 주소 변화만 감지하도록 최소화
 
   return (
     <div className="flex flex-col h-screen">
@@ -179,7 +202,7 @@ export function SimpleTabLayout() {
             if (!found) return null
             const { Component } = found
             return (
-              <TabRouteParamsContext.Provider key={tab.id} value={tab.params ?? {}}>
+              <TabRouteParamsContext.Provider key={tab.id} value={found.params}>
                 <div style={{ display: activeTabId === tab.id ? 'block' : 'none' }}>
                   <Component />
                 </div>

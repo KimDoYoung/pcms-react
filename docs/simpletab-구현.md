@@ -180,7 +180,7 @@ const TAB_PAGE_MAP: Record<string, ComponentType> = {
 
 ## V1 이후 확장 포인트
 
-- 페이지 내부 navigate (예: 일지 상세보기 클릭) → 새 탭으로 열기
-- 탭 상태 sessionStorage 저장 (새로고침 후 복원)
-- URL ↔ 활성 탭 동기화
-- 탭 최대 개수 제한 및 경고
+- [x] 페이지 내부 navigate (예: 일지 상세보기 클릭) → 현재 탭 내용물 교체 (In-tab Navigation)
+- [x] URL ↔ 활성 탭 동기화 (검색 파라미터 포함)
+- [ ] 탭 상태 sessionStorage 저장 (새로고침 후 복원)
+- [ ] 탭 최대 개수 제한 및 경고
