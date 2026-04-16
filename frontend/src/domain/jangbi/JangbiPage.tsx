@@ -5,12 +5,11 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-import { Search, Plus, Pencil, Trash2, CalendarRange } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2 } from 'lucide-react'
 import StarRating from '@/shared/components/StarRating'
 import { formatCost, formatDate } from '@/lib/utils'
 import type { JangbiPageResponse } from '@/domain/jangbi/types/jangbi'
-import { DateRangeSetter } from '@/shared/components/DateRangeSetter'
-import { format } from 'date-fns'
+import { DateRangePicker } from '@/shared/components/DateRangePicker'
 
 const PAGE_SIZE = 10
 
@@ -18,8 +17,6 @@ export default function JangbiPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [showPicker, setShowPicker] = useState(false)
-
   const page = Number(searchParams.get('page') ?? 1)
   const keyword = searchParams.get('keyword') ?? ''
   const lvl = searchParams.get('lvl') ?? ''
@@ -84,7 +81,7 @@ export default function JangbiPage() {
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-5">
           <h1 className="text-xl font-bold text-gray-800">🖥️ 장비</h1>
-          <Button size="sm" onClick={() => navigate('/jangbi/new')}>
+          <Button variant="action" size="sm" onClick={() => navigate('/jangbi/new')}>
             <Plus className="w-4 h-4 mr-1" /> 새 장비 추가
           </Button>
         </div>
@@ -101,41 +98,14 @@ export default function JangbiPage() {
               className="text-sm"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-500 shrink-0">구입일</label>
-            <Input
-              type="date"
-              value={form.startYmd}
-              onChange={(e) => setForm((f) => ({ ...f, startYmd: e.target.value }))}
-              className="text-sm w-36"
-            />
-            <span className="text-xs text-gray-400">~</span>
-            <Input
-              type="date"
-              value={form.endYmd}
-              onChange={(e) => setForm((f) => ({ ...f, endYmd: e.target.value }))}
-              className="text-sm w-36"
-            />
-          </div>
-          <div className="relative">
-            <Button variant="outline" size="sm"
-              onClick={() => setShowPicker((v) => !v)}
-              title="기간 빠른 선택">
-              <CalendarRange className="w-4 h-4" />
-            </Button>
-            {showPicker && (
-              <DateRangeSetter
-                onRangeChange={(start, end) => {
-                  setForm((f) => ({
-                    ...f,
-                    startYmd: format(start, 'yyyy-MM-dd'),
-                    endYmd: format(end, 'yyyy-MM-dd'),
-                  }))
-                }}
-                onClose={() => setShowPicker(false)}
-              />
-            )}
-          </div>
+          <DateRangePicker
+            layout="row"
+            title="구입일"
+            returnFormat="yyyy-MM-dd"
+            startDate={form.startYmd}
+            endDate={form.endYmd}
+            onChange={(s, e) => setForm((f) => ({ ...f, startYmd: s, endYmd: e }))}
+          />
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500 shrink-0">만족도</label>
             <select
@@ -149,10 +119,10 @@ export default function JangbiPage() {
               <option value="1">실망</option>
             </select>
           </div>
-          <Button onClick={handleSearch} className="shrink-0">
+          <Button variant="action" size="pill" onClick={handleSearch} className="shrink-0">
             <Search className="w-4 h-4 mr-1" /> 찾기
           </Button>
-          <Button variant="outline" onClick={handleReset} className="shrink-0">
+          <Button variant="init" size="pill" onClick={handleReset} className="shrink-0">
             초기화
           </Button>
         </div>
