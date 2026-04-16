@@ -152,7 +152,8 @@ export function SimpleTabBar() {
 
   return (
     <>
-      <div className="flex items-end bg-gray-100 border-b border-gray-200 px-4 pt-1.5 gap-0.5 overflow-x-auto shrink-0">
+      <div className="bg-gray-100 border-b border-gray-200 shrink-0">
+      <div className="container mx-auto px-6 flex items-end pt-1.5 gap-0.5 overflow-x-auto">
         {tabs.map((tab) => {
           const isActive = activeTabId === tab.id
           const isDragging = draggedId === tab.id
@@ -194,6 +195,7 @@ export function SimpleTabBar() {
             </div>
           )
         })}
+      </div>
       </div>
 
       {contextMenu && (

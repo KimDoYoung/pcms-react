@@ -65,7 +65,7 @@ export const APP_ROUTES: AppRoute[] = [
   { path: '/practice/tailwindcss', label: '✏️ Tailwind CSS 연습', Component: Practice01Flex, menuGroup: '📝 실습' },
   { path: '/practice/hooks', label: '🪝 React Hooks 연습', Component: Practice02Hooks, menuGroup: '📝 실습' },
   { path: '/practice/hanja', label: '漢 한자 변환 연습', Component: Practice03Hanja, menuGroup: '📝 실습' },
-  { path: '/practice/component-test1', label: '🧪 DatePicker 연습', Component: ComponentTest1, menuGroup: '📝 실습' },
+  { path: '/practice/component-test1', label: '🗓️ DatePicker 연습', Component: ComponentTest1, menuGroup: '📝 실습' },
 
   // 사용자
   { path: '/user-info', label: '👤 사용자정보', Component: UserInfoPage },
