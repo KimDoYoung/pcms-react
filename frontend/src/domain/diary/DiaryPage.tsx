@@ -9,7 +9,7 @@ import { Search, ChevronDown, ChevronUp, Pencil, Eye, CalendarRange, ArrowDownUp
 import { formatCount, formatDate, formatYmd } from '@/lib/utils'
 import { format } from 'date-fns'
 import type { DiaryListDto, DiaryPageResponse } from '@/domain/diary/types/diary'
-import { DateRangePicker } from '@/shared/components/DateRangePicker'
+import {  DateRangeSetter } from '@/shared/components/DateRangeSetter'
 
 const PAGE_SIZE = 10
 
@@ -165,7 +165,7 @@ export default function DiaryPage() {
               <CalendarRange className="w-4 h-4" />
             </Button>
             {showPicker && (
-              <DateRangePicker
+              <DateRangeSetter
                 onRangeChange={(start, end) => {
                   setForm((f) => ({
                     ...f,

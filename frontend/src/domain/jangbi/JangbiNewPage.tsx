@@ -8,7 +8,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { formatDate, formatYmd } from '@/lib/utils'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
-import { DateRangePicker } from '@/shared/components/DateRangePicker'
+import { DateRangeSetter } from '@/shared/components/DateRangeSetter'
 
 export default function JangbiNewPage() {
   const navigate = useNavigate()
@@ -92,7 +92,7 @@ export default function JangbiNewPage() {
                     <CalendarRange className="w-4 h-4" />
                   </Button>
                   {showPicker && (
-                    <DateRangePicker
+                    <DateRangeSetter
                       onRangeChange={(start) => {
                         set('ymd', format(start, 'yyyy-MM-dd'))
                       }}

@@ -9,7 +9,7 @@ import { Search, Plus, Pencil, Trash2, CalendarRange } from 'lucide-react'
 import StarRating from '@/shared/components/StarRating'
 import { formatCost, formatDate } from '@/lib/utils'
 import type { JangbiPageResponse } from '@/domain/jangbi/types/jangbi'
-import { DateRangePicker } from '@/shared/components/DateRangePicker'
+import { DateRangeSetter } from '@/shared/components/DateRangeSetter'
 import { format } from 'date-fns'
 
 const PAGE_SIZE = 10
@@ -124,7 +124,7 @@ export default function JangbiPage() {
               <CalendarRange className="w-4 h-4" />
             </Button>
             {showPicker && (
-              <DateRangePicker
+              <DateRangeSetter
                 onRangeChange={(start, end) => {
                   setForm((f) => ({
                     ...f,

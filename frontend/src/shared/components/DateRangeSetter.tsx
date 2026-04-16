@@ -3,15 +3,15 @@ import { subWeeks, subMonths, subYears, startOfToday, startOfMonth, endOfMonth }
 import { X } from 'lucide-react';
 
 /**
- * RangePicker Props 인터페이스
+ * DateRangeSetter Props 인터페이스
  * @prop onRangeChange - 날짜 범위가 선택되었을 때 부모에게 [시작일, 종료일]을 전달하는 콜백 함수
  * @prop onClose - 선택 완료 후 또는 닫기 버튼 클릭 시 패널을 닫기 위한 함수
  */
-interface DateRangePickerProps {
+interface DateRangeSetterProps {
     onRangeChange: (startDate: Date, endDate: Date) => void;
     onClose: () => void;
 }
-export const DateRangePicker: React.FC<DateRangePickerProps> = ({ onRangeChange, onClose }) => {
+export const DateRangeSetter: React.FC<DateRangeSetterProps> = ({ onRangeChange, onClose }) => {
     const today = startOfToday();
     const handleSelect = (fromDate: Date, toDate: Date) => {
         onRangeChange(fromDate, toDate);
