@@ -8,7 +8,7 @@ import { Globe } from 'lucide-react'
 import { useTabParams } from '@/shared/layout/useTabParams'
 import { useMessage } from '@/shared/hooks/useMessage'
 import { apiClient } from '@/lib/apiClient'
-import { formatYmd, formatDate } from '@/lib/utils'
+import { formatYmd } from '@/lib/utils'
 
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
