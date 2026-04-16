@@ -32,7 +32,7 @@ export default function PostNewPage() {
 
   useEffect(() => {
     if (!boardId) navigate('/boards')
-  }, [boardId])
+  }, [boardId, navigate])
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }))

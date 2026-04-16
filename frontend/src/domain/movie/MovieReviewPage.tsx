@@ -1,10 +1,10 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
-import type { ColDef, GridReadyEvent, IDatasource, IGetRowsParams, GridApi } from 'ag-grid-community';
+import type { ColDef, GridReadyEvent, IDatasource, IGetRowsParams, GridApi, ICellRendererParams } from 'ag-grid-community';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/lib/apiClient';
-import type { MovieReviewDto, MovieReviewSearchDto } from './types/movie';
+import type { MovieReviewDto, MovieReviewSearchDto, PagedResponse } from './types/movie';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { formatDate } from '@/lib/utils';
@@ -33,8 +33,8 @@ const MovieReviewPage = () => {
     getRows: async (params: IGetRowsParams) => {
       try {
         const page = Math.floor(params.startRow / PAGE_SIZE) + 1;
-        const response = await apiClient.get<any>('/movie/review', { 
-          params: { ...searchParams, page, size: PAGE_SIZE } 
+        const response = await apiClient.get<PagedResponse<MovieReviewDto>>('/movie/review', {
+          params: { ...searchParams, page, size: PAGE_SIZE }
         });
         params.successCallback(response.dtoList, response.total);
       } catch (e) {
@@ -57,17 +57,17 @@ const MovieReviewPage = () => {
     setSearchParams({ keyword: '' });
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = useCallback(async (id: number) => {
     if (!window.confirm('정말 삭제하시겠습니까?')) return;
     try {
       await apiClient.delete(`/movie/review/${id}`);
       showMessage('삭제되었습니다.', 'success');
-      handleSearch();
+      gridApiRef.current?.setGridOption('datasource', dataSource);
     } catch (e) {
       console.error('Delete error', e);
       showMessage('삭제 중 오류가 발생했습니다.', 'error');
     }
-  };
+  }, [showMessage, dataSource]);
 
   const columnDefs = useMemo<ColDef<MovieReviewDto>[]>(() => [
     { field: 'id', headerName: 'ID', width: 80 },
@@ -76,27 +76,27 @@ const MovieReviewPage = () => {
       headerName: '제목', 
       flex: 1, 
       minWidth: 150,
-      cellRenderer: (params: any) => (
-        <span 
+      cellRenderer: (params: ICellRendererParams<MovieReviewDto>) => (
+        <span
           className="text-blue-600 hover:underline cursor-pointer font-medium"
-          onClick={() => navigate(`/movie/review/${params.data.id}/view`)}
+          onClick={() => navigate(`/movie/review/${params.data?.id}/view`)}
         >
           {params.value}
         </span>
       )
     },
-    { 
-      field: 'lvl', 
-      headerName: '평점', 
+    {
+      field: 'lvl',
+      headerName: '평점',
       width: 110,
-      cellRenderer: (params: any) => (
+      cellRenderer: (params: ICellRendererParams<MovieReviewDto>) => (
         <div className="flex h-full items-center">
           <StarRating value={params.value ?? 0} max={5} size="sm" />
         </div>
       )
-    },    
+    },
     { field: 'nara', headerName: '국가', width: 70,
-      cellRenderer: (params: any) => (
+      cellRenderer: (params: ICellRendererParams<MovieReviewDto>) => (
         <span title={params.value}>
           {COUNTRY_EMOJI_MAP.get(params.value) ?? params.value}
         </span>
@@ -104,37 +104,37 @@ const MovieReviewPage = () => {
     },
     { field: 'year', headerName: '제작년도', width: 100 },
 
-    { 
-      field: 'ymd', 
-      headerName: '감상일자', 
+    {
+      field: 'ymd',
+      headerName: '감상일자',
       width: 150,
-      valueFormatter: (params) => params.value ? formatDate(params.value) : '' 
+      valueFormatter: (params) => params.value ? formatDate(params.value) : ''
     },
     {
       headerName: '조작',
       width: 150,
-      cellRenderer: (params: any) => (
+      cellRenderer: (params: ICellRendererParams<MovieReviewDto>) => (
         <div className="flex gap-1 h-full items-center">
-          <Button 
-            size="sm" 
-            variant="action" 
+          <Button
+            size="sm"
+            variant="action"
             className="h-7"
-            onClick={() => navigate(`/movie/review/${params.data.id}/edit`)}
+            onClick={() => navigate(`/movie/review/${params.data?.id}/edit`)}
           >
             수정
           </Button>
-          <Button 
-            size="sm" 
-            variant="delete" 
+          <Button
+            size="sm"
+            variant="delete"
             className="h-7"
-            onClick={() => handleDelete(params.data.id)}
+            onClick={() => params.data?.id !== undefined && handleDelete(params.data.id)}
           >
             삭제
           </Button>
         </div>
       )
     }
-  ], [navigate]);
+  ], [navigate, handleDelete]);
 
   return (
     <div className="min-h-screen bg-gray-50">

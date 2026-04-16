@@ -1,3 +1,8 @@
+export interface PagedResponse<T> {
+  dtoList: T[]
+  total: number
+}
+
 export interface MovieDto {
   id?: number;
   mid?: string;

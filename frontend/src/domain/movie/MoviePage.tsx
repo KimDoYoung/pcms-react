@@ -3,7 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import type { ColDef, GridReadyEvent, IDatasource, IGetRowsParams, GridApi, CellValueChangedEvent, RowStyle } from 'ag-grid-community';
 import { apiClient } from '@/lib/apiClient';
-import type { MovieDto, MovieSearchDto } from './types/movie';
+import type { MovieDto, MovieSearchDto, PagedResponse } from './types/movie';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { GroupRadioButton } from '@/shared/components/GroupRadioButton';
@@ -66,7 +66,7 @@ const MoviePage = () => {
       try {
         const sp = searchParamsRef.current;
         const page = Math.floor(params.startRow / PAGE_SIZE) + 1;
-        const response = await apiClient.get<any>('/movie', {
+        const response = await apiClient.get<PagedResponse<MovieDto>>('/movie', {
           params: { ...sp, gubun: sp.gubun === 'ALL' ? '' : sp.gubun, page, size: PAGE_SIZE }
         });
         params.successCallback(response.dtoList, response.total);

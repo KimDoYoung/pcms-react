@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useEditor } from '@tiptap/react'
 import HanjaSearchModal from '@/shared/components/editor/HanjaSearchModal'
 
@@ -25,9 +25,20 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
   const [selectedWord, setSelectedWord] = useState('')
   const selectionRef = useRef<{ from: number; to: number } | null>(null)
 
-  if (!editor) return null
+  const handleHanjaClick = useCallback(() => {
+    if (!editor) return
+
+    const { from, to } = editor.state.selection
+    const text = editor.state.doc.textBetween(from, to, ' ')
+    if (!text.trim()) return
+    selectionRef.current = { from, to }
+    setSelectedWord(text.trim())
+    setHanjaOpen(true)
+  }, [editor])
 
   useEffect(() => {
+    if (!editor) return
+
     function onKeyDown(e: KeyboardEvent) {
       if (e.ctrlKey && e.shiftKey && e.key === 'H') {
         e.preventDefault()
@@ -36,16 +47,9 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  })
+  }, [editor, handleHanjaClick])
 
-  function handleHanjaClick() {
-    const { from, to } = editor.state.selection
-    const text = editor.state.doc.textBetween(from, to, ' ')
-    if (!text.trim()) return
-    selectionRef.current = { from, to }
-    setSelectedWord(text.trim())
-    setHanjaOpen(true)
-  }
+  if (!editor) return null
 
   function handleHanjaSelect(hanja: string) {
     if (!selectionRef.current) return

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getDayOfWeek, formatYmd, formatDate } from '@/lib/utils'
@@ -10,6 +10,13 @@ import { Button } from '@/shared/components/ui/button'
 import AttachmentUploader from '@/shared/components/AttachmentUploader'
 import DiarySummaryList from '@/domain/diary/components/DiarySummaryList'
 import { useMessage } from '@/shared/hooks/useMessage'
+
+interface DiaryApiResponse {
+  id: number
+  summary?: string
+  content?: string
+  attachments?: { fileId: number; [key: string]: unknown }[]
+}
 
 function DiaryRegisterPage() {
   const navigate = useNavigate()
@@ -35,15 +42,15 @@ function DiaryRegisterPage() {
     async function fetchDiary() {
       try {
         const ymd = formatYmd(diaryDate)
-        const res = await apiClient.get(`/diary/date/${ymd}`)
+        const res = await apiClient.get<DiaryApiResponse | null>(`/diary/date/${ymd}`)
 
         if (res && typeof res === 'object' && 'id' in res) {
-          const loadedTitle = (res as any).summary || ''
-          const loadedContent = (res as any).content || ''
-          setDiaryId((res as any).id)
+          const loadedTitle = res.summary || ''
+          const loadedContent = res.content || ''
+          setDiaryId(res.id)
           setTitle(loadedTitle)
           setContent(loadedContent)
-          setAttachments((res as any).attachments || [])
+          setAttachments(res.attachments || [])
           setSavedSnapshot(JSON.stringify({ title: loadedTitle, content: loadedContent }))
         } else {
           setDiaryId(null)
@@ -76,13 +83,13 @@ function DiaryRegisterPage() {
     newFiles.length > 0 ||
     deletedAttachmentIds.length > 0
 
-  const changeDate = (days: number) => {
+  const changeDate = useCallback((days: number) => {
     const d = new Date(diaryDate)
     d.setDate(d.getDate() + days)
     setDiaryDate(d.toISOString().slice(0, 10))
-  }
+  }, [diaryDate])
 
-  async function handleSubmit() {
+  const handleSubmit = useCallback(async () => {
     const diaryPayload = {
       id: diaryId,
       ymd: formatYmd(diaryDate),
@@ -112,10 +119,10 @@ function DiaryRegisterPage() {
       ])
 
       // Refresh to get latest attachments
-      const res = await apiClient.get(`/diary/date/${diaryPayload.ymd}`)
+      const res = await apiClient.get<DiaryApiResponse | null>(`/diary/date/${diaryPayload.ymd}`)
       if (res && typeof res === 'object' && 'id' in res) {
-        setDiaryId((res as any).id)
-        setAttachments((res as any).attachments || [])
+        setDiaryId(res.id)
+        setAttachments(res.attachments || [])
         setNewFiles([])
         setDeletedAttachmentIds([])
         setSavedSnapshot(JSON.stringify({ title, content }))
@@ -124,7 +131,7 @@ function DiaryRegisterPage() {
       console.error(e)
       showMessage('저장 중 오류가 발생했습니다.', 'error')
     }
-  }
+  }, [diaryId, diaryDate, title, content, deletedAttachmentIds, newFiles, queryClient, showMessage])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -148,7 +155,7 @@ function DiaryRegisterPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [diaryDate, title, content, savedSnapshot, diaryId, attachments, newFiles, deletedAttachmentIds])
+  }, [diaryDate, title, content, savedSnapshot, diaryId, attachments, newFiles, deletedAttachmentIds, handleSubmit, changeDate])
 
   return (
     <div className="min-h-screen bg-gray-50">

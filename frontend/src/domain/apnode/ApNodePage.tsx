@@ -355,7 +355,7 @@ export default function ApNodePage() {
   async function handleDownload(node: ApNode) {
     try {
       // apiClient를 사용하여 blob 형태로 데이터 요청 (토큰 헤더 자동 포함됨)
-      const response = await (apiClient as any).get(`/apnode/${node.id}/download`, {
+      const response = await apiClient.get<Blob>(`/apnode/${node.id}/download`, {
         responseType: 'blob',
       })
 
@@ -729,7 +729,12 @@ export default function ApNodePage() {
                                 type="checkbox"
                                 className="rounded border-gray-300"
                                 checked={isSelected}
-                                onChange={(e) => handleItemClick(e as any, item.id)}
+                                onChange={() => setSelectedIds((prev) => {
+                                  const next = new Set(prev)
+                                  if (next.has(item.id)) next.delete(item.id)
+                                  else next.add(item.id)
+                                  return next
+                                })}
                               />
                             </td>
                             <td className="p-2">

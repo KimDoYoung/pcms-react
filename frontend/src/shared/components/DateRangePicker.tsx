@@ -117,24 +117,41 @@ export function DateRangePicker({
     </Popover>
   )
 
-  const pickers = (
+  const commonProps = { disabled, buttonSize }
+
+  const pickers = returnFormat ? (
     <>
       <DatePicker
-        returnFormat={returnFormat as any}
-        value={startDate as any}
-        onChange={(val: any) => (onChange as any)?.(val, endDate)}
+        returnFormat={returnFormat}
+        value={startDate as string | undefined}
+        onChange={(val) => (onChange as (s: string, e: string) => void)?.(val, endDate as string)}
         placeholder="시작일"
-        disabled={disabled}
-        buttonSize={buttonSize}
+        {...commonProps}
       />
       <span className="text-muted-foreground select-none">~</span>
       <DatePicker
-        returnFormat={returnFormat as any}
-        value={endDate as any}
-        onChange={(val: any) => (onChange as any)?.(startDate, val)}
+        returnFormat={returnFormat}
+        value={endDate as string | undefined}
+        onChange={(val) => (onChange as (s: string, e: string) => void)?.(startDate as string, val)}
         placeholder="종료일"
-        disabled={disabled}
-        buttonSize={buttonSize}
+        {...commonProps}
+      />
+      {quickPopover}
+    </>
+  ) : (
+    <>
+      <DatePicker
+        value={startDate as Date | undefined}
+        onChange={(val) => (onChange as (s: Date | undefined, e: Date | undefined) => void)?.(val, endDate as Date | undefined)}
+        placeholder="시작일"
+        {...commonProps}
+      />
+      <span className="text-muted-foreground select-none">~</span>
+      <DatePicker
+        value={endDate as Date | undefined}
+        onChange={(val) => (onChange as (s: Date | undefined, e: Date | undefined) => void)?.(startDate as Date | undefined, val)}
+        placeholder="종료일"
+        {...commonProps}
       />
       {quickPopover}
     </>

@@ -12,6 +12,8 @@ import SpecialDayFormDialog from '@/domain/calendar/component/SpecialDayFormDial
 import { COLOR_MAP, DEFAULT_COLOR } from '@/domain/calendar/component/eventColors'
 import type { CalendarEvent, CalendarDay, LunarDateDto } from '@/domain/calendar/types/calendar'
 
+const todayDate = new Date()
+
 function getStartEndYmd(year: number, month: number): [string, string] {
   const firstDate = new Date(year, month - 1, 1)
   const lastDate = new Date(year, month, 0)
@@ -22,7 +24,6 @@ function getStartEndYmd(year: number, month: number): [string, string] {
 
 function Calendar1Page() {
   const queryClient = useQueryClient()
-  const todayDate = new Date()
   const [currentYear, setCurrentYear] = useState(todayDate.getFullYear())
   const [currentMonth, setCurrentMonth] = useState(todayDate.getMonth() + 1)
   const [addDialogOpen, setAddDialogOpen] = useState(false)

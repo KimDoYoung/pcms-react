@@ -81,7 +81,7 @@ export const useTabStore = create<TabState>((set, get) => ({
     if (!target) return
 
     const hasChange = Object.entries(updates).some(([key, value]) => {
-      return (target as any)[key] !== value
+      return target[key as keyof TabItem] !== value
     })
 
     if (hasChange) {

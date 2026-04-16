@@ -3,7 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import type { ColDef, GridReadyEvent, IDatasource, IGetRowsParams, GridApi } from 'ag-grid-community';
 import { apiClient } from '@/lib/apiClient';
-import type { HddDto, HddSearchDto } from './types/movie';
+import type { HddDto, HddSearchDto, PagedResponse } from './types/movie';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import Toolbar from '@/shared/layout/Toolbar';
@@ -27,7 +27,7 @@ const HddPage = () => {
     getRows: async (params: IGetRowsParams) => {
       try {
         const page = Math.floor(params.startRow / PAGE_SIZE) + 1;
-        const response = await apiClient.get<any>('/movie/hdd', { 
+        const response = await apiClient.get<PagedResponse<HddDto>>('/movie/hdd', {
           params: { ...searchParams, page, size: PAGE_SIZE } 
         });
         params.successCallback(response.dtoList, response.total);

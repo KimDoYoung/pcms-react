@@ -13,7 +13,7 @@
  * - onSelect     : 한자를 선택했을 때 호출되는 콜백 (모달은 자동으로 닫힘)
  * - ↑↓ 로 항목 이동, Enter 로 선택, Esc 로 닫기 (선택 없음)
  */
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -61,6 +61,11 @@ export default function HanjaSearchModal({ open, selectedWord, onClose, onSelect
     itemRefs.current[focusedIndex]?.scrollIntoView({ block: 'nearest' })
   }, [focusedIndex])
 
+  const handleSelect = useCallback((hanja: string) => {
+    onSelect(hanja)
+    onClose()
+  }, [onSelect, onClose])
+
   // ↑↓ Enter 키보드 네비게이션
   useEffect(() => {
     if (!open || results.length === 0) return
@@ -78,12 +83,7 @@ export default function HanjaSearchModal({ open, selectedWord, onClose, onSelect
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open, results, focusedIndex])
-
-  function handleSelect(hanja: string) {
-    onSelect(hanja)
-    onClose()
-  }
+  }, [open, results, focusedIndex, handleSelect])
 
   async function handleAdd() {
     if (!inputKorean.trim() || !inputHanja.trim()) return

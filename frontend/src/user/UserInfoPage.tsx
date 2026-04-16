@@ -26,7 +26,7 @@ function UserInfoPage() {
 
     setLoading(true)
     try {
-      const response = await apiClient.post<any>('/user/change-password', formData)
+      const response = await apiClient.post<{ success: boolean; message?: string }>('/user/change-password', formData)
       if (response.success) {
         alert('비밀번호가 성공적으로 변경되었습니다.')
         setFormData({
@@ -37,9 +37,10 @@ function UserInfoPage() {
       } else {
         alert(response.message || '비밀번호 변경에 실패했습니다.')
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Password change error:', error)
-      const msg = error.response?.data?.message || '비밀번호 변경 중 오류가 발생했습니다.'
+      const axiosError = error as { response?: { data?: { message?: string } } }
+      const msg = axiosError.response?.data?.message || '비밀번호 변경 중 오류가 발생했습니다.'
       alert(msg)
     } finally {
       setLoading(false)

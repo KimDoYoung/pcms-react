@@ -46,7 +46,7 @@ export default function ContentEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({ placeholder }),
-      // @ts-ignore
+      // @ts-expect-error ResizableImage has no type declarations
       ResizableImage.configure({ inline: false, allowBase64: true }),
       TextStyle,
       Color,
