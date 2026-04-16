@@ -106,3 +106,4 @@ redis-cli -h jskn.iptime.org -p 6379 -a "kalpa987!"
 
 - component의 목적(용도)를 기술한다.
 - component의 사용법을 기술한다.
+- lint 명령을 수행 ' fm.sh lint ' 를 수행해서 0개의 warning, 0개의  error 여야한다.
