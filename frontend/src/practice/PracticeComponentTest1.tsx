@@ -8,6 +8,7 @@
  */
 import { useState } from 'react'
 import { DatePicker } from '@/shared/components/DatePicker'
+import { DateRangePicker } from '@/shared/components/DateRangePicker'
 import Toolbar from '@/shared/layout/Toolbar'
 
 // ──────────────────────────────────────────
@@ -104,17 +105,104 @@ function DisabledExample() {
 }
 
 // ──────────────────────────────────────────
+// 실습 5: DateRangePicker — Date 반환
+// ──────────────────────────────────────────
+function DateRangeExample() {
+  const [start, setStart] = useState<Date | undefined>()
+  const [end, setEnd]     = useState<Date | undefined>()
+
+  return (
+    <section className="p-6 border rounded-xl bg-white shadow-sm space-y-3">
+      <h2 className="font-semibold text-base">5. DateRangePicker — Date 반환</h2>
+      <DateRangePicker
+        title="조회기간"
+        startDate={start}
+        endDate={end}
+        onChange={(s, e) => { setStart(s); setEnd(e) }}
+      />
+      <p className="text-sm">
+        선택값:{' '}
+        <span className="font-mono text-primary">
+          {start ? start.toISOString() : '(없음)'} ~{' '}
+          {end   ? end.toISOString()   : '(없음)'}
+        </span>
+      </p>
+    </section>
+  )
+}
+
+// ──────────────────────────────────────────
+// 실습 5-b: DateRangePicker — layout="row" (1라인)
+// ──────────────────────────────────────────
+function DateRangeRowExample() {
+  const [start, setStart] = useState<string | undefined>()
+  const [end, setEnd]     = useState<string | undefined>()
+
+  return (
+    <section className="p-6 border rounded-xl bg-white shadow-sm space-y-3">
+      <h2 className="font-semibold text-base">5-b. DateRangePicker — layout="row" (1라인)</h2>
+      <DateRangePicker
+        layout="row"
+        title="조회기간"
+        returnFormat="yyyy-MM-dd"
+        startDate={start}
+        endDate={end}
+        onChange={(s, e) => { setStart(s); setEnd(e) }}
+        buttonSize="sm"
+      />
+      <p className="text-sm">
+        선택값:{' '}
+        <span className="font-mono text-primary">
+          {start || '(없음)'} ~ {end || '(없음)'}
+        </span>
+      </p>
+    </section>
+  )
+}
+
+// ──────────────────────────────────────────
+// 실습 6: DateRangePicker — 문자열 반환
+// ──────────────────────────────────────────
+function DateRangeStringExample() {
+  const [start, setStart] = useState('')
+  const [end, setEnd]     = useState('')
+
+  return (
+    <section className="p-6 border rounded-xl bg-white shadow-sm space-y-3">
+      <h2 className="font-semibold text-base">6. DateRangePicker — yyyyMMdd 문자열 반환</h2>
+      <DateRangePicker
+        title="조회기간"
+        returnFormat="yyyyMMdd"
+        startDate={start}
+        endDate={end}
+        onChange={(s, e) => { setStart(s); setEnd(e) }}
+        buttonSize="sm"
+      />
+      <p className="text-sm">
+        선택값:{' '}
+        <span className="font-mono text-primary">
+          {start || '(없음)'} ~ {end || '(없음)'}
+        </span>
+      </p>
+    </section>
+  )
+}
+
+// ──────────────────────────────────────────
 // 페이지
 // ──────────────────────────────────────────
 export default function ComponentTest1() {
   return (
     <>
-      <Toolbar title="DatePicker 컴포넌트 연습" />
+      <Toolbar />
       <main className="container mx-auto px-4 py-6 space-y-6">
         <DateModeExample />
         <StringDashModeExample />
         <StringYmdModeExample />
         <DisabledExample />
+        <DateRangeExample />
+        <DateRangeRowExample />
+        <DateRangeStringExample />
       </main>
     </>
   )

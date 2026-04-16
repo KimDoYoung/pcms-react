@@ -62,24 +62,27 @@ type DatePickerStringProps = DatePickerBaseProps & {
   onChange?: (dateStr: string) => void
 }
 
-type DatePickerProps = DatePickerDateProps | DatePickerStringProps
 
+// 오버로드 시그니처 — 외부 호출 시 타입 추론에 사용
+export function DatePicker(props: DatePickerDateProps): React.JSX.Element
+export function DatePicker(props: DatePickerStringProps): React.JSX.Element
+// 구현부 — returnFormat을 직접 구조분해해서 ...rest 캐스팅 문제를 방지
 export function DatePicker({
   value,
   onChange,
+  returnFormat,
   placeholder = "날짜를 선택하세요",
   disabled = false,
   className,
   buttonSize = "default",
-  ...rest
-}: DatePickerProps) {
-  const returnFormat = (rest as DatePickerStringProps).returnFormat
+}: DatePickerDateProps | DatePickerStringProps) {
 
   // 내부 선택값은 항상 Date로 관리
   const selectedDate: Date | undefined = React.useMemo(() => {
     if (!value) return undefined
     if (value instanceof Date) return value
-    const parsed = parse(value, returnFormat, new Date())
+    if (!returnFormat) return undefined
+    const parsed = parse(value as string, returnFormat, new Date())
     return isValid(parsed) ? parsed : undefined
   }, [value, returnFormat])
 
@@ -87,11 +90,9 @@ export function DatePicker({
 
   const handleSelect = (date: Date | undefined) => {
     if (returnFormat) {
-      ;(onChange as DatePickerStringProps["onChange"])?.(
-        date ? format(date, returnFormat) : ""
-      )
+      (onChange as (s: string) => void)?.(date ? format(date, returnFormat) : "")
     } else {
-      ;(onChange as DatePickerDateProps["onChange"])?.(date)
+      (onChange as (d: Date | undefined) => void)?.(date)
     }
     setOpen(false)
   }
@@ -108,7 +109,12 @@ export function DatePicker({
           size={buttonSize}
           disabled={disabled}
           className={cn(
-            "w-[240px] justify-start text-left font-normal",
+            returnFormat === 'yyyyMMdd'
+              ? "w-[120px]"
+              : returnFormat === 'yyyy-MM-dd'
+                ? "w-[150px]"
+                : "w-[200px]",
+            "justify-start text-left font-normal",
             !selectedDate && "text-muted-foreground",
             className
           )}

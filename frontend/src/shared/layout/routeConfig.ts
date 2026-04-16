@@ -26,7 +26,7 @@ import SettingsPage from '@/user/SettingsPage'
 import Practice01Flex from '@/practice/Practice01Flex'
 import Practice02Hooks from '@/practice/Practice02Hooks'
 import Practice03Hanja from '@/practice/Practice03Hanja'
-import ComponentTest1 from '@/practice/ComponentTest1'
+import ComponentTest1 from '@/practice/PracticeComponentTest1'
 
 export interface AppRoute {
   path: string

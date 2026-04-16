@@ -10,8 +10,9 @@ import { X } from 'lucide-react';
 interface DateRangeSetterProps {
     onRangeChange: (startDate: Date, endDate: Date) => void;
     onClose: () => void;
+    className?: string;
 }
-export const DateRangeSetter: React.FC<DateRangeSetterProps> = ({ onRangeChange, onClose }) => {
+export const DateRangeSetter: React.FC<DateRangeSetterProps> = ({ onRangeChange, onClose, className }) => {
     const today = startOfToday();
     const handleSelect = (fromDate: Date, toDate: Date) => {
         onRangeChange(fromDate, toDate);
@@ -28,7 +29,7 @@ export const DateRangeSetter: React.FC<DateRangeSetterProps> = ({ onRangeChange,
         { label: '작년 금월', from: startOfMonth(subYears(today, 1)), to: endOfMonth(subYears(today, 1)) },
     ];
     return (
-        <div className="absolute top-full mt-2 w-72 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-3">
+        <div className={className ?? "absolute top-full mt-2 w-72 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-3"}>
             <div className="flex items-start justify-between gap-2 mb-3">
                 <p className="text-xs font-medium text-gray-500">빠른 날짜 선택</p>
                 <button
