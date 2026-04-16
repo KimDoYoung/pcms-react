@@ -1,14 +1,26 @@
 package kr.co.kalpa.pcms.domain.movie.controller;
 
 import kr.co.kalpa.pcms.common.dto.PageResponseDto;
-import kr.co.kalpa.pcms.domain.movie.dto.*;
+import kr.co.kalpa.pcms.domain.movie.dto.HddDto;
+import kr.co.kalpa.pcms.domain.movie.dto.HddSearchDto;
+import kr.co.kalpa.pcms.domain.movie.dto.MovieDto;
+import kr.co.kalpa.pcms.domain.movie.dto.MovieReviewDto;
+import kr.co.kalpa.pcms.domain.movie.dto.MovieReviewSearchDto;
+import kr.co.kalpa.pcms.domain.movie.dto.MovieSearchDto;
 import kr.co.kalpa.pcms.domain.movie.service.HddService;
 import kr.co.kalpa.pcms.domain.movie.service.MovieReviewService;
 import kr.co.kalpa.pcms.domain.movie.service.MovieService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;

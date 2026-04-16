@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!--
+      Lombok @Getter 는 내부 컬렉션/Date 를 그대로 반환하므로 EI_EXPOSE_REP 가 대량 발생.
+      Spring DTO 컨텍스트에서는 허용 가능한 패턴이므로 제외.
+    -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!--
+      Jackson 이 리플렉션으로 필드를 직접 세팅하는 @Getter-only DTO 는
+      바이트코드 상 "unwritten field" 로 보이지만 런타임에는 정상 동작함.
+    -->
+    <Match>
+        <Bug pattern="UWF_UNWRITTEN_FIELD"/>
+    </Match>
+</FindBugsFilter>

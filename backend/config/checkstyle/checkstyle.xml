@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+  PCMS Backend Checkstyle 규칙
+  - Javadoc 불필요 (프로젝트 정책상 Why 주석만 허용)
+  - Lombok 호환 (@Slf4j 의 log 상수는 예외 처리)
+  - 실용적인 규칙만 포함 (스타일보다 버그 방지 우선)
+-->
+<module name="Checker">
+    <property name="charset" value="UTF-8"/>
+    <property name="severity" value="warning"/>
+    <property name="fileExtensions" value="java"/>
+
+    <!-- 파일 끝 개행 -->
+    <module name="NewlineAtEndOfFile">
+        <property name="lineSeparator" value="lf_cr_crlf"/>
+    </module>
+
+    <module name="TreeWalker">
+
+        <!-- ── 임포트 ──────────────────────────────────────────────── -->
+        <!-- 사용하지 않는 import -->
+        <module name="UnusedImports"/>
+        <!-- 같은 클래스를 중복 import -->
+        <module name="RedundantImport"/>
+        <!-- 와일드카드 import 금지 (java.lang.* 예외) -->
+        <module name="AvoidStarImport">
+            <property name="allowClassImports" value="false"/>
+            <property name="allowStaticMemberImports" value="false"/>
+        </module>
+
+        <!-- ── 네이밍 규칙 ───────────────────────────────────────── -->
+        <!-- 클래스명: UpperCamelCase -->
+        <module name="TypeName"/>
+        <!-- 메서드명: lowerCamelCase -->
+        <module name="MethodName"/>
+        <!-- 지역변수: lowerCamelCase -->
+        <module name="LocalVariableName"/>
+        <!-- 파라미터: lowerCamelCase -->
+        <module name="ParameterName"/>
+        <!-- 패키지명: 소문자 -->
+        <module name="PackageName">
+            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
+        </module>
+        <!-- 상수: UPPER_CASE (단, @Slf4j 가 생성하는 log 예외) -->
+        <module name="ConstantName">
+            <property name="format" value="^log$|^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$"/>
+        </module>
+
+        <!-- ── 코드 품질 ─────────────────────────────────────────── -->
+        <!-- 빈 블록 금지 (catch 블록에 주석 없을 때 등) -->
+        <module name="EmptyBlock">
+            <property name="option" value="text"/>
+        </module>
+        <!-- 빈 문장 금지 (;; 같은 실수) -->
+        <module name="EmptyStatement"/>
+        <!-- equals() 오버라이드 시 hashCode() 도 함께 구현 -->
+        <module name="EqualsHashCode"/>
+        <!-- 문자열 == 비교 금지 (equals() 사용) -->
+        <module name="StringLiteralEquality"/>
+        <!-- 불필요한 boolean 표현식 단순화 -->
+        <module name="SimplifyBooleanExpression"/>
+        <!-- if (cond) return true; else return false; → return cond; -->
+        <module name="SimplifyBooleanReturn"/>
+        <!-- long 리터럴은 l 대신 L 사용 -->
+        <module name="UpperEll"/>
+        <!-- 접근제어자 순서: public protected private abstract static ... -->
+        <module name="ModifierOrder"/>
+        <!-- 재정의된 메서드에는 @Override 어노테이션 필수 -->
+        <module name="MissingOverride"/>
+
+    </module>
+</module>

@@ -190,6 +190,44 @@ do_clean() {
     info "빌드 캐시가 삭제되었습니다."
 }
 
+do_checkstyle() {
+    header "Checkstyle - 코드 스타일 검사"
+    "$GRADLEW" -p "$BACKEND_DIR" checkstyleMain --rerun-tasks 2>&1 | \
+        grep -E "(warning|error|\[ant:checkstyle\]|\[WARN\])" | head -60 || true
+    local report="$BACKEND_DIR/build/reports/checkstyle/main.html"
+    if [[ -f "$report" ]]; then
+        info "리포트: $report"
+    fi
+}
+
+do_spotbugs() {
+    header "SpotBugs - 버그 패턴 정적 분석"
+    "$GRADLEW" -p "$BACKEND_DIR" spotbugsMain --rerun-tasks 2>&1 | \
+        grep -E "(warning|error|BUG|SpotBugs)" | head -60 || true
+    local report="$BACKEND_DIR/build/reports/spotbugs/main.html"
+    if [[ -f "$report" ]]; then
+        info "리포트: $report"
+    fi
+}
+
+do_lint() {
+    header "Lint - Checkstyle + SpotBugs 전체 검사"
+    info "1/2 Checkstyle 실행 중..."
+    "$GRADLEW" -p "$BACKEND_DIR" checkstyleMain --rerun-tasks -q 2>&1 | \
+        grep -E "(warning|\[ant:checkstyle\])" | head -60 || true
+
+    info "2/2 SpotBugs 실행 중..."
+    "$GRADLEW" -p "$BACKEND_DIR" spotbugsMain --rerun-tasks -q 2>&1 | \
+        grep -E "(warning|BUG)" | head -60 || true
+
+    echo ""
+    local cs_report="$BACKEND_DIR/build/reports/checkstyle/main.html"
+    local sb_report="$BACKEND_DIR/build/reports/spotbugs/main.html"
+    [[ -f "$cs_report" ]] && info "Checkstyle 리포트: $cs_report"
+    [[ -f "$sb_report" ]] && info "SpotBugs  리포트: $sb_report"
+    info "Lint 완료."
+}
+
 do_log() {
     local log_file="$BACKEND_DIR/pcms-data/logs/pcms.log"
     header "Log - 애플리케이션 로그 보기"
@@ -225,6 +263,9 @@ print_menu() {
         "clean:빌드 캐시 삭제"
         "log:로그 보기"
         "status:상태 확인"
+        "checkstyle:코드 스타일 검사"
+        "spotbugs:버그 패턴 분석"
+        "lint:전체 정적 분석"
     )
 
     echo -e "  ${BOLD}명령어${NC}"
@@ -259,7 +300,7 @@ main() {
         print_banner
         print_menu
 
-        local cmds=("run" "compile" "build" "war" "test" "clean" "log" "status")
+        local cmds=("run" "compile" "build" "war" "test" "clean" "log" "status" "checkstyle" "spotbugs" "lint")
 
         read -rp "  번호를 입력하세요: " choice
         echo ""
@@ -281,14 +322,17 @@ main() {
     fi
 
     case "$cmd" in
-        run)     do_run ;;
-        compile) do_compile ;;
-        build)   do_build ;;
-        war)     do_war ;;
-        test)    do_test ;;
-        clean)   do_clean ;;
-        log)     do_log ;;
-        status)  do_status ;;
+        run)        do_run ;;
+        compile)    do_compile ;;
+        build)      do_build ;;
+        war)        do_war ;;
+        test)       do_test ;;
+        clean)      do_clean ;;
+        log)        do_log ;;
+        status)     do_status ;;
+        checkstyle) do_checkstyle ;;
+        spotbugs)   do_spotbugs ;;
+        lint)       do_lint ;;
         help)
             print_banner
             print_menu

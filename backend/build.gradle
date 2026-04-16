@@ -1,8 +1,10 @@
 plugins {
     id 'java'
     id 'war'                                        // 외부 Tomcat 배포를 위한 WAR 플러그인
-    id 'org.springframework.boot' version '3.3.0'   // Spring Boot 플러그인 
+    id 'org.springframework.boot' version '3.3.0'   // Spring Boot 플러그인
     id 'io.spring.dependency-management' version '1.1.4'
+    id 'checkstyle'                                 // 코드 스타일 검사
+    id 'com.github.spotbugs' version '6.0.19'       // 버그 패턴 정적 분석
 }
 
 group = 'kr.co.kalpa'
@@ -64,6 +66,34 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// ── Checkstyle ──────────────────────────────────────────────────────────────
+checkstyle {
+    toolVersion = '10.17.0'
+    configFile = file("config/checkstyle/checkstyle.xml")
+    ignoreFailures = true       // 위반이 있어도 빌드 실패하지 않음 (경고로만 처리)
+    showViolations = true
+}
+tasks.withType(Checkstyle).configureEach {
+    reports {
+        xml.required = false
+        html.required = true
+    }
+}
+
+// ── SpotBugs ─────────────────────────────────────────────────────────────────
+spotbugs {
+    ignoreFailures = true       // 위반이 있어도 빌드 실패하지 않음 (경고로만 처리)
+    effort = com.github.spotbugs.snom.Effort.valueOf("DEFAULT")
+    reportLevel = com.github.spotbugs.snom.Confidence.valueOf("MEDIUM")  // low 신뢰도 결과는 제외
+    excludeFilter = file("config/spotbugs/exclude.xml")  // Lombok false positive 제외
+}
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+    reports {
+        xml.required = false
+        html.required = true
+    }
 }
 
 // 외장 Tomcat 배포 시 DevTools가 WAR에 포함되면 classpath 감시로 인한 재시작 루프 발생

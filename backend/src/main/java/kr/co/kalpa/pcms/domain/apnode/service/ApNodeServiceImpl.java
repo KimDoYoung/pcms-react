@@ -150,7 +150,8 @@ public class ApNodeServiceImpl implements ApNodeService {
         Integer width = null;
         Integer height = null;
         String thumbnailPath = null;
-        if (file.getContentType() != null && file.getContentType().startsWith("image/")) {
+        String uploadedContentType = file.getContentType();
+        if (uploadedContentType != null && uploadedContentType.startsWith("image/")) {
             try {
                 BufferedImage img = ImageIO.read(savePath.toFile());
                 if (img != null) {
