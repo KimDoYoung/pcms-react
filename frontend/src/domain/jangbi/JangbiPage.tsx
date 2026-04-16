@@ -7,17 +7,12 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Search, Plus, Pencil, Trash2, CalendarRange } from 'lucide-react'
 import StarRating from '@/shared/components/StarRating'
-import { formatDate } from '@/lib/utils'
+import { formatCost, formatDate } from '@/lib/utils'
 import type { JangbiPageResponse } from '@/domain/jangbi/types/jangbi'
 import { DateRangePicker } from '@/shared/components/DateRangePicker'
 import { format } from 'date-fns'
 
 const PAGE_SIZE = 10
-
-function formatCost(cost: number | null) {
-  if (cost == null) return '-'
-  return cost.toLocaleString('ko-KR')
-}
 
 export default function JangbiPage() {
   const navigate = useNavigate()

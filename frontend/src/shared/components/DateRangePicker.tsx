@@ -1,5 +1,5 @@
 import React from 'react';
-import { subWeeks, subMonths, startOfToday, startOfMonth, endOfMonth } from 'date-fns';
+import { subWeeks, subMonths, subYears, startOfToday, startOfMonth, endOfMonth } from 'date-fns';
 import { X } from 'lucide-react';
 
 /**
@@ -22,8 +22,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ onRangeChange,
         { label: '2주일 전', from: subWeeks(today, 2), to: today },
         { label: '1개월 전', from: subMonths(today, 1), to: today },
         { label: '2개월 전', from: subMonths(today, 2), to: today },
+        { label: '3개월 전', from: subMonths(today, 3), to: today },
         { label: '금월', from: startOfMonth(today), to: today },
         { label: '전월', from: startOfMonth(subMonths(today, 1)), to: endOfMonth(subMonths(today, 1)) },
+        { label: '작년 금월', from: startOfMonth(subYears(today, 1)), to: endOfMonth(subYears(today, 1)) },
     ];
     return (
         <div className="absolute top-full mt-2 w-72 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-3">
