@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatDate, getDayOfWeek, formatFileSize, formatCount, formatRelativeDateTime, addYmd } from './utils'
+import { cn, formatDate, getDayOfWeek, formatYmd, formatFileSize, addYmd, addDate, formatCount, formatCost, formatRelativeDateTime } from './utils'
 
 // 테스트 기준일: 2026-04-12 (일요일)
 const DATE_YYYY_MM_DD = '2026-04-12'
@@ -145,20 +145,150 @@ describe('formatRelativeDateTime', () => {
   })
 })
 
-describe('shiftYmd', () => {
-  it('yyyymmdd 문자열 입력을 이동한다', () => {
+// ────────────────────────────────────────────────────────────────
+// cn
+// ────────────────────────────────────────────────────────────────
+describe('cn', () => {
+  it('단일 클래스', () => {
+    expect(cn('foo')).toBe('foo')
+  })
+
+  it('여러 클래스 합치기', () => {
+    expect(cn('foo', 'bar')).toBe('foo bar')
+  })
+
+  it('조건부 클래스 - falsy는 제외', () => {
+    expect(cn('foo', false && 'bar', undefined, 'baz')).toBe('foo baz')
+  })
+
+  it('Tailwind 충돌 클래스 제거 (twMerge)', () => {
+    expect(cn('p-2', 'p-4')).toBe('p-4')
+  })
+})
+
+// ────────────────────────────────────────────────────────────────
+// formatDate - time_display
+// ────────────────────────────────────────────────────────────────
+describe('formatDate (time_display)', () => {
+  it('time_display=true → 날짜 + 시간 + 요일', () => {
+    const d = new Date('2026-04-12T14:30:00')
+    expect(formatDate(d, true, true, false, true)).toBe('2026-04-12 14:30:00 (일)')
+  })
+
+  it('time_display=true, dayofweek=false → 날짜 + 시간만', () => {
+    const d = new Date('2026-04-12T09:05:03')
+    expect(formatDate(d, false, true, false, true)).toBe('2026-04-12 09:05:03')
+  })
+})
+
+// ────────────────────────────────────────────────────────────────
+// getDayOfWeek - 추가 케이스
+// ────────────────────────────────────────────────────────────────
+describe('getDayOfWeek (추가)', () => {
+  it('잘못된 날짜 → 빈 문자열', () => {
+    expect(getDayOfWeek('invalid')).toBe('')
+  })
+})
+
+// ────────────────────────────────────────────────────────────────
+// formatYmd
+// ────────────────────────────────────────────────────────────────
+describe('formatYmd', () => {
+  it('Date 객체 → yyyyMMdd', () => {
+    expect(formatYmd(new Date('2026-04-12T00:00:00'))).toBe('20260412')
+  })
+
+  it('yyyy-MM-dd 문자열 → yyyyMMdd', () => {
+    expect(formatYmd('2026-04-12')).toBe('20260412')
+  })
+
+  it('yyyyMMdd 문자열 → 그대로 반환', () => {
+    expect(formatYmd('20260412')).toBe('20260412')
+  })
+})
+
+// ────────────────────────────────────────────────────────────────
+// addDate
+// ────────────────────────────────────────────────────────────────
+describe('addDate', () => {
+  it('yyyyMMdd + 1일', () => {
+    const result = addDate('20260412', 1)
+    expect(result.getFullYear()).toBe(2026)
+    expect(result.getMonth()).toBe(3) // 0-indexed: 3 = 4월
+    expect(result.getDate()).toBe(13)
+  })
+
+  it('yyyy-MM-dd - 1일', () => {
+    const result = addDate('2026-04-12', -1)
+    expect(result.getDate()).toBe(11)
+  })
+
+  it('Date 객체 + 7일', () => {
+    const result = addDate(new Date('2026-04-12T00:00:00'), 7)
+    expect(result.getDate()).toBe(19)
+  })
+
+  it('잘못된 입력 → Invalid Date', () => {
+    const result = addDate('invalid', 1)
+    expect(isNaN(result.getTime())).toBe(true)
+  })
+})
+
+// ────────────────────────────────────────────────────────────────
+// addYmd
+// ────────────────────────────────────────────────────────────────
+describe('addYmd', () => {
+  it('yyyyMMdd + 1일 → yyyyMMdd 문자열', () => {
     expect(addYmd('20260412', 1)).toBe('20260413')
   })
 
-  it('yyyy-MM-dd 문자열 입력을 이동한다', () => {
-    expect(addYmd('2026-04-12', -2)).toBe('20260410')
+  it('yyyy-MM-dd - 1일 → yyyyMMdd 문자열', () => {
+    expect(addYmd('2026-04-12', -1)).toBe('20260411')
   })
 
-  it('Date 입력을 이동한다', () => {
-    expect(addYmd(new Date('2026-04-12T00:00:00'), 5)).toBe('20260417')
+  it('월 경계 이동', () => {
+    expect(addYmd('20260430', 1)).toBe('20260501')
   })
 
-  it('잘못된 입력이면 빈 문자열을 반환한다', () => {
+  it('잘못된 입력 → 빈 문자열', () => {
     expect(addYmd('invalid', 1)).toBe('')
+  })
+})
+
+// ────────────────────────────────────────────────────────────────
+// formatCount - 추가 케이스
+// ────────────────────────────────────────────────────────────────
+describe('formatCount (추가)', () => {
+  it('null 입력 → "-"', () => {
+    expect(formatCount(null as unknown as undefined)).toBe('-')
+  })
+
+  it('defaultValue 지정', () => {
+    expect(formatCount(undefined, '없음')).toBe('없음')
+  })
+})
+
+// ────────────────────────────────────────────────────────────────
+// formatCost
+// ────────────────────────────────────────────────────────────────
+describe('formatCost', () => {
+  it('undefined 입력 → "0"', () => {
+    expect(formatCost(undefined)).toBe('0')
+  })
+
+  it('null 입력 → "0"', () => {
+    expect(formatCost(null)).toBe('0')
+  })
+
+  it('0 입력 → "0"', () => {
+    expect(formatCost(0)).toBe('0')
+  })
+
+  it('천 단위 콤마 표시', () => {
+    expect(formatCost(1500000)).toBe('1,500,000')
+  })
+
+  it('defaultValue 지정', () => {
+    expect(formatCost(null, '-')).toBe('-')
   })
 })
