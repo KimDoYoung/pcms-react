@@ -62,7 +62,7 @@ export default function AnniversaryPage() {
       <Toolbar />
       <main className="container mx-auto px-4 mt-6 max-w-2xl">
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 text-white flex items-center justify-between">
+          <div className="bg-gradient-to-r from-indigo-400 to-blue-400 p-4 text-white flex items-center justify-between">
             <h1 className="text-xl font-bold">기념일 관리</h1>
             <Button
               size="sm"

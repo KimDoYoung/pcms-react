@@ -162,7 +162,7 @@ function Calendar1Page() {
       <main className="container mx-auto px-4 mt-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
           {/* Header - 연/월 부분 높이와 폰트 크기 확대 */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 text-white">
+          <div className="bg-gradient-to-r from-indigo-400 to-blue-400 p-4 text-white">
             <div className="flex justify-center items-center gap-6">
               <Button 
                 variant="ghost" 
