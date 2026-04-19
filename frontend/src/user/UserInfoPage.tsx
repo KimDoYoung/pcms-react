@@ -51,7 +51,7 @@ function UserInfoPage() {
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
       <main className="container mx-auto px-6 py-8">
-        <div className="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">사용자 정보 관리</h1>
           
           <div className="space-y-6">

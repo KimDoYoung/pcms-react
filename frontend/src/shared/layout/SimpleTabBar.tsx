@@ -119,6 +119,20 @@ export function SimpleTabBar() {
     navigate(tab.path + (tab.search || ''))
   }
 
+  function handleCloseTab(e: React.MouseEvent, tab: TabItem) {
+    e.stopPropagation()
+    const { activeTabId, tabs } = useTabStore.getState()
+    closeTab(tab.id)
+    // 활성 탭을 닫으면 URL도 새 활성 탭으로 이동해야
+    // 동일 URL 재클릭 시 useTabSync가 동작하지 않는 문제를 방지
+    if (tab.id === activeTabId) {
+      const idx = tabs.findIndex((t) => t.id === tab.id)
+      const remaining = tabs.filter((t) => t.id !== tab.id)
+      const newActiveId = remaining[Math.max(0, idx - 1)]?.id ?? '/'
+      navigate(newActiveId)
+    }
+  }
+
   function handleContextMenu(e: React.MouseEvent, tabId: string) {
     e.preventDefault()
     setContextMenu({ tabId, x: e.clientX, y: e.clientY })
@@ -185,7 +199,7 @@ export function SimpleTabBar() {
               <span className="flex-1 truncate">{truncateTabLabel(tab.label)}</span>
               {tab.closable && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); closeTab(tab.id) }}
+                  onClick={(e) => handleCloseTab(e, tab)}
                   style={{ marginRight: '2px' }}
                   className="shrink-0 rounded-full p-0.5 text-gray-400 hover:bg-red-100 hover:text-red-500 transition-colors"
                 >

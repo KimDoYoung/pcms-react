@@ -42,6 +42,18 @@ export default function SNoteEditPage() {
     if (snote) setTitle(snote.title ?? '')
   }, [snote])
 
+  // Ctrl+S 저장 단축키 (복호화 상태에서만 동작)
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault()
+        if (decrypted) handleSave()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  })
+
   async function handleRestore() {
     if (!snote || !passwordInput) return
     setMessage(null)

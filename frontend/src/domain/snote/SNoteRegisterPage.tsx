@@ -25,6 +25,18 @@ export default function SNoteRegisterPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // Ctrl+S 저장 단축키
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault()
+        handleSubmit()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  })
+
   // 마운트 시 서버에서 기본 hint/password 로드
   useEffect(() => {
     apiClient.get<RandomHintResponse>('/snote/random-hint').then((res) => {

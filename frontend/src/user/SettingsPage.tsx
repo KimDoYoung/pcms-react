@@ -26,7 +26,7 @@ function SettingsPage() {
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
       <main className="container mx-auto px-6 py-8">
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-8">시스템 설정</h1>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
