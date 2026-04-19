@@ -158,7 +158,8 @@ describe('cn', () => {
   })
 
   it('조건부 클래스 - falsy는 제외', () => {
-    expect(cn('foo', false && 'bar', undefined, 'baz')).toBe('foo baz')
+    const falsy = false
+    expect(cn('foo', falsy && 'bar', undefined, 'baz')).toBe('foo baz')
   })
 
   it('Tailwind 충돌 클래스 제거 (twMerge)', () => {

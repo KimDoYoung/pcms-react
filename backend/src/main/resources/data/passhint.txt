@@ -1,0 +1,14 @@
+# S-Note 기본 hint:password 목록
+# 형식: hint:password (한 줄에 하나)
+# 비밀번호를 입력하지 않을 때 랜덤으로 선택됩니다.
+
+엄마이름:kalpa1234
+좋아하는색:blue2025
+첫차번호:auto9876
+초등학교:school77
+강아지이름:bori2019
+할머니생신:halmae0315
+좋아하는음식:pizza42
+어린시절별명:star88
+처음핸드폰:nokia3310
+첫직장:work2012

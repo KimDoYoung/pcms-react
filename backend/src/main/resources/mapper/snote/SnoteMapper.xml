@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.domain.snote.service.SnoteMapper">
+
+    <resultMap id="snoteMap" type="kr.co.kalpa.pcms.domain.snote.entity.Snote">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="note" column="note"/>
+        <result property="createDt" column="create_dt"/>
+    </resultMap>
+
+    <sql id="search">
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <insert id="insertSnote" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO cms.snote (title, note)
+        VALUES (#{title}, #{note})
+    </insert>
+
+    <select id="selectSnoteById" resultMap="snoteMap">
+        SELECT id, title, note, create_dt
+        FROM cms.snote
+        WHERE id = #{id}
+    </select>
+
+    <update id="updateSnote">
+        UPDATE cms.snote
+        SET title = #{title},
+            note  = #{note}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteSnote">
+        DELETE FROM cms.snote WHERE id = #{id}
+    </delete>
+
+    <select id="selectSnoteList" resultMap="snoteMap">
+        SELECT id, title, note, create_dt
+        FROM cms.snote
+        <include refid="search"/>
+        ORDER BY id DESC
+        LIMIT #{size} OFFSET #{skip}
+    </select>
+
+    <select id="selectSnoteCount" resultType="int">
+        SELECT count(*)
+        FROM cms.snote
+        <include refid="search"/>
+    </select>
+
+</mapper>

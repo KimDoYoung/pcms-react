@@ -9,6 +9,9 @@ import JangbiPage from '@/domain/jangbi/JangbiPage'
 import JangbiViewPage from '@/domain/jangbi/JangbiViewPage'
 import JangbiEditPage from '@/domain/jangbi/JangbiEditPage'
 import BoardsPage from '@/domain/board/BoardsPage'
+import SNoteListPage from '@/domain/snote/SNoteListPage'
+import SNoteRegisterPage from '@/domain/snote/SNoteRegisterPage'
+import SNoteEditPage from '@/domain/snote/SNoteEditPage'
 import PostsPage from '@/domain/board/PostsPage'
 import PostNewPage from '@/domain/board/PostNewPage'
 import PostViewPage from '@/domain/board/PostViewPage'
@@ -48,6 +51,8 @@ export const APP_ROUTES: AppRoute[] = [
   
   // 게시판
   { path: '/boards', label: '✍️ 게시판관리', Component: BoardsPage, menuGroup: '📝 게시판' },
+  { path: '/snote', label: '🔐 S-Note', Component: SNoteListPage, menuGroup: '📝 게시판' },
+  { path: '/snote/register', label: '🔐 S-Note 등록', Component: SNoteRegisterPage },
   { path: '/posts', label: '📋 게시글', Component: PostsPage },
   { path: '/posts/new', label: '📝 새게시글', Component: PostNewPage },
 
@@ -76,6 +81,7 @@ export const APP_ROUTES: AppRoute[] = [
   { path: '/jangbi/:id/edit', label: '🖥️ 장비수정', Component: JangbiEditPage, isDynamic: true },
   { path: '/jangbi/:id', label: '🖥️ 장비상세', Component: JangbiViewPage, isDynamic: true },
   { path: '/posts/:id/edit', label: '📝 게시글수정', Component: PostEditPage, isDynamic: true },
+  { path: '/snote/:id/edit', label: '🔐 S-Note 수정', Component: SNoteEditPage, isDynamic: true },
   { path: '/posts/:id', label: '📝 게시글', Component: PostViewPage, isDynamic: true },
   { path: '/movie/review/:id/edit', label: '🎬 영화감상평 수정', Component: MovieReviewFormPage, isDynamic: true },
   { path: '/movie/review/:id/view', label: '🎬 영화감상평 보기', Component: MovieReviewViewPage, isDynamic: true },
