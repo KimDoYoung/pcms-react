@@ -46,6 +46,7 @@ export default function TodoAddModal({ onClose }: Props) {
               value={value}
               onChange={(e) => handleChange(i, e.target.value)}
               placeholder={`${i + 1}번째 항목`}
+              autoFocus={i === 0}
               className="border rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-300"
             />
           ))}

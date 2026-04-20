@@ -49,7 +49,7 @@ export default function PostEditPage() {
     setForm({
       title: post.title,
       author: post.author ?? '',
-      baseYmd: ymd.length === 8 ? `${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}` : ymd,
+      baseYmd: ymd.length === 8 ? `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}` : ymd,
       content: post.content ?? '',
     })
     setAttachments(post.attachments ?? [])
@@ -139,10 +139,10 @@ export default function PostEditPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
 
           {/* 기본 정보 */}
-          <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="px-6 py-5 flex flex-col md:flex-row gap-4">
 
             {/* 제목 */}
-            <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <div className="flex flex-col gap-1.5 flex-1">
               <label className="text-sm font-medium text-gray-700">제목 <span className="text-red-500">*</span></label>
               <Input
                 placeholder="게시글 제목"
@@ -153,17 +153,17 @@ export default function PostEditPage() {
             </div>
 
             {/* 작성자 */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 w-full md:w-36">
               <label className="text-sm font-medium text-gray-700">작성자</label>
               <Input
-                placeholder="미입력 시 관리자"
+                placeholder="지정안함"
                 value={form.author}
                 onChange={(e) => set('author', e.target.value)}
               />
             </div>
 
             {/* 기준일 */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 w-full md:w-40">
               <label className="text-sm font-medium text-gray-700">기준일 <span className="text-red-500">*</span></label>
               <Input
                 type="date"
@@ -221,11 +221,11 @@ export default function PostEditPage() {
 
         {/* 버튼 */}
         <div className="mt-4 flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
+          <Button variant="delete" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
             삭제
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate(`/posts/${id}`, { state: { boardId } })}>취소</Button>
+            <Button variant="action" onClick={() => navigate(`/posts/${id}`, { state: { boardId } })}>취소</Button>
             <Button onClick={handleSubmit} disabled={saving || !form.title.trim()}>
               {saving ? '저장 중...' : '저장'}
             </Button>

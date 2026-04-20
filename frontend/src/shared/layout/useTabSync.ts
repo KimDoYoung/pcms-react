@@ -28,10 +28,12 @@ export function useTabSync() {
     const currentActiveTabId = state.activeTabId
 
     // active 탭의 하위 경로면 새 탭 대신 현재 탭 내부에서 이동
+    // 단, 명시적으로 선언된 정적 라우트(isDynamic === false)인 경우 독립적인 탭으로 오픈
     const isInTabNavigation =
       currentActiveTabId !== '/' &&
       pathname !== currentActiveTabId &&
-      pathname.startsWith(currentActiveTabId + '/')
+      pathname.startsWith(currentActiveTabId + '/') &&
+      found.isDynamic !== false
 
     if (isInTabNavigation) {
       const activeTab = currentTabs.find(t => t.id === currentActiveTabId)

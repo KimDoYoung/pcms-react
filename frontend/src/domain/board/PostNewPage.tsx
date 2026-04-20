@@ -93,10 +93,10 @@ export default function PostNewPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
 
           {/* 기본 정보 */}
-          <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="px-6 py-5 flex flex-col md:flex-row gap-4">
 
             {/* 제목 */}
-            <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <div className="flex flex-col gap-1.5 flex-1">
               <label className="text-sm font-medium text-gray-700">제목 <span className="text-red-500">*</span></label>
               <Input
                 placeholder="게시글 제목"
@@ -114,7 +114,7 @@ export default function PostNewPage() {
             </div>
 
             {/* 작성자 */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 w-full md:w-36">
               <label className="text-sm font-medium text-gray-700">작성자</label>
               <Input
                 placeholder="작성자명"
@@ -124,7 +124,7 @@ export default function PostNewPage() {
             </div>
 
             {/* 기준일 */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 w-full md:w-40">
               <label className="text-sm font-medium text-gray-700">기준일 <span className="text-red-500">*</span></label>
               <Input
                 type="date"

@@ -91,13 +91,14 @@ export interface FoundRoute {
   Component: ComponentType
   params: Record<string, string>
   label: string
+  isDynamic?: boolean
 }
 
 export function findRoute(pathname: string): FoundRoute | null {
   // 1. 정적 경로 우선 매칭
   const staticRoute = APP_ROUTES.find(r => !r.isDynamic && r.path === pathname)
   if (staticRoute) {
-    return { Component: staticRoute.Component, params: {}, label: staticRoute.label }
+    return { Component: staticRoute.Component, params: {}, label: staticRoute.label, isDynamic: false }
   }
 
   // 2. 동적 경로 매칭
@@ -108,6 +109,7 @@ export function findRoute(pathname: string): FoundRoute | null {
         Component: route.Component,
         params: (match.params as Record<string, string>) ?? {},
         label: route.label,
+        isDynamic: true
       }
     }
   }
