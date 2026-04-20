@@ -80,7 +80,37 @@ public class FileUploadServiceImpl implements FileUploadService {
 
         return new ProcessResult(sb.toString(), fileIds);
     }
+    @Override
+    public String uploadEditorImage(MultipartFile file) {
+        String mimeType = file.getContentType();
+        String ext = mimeToExt(mimeType != null ? mimeType : "");
+        String physicalFileName = UUID.randomUUID().toString().replace("-", "") + "." + ext;
+        String folderPath = dailyFolderPath();
 
+        log.info("➡️ [FileUploadService] 추출된 확장자: {}, 물리 파일명: {}", ext, physicalFileName);
+
+        try {
+            Path dir = Paths.get(fileProperties.getUpload().getEditorImagesDir(), folderPath);
+            Files.createDirectories(dir);
+            file.transferTo(dir.resolve(physicalFileName));
+
+            CmsFile cmsFile = CmsFile.builder()
+                    .savedFolder(folderPath)
+                    .orgFileName("editor-image." + ext)
+                    .physicalFileName(physicalFileName)
+                    .fileSize(file.getSize())
+                    .mimeType(mimeType)
+                    .build();
+            fileMapper.insertFile(cmsFile);
+            
+            String finalUrl = buildImageUrl(folderPath, physicalFileName);
+            log.info("✅ [FileUploadService] DB CmsFile 저장 성공, 최종 URL: {}", finalUrl);
+            return finalUrl;
+        } catch (IOException e) {
+            log.error("❌ [FileUploadService] 물리 파일 저장 중 오류 발생!", e);
+            throw new UncheckedIOException("에디터 단일 이미지 업로드 실패", e);
+        }
+    }
     @Override
     public Long saveAttachment(MultipartFile file) {
         String orgName = StringUtils.hasText(file.getOriginalFilename())

@@ -14,6 +14,11 @@ public interface FileUploadService {
     ProcessResult processEditorImages(String content);
 
     /**
+     * 마크다운 등에서 단일 이미지를 업로드받아 UUID 기반 파일명으로 저장하고 URL을 반환한다.
+     */
+    String uploadEditorImage(MultipartFile file);
+
+    /**
      * 첨부파일을 디스크에 저장하고 files 테이블에 기록한다. fileId를 반환한다.
      */
     Long saveAttachment(MultipartFile file);

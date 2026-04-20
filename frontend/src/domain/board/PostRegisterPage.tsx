@@ -152,6 +152,57 @@ export default function PostRegisterPage() {
                 placeholder="마크다운으로 내용을 입력하세요..."
                 value={form.content}
                 onChange={(e) => set('content', e.target.value)}
+                onPaste={async (e) => {
+                  const items = e.clipboardData?.items
+                  if (!items) return
+                  for (const item of Array.from(items)) {
+                    if (item.type.startsWith('image/')) {
+                      e.preventDefault()
+                      const file = item.getAsFile()
+                      if (!file) continue
+
+                      const textarea = e.currentTarget
+                      const start = textarea.selectionStart
+                      const end = textarea.selectionEnd
+                      const curVal = form.content
+
+                      const placeholderId = Date.now()
+                      const loadingText = `![Uploading image ${placeholderId}...]()\n`
+
+                      // 커서 위치에 로딩 텍스트 우선 삽입
+                      const newContent = curVal.substring(0, start) + loadingText + curVal.substring(end)
+                      set('content', newContent)
+
+                      // 나중에 커서 위치를 자연스럽게 유지하려면 타이밍 조절이 필요할 수 있으나,
+                      // React 상태 변경에 의한 비동기 처리에 맡깁니다.
+                      try {
+                        const formData = new FormData()
+                        formData.append('file', file)
+                        const res = await apiClient.post<any>('/files/editor-image', formData, {
+                          headers: { 'Content-Type': 'multipart/form-data' }
+                        })
+                        
+                        console.log('🎯 [PostRegisterPage] Upload API Response:', res)
+                        
+                        const actualUrl = typeof res === 'string' ? res : (res?.url || res?.data?.url || 'undefined_url_returned')
+                        const markdownImageInfo = `![image](${actualUrl})\n`
+                        
+                        setForm((f) => ({
+                          ...f,
+                          content: f.content.replace(loadingText, markdownImageInfo)
+                        }))
+                      } catch (err) {
+                        console.error('❌ [PostRegisterPage] Upload API Error:', err)
+                        alert('이미지 업로드 중 오류가 발생했습니다.')
+                        setForm((f) => ({
+                          ...f,
+                          content: f.content.replace(loadingText, '')
+                        }))
+                      }
+                      return // 이미지 하나만 처리
+                    }
+                  }
+                }}
                 className="border border-gray-200 rounded-lg px-4 py-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono w-full"
               />
             ) : (
