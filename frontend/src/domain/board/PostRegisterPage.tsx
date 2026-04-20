@@ -12,7 +12,7 @@ import { useAuthStore } from '@/shared/store/authStore'
 import { formatDate, formatYmd } from '@/lib/utils'
 import type { BoardDto } from '@/domain/board/types/board'
 
-export default function PostNewPage() {
+export default function PostRegisterPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const boardId = searchParams.get('boardId') ? Number(searchParams.get('boardId')) : null
@@ -170,7 +170,7 @@ export default function PostNewPage() {
             <AttachmentUploader
               attachments={[]}
               newFiles={newFiles}
-              onRemoveAttachment={() => {}}
+              onRemoveAttachment={() => { }}
               onAddFiles={(files) => setNewFiles((prev) => [...prev, ...files])}
               onRemoveNewFile={(idx) => setNewFiles((p) => p.filter((_, i) => i !== idx))}
               inputId="post-new-file"

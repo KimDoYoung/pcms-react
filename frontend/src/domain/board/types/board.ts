@@ -4,7 +4,7 @@ export interface AttachmentDto {
   fileSize: number
 }
 
-// PostViewPage, PostNewPage, PostEditPage 공통 (boardCode 불필요)
+// PostViewPage, PostRegisterPage, PostEditPage 공통 (boardCode 불필요)
 export interface BoardDto {
   id: number
   boardNameKor: string

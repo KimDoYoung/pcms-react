@@ -10,7 +10,7 @@ import { formatDate, formatYmd } from '@/lib/utils'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
 import { DateRangeSetter } from '@/shared/components/DateRangeSetter'
 
-export default function JangbiNewPage() {
+export default function JangbiRegisterPage() {
   const navigate = useNavigate()
   const today = formatDate(new Date(), false)
 

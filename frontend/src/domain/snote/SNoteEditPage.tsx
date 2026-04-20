@@ -115,7 +115,7 @@ export default function SNoteEditPage() {
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
       <main className="container mx-auto px-4 py-6">
-        <div className="max-w-2xl mx-auto">
+        <div className="mx-auto">
 
           <div className="flex items-center gap-2 mb-6">
             <h1 className="text-xl font-bold text-gray-800">🔐 S-Note 수정</h1>
@@ -171,7 +171,7 @@ export default function SNoteEditPage() {
                 <Label htmlFor="content" className="text-sm text-gray-600">내용</Label>
                 <textarea
                   id="content"
-                  rows={12}
+                  rows={24}
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y font-mono"

@@ -80,7 +80,7 @@ export default function SNoteRegisterPage() {
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
       <main className="container mx-auto px-4 py-6">
-        <div className="max-w-2xl mx-auto">
+        <div className="mx-auto">
 
           <h1 className="text-xl font-bold text-gray-800 mb-6">🔐 S-Note 등록</h1>
 
@@ -106,7 +106,7 @@ export default function SNoteRegisterPage() {
               </Label>
               <textarea
                 id="content"
-                rows={10}
+                rows={24}
                 placeholder="암호화하여 저장될 내용을 입력하세요."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}

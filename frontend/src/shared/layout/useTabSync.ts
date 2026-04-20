@@ -27,13 +27,14 @@ export function useTabSync() {
     const currentTabs = state.tabs
     const currentActiveTabId = state.activeTabId
 
-    // active 탭의 하위 경로면 새 탭 대신 현재 탭 내부에서 이동
-    // 단, 명시적으로 선언된 정적 라우트(isDynamic === false)인 경우 독립적인 탭으로 오픈
+    // 활성 탭과 새 경로의 tabGroup 확인
+    const currentTabRoute = findRoute(currentActiveTabId)
+    const currentTabGroup = currentTabRoute?.tabGroup ?? currentActiveTabId
+    const nextTabGroup = found.tabGroup ?? pathname
+
+    // 탭 그룹이 동일하면(홈 제외) 새 탭 오픈 없이 기존 탭의 내부 상태를 교체(Replace)
     const isInTabNavigation =
-      currentActiveTabId !== '/' &&
-      pathname !== currentActiveTabId &&
-      pathname.startsWith(currentActiveTabId + '/') &&
-      found.isDynamic !== false
+      currentActiveTabId !== '/' && currentTabGroup === nextTabGroup
 
     if (isInTabNavigation) {
       const activeTab = currentTabs.find(t => t.id === currentActiveTabId)
