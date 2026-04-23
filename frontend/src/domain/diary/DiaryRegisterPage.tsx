@@ -22,9 +22,9 @@ function DiaryRegisterPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showMessage } = useMessage()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const today = formatDate(new Date(), false)
-  const [diaryDate, setDiaryDate] = useState(searchParams.get('date') ?? today)
+  const diaryDate = searchParams.get('date') ?? today
   const [showList, setShowList] = useState(true)
   const [title, setTitle] = useState('')
   const [diaryId, setDiaryId] = useState<number | null>(null)
@@ -136,10 +136,11 @@ function DiaryRegisterPage() {
   const changeDate = useCallback((days: number) => {
     const d = new Date(diaryDate)
     d.setDate(d.getDate() + days)
-    setDiaryDate(d.toISOString().slice(0, 10))
-  }, [diaryDate])
+    const newDate = d.toISOString().slice(0, 10)
+    setSearchParams({ date: newDate })
+  }, [diaryDate, setSearchParams])
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(async (silent = false) => {
     if (!title.trim() || isSubmitting.current) return
     isSubmitting.current = true
 
@@ -163,7 +164,10 @@ function DiaryRegisterPage() {
       await apiClient.post<{ id: number }>('/diary', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
-      showMessage('저장되었습니다.', 'success')
+      
+      if (!silent) {
+        showMessage('저장되었습니다.', 'success')
+      }
       
       // Clear auto-save draft
       localStorage.removeItem(getAutoSaveKey(diaryDate))
@@ -174,6 +178,9 @@ function DiaryRegisterPage() {
         queryClient.invalidateQueries({ queryKey: ['diary-summary'] }),
         queryClient.invalidateQueries({ queryKey: ['diary-list'] })
       ])
+
+      // silent인 경우(이동 중)에는 상태 업데이트 스킵 (어차피 언마운트되거나 새 날짜가 로드됨)
+      if (silent) return true
 
       // Refresh to get latest attachments
       const res = await apiClient.get<DiaryApiResponse | null>(`/diary/date/${diaryPayload.ymd}`)
@@ -187,7 +194,9 @@ function DiaryRegisterPage() {
       return true
     } catch (e) {
       console.error(e)
-      showMessage('저장 중 오류가 발생했습니다.', 'error')
+      if (!silent) {
+        showMessage('저장 중 오류가 발생했습니다.', 'error')
+      }
       return false
     } finally {
       isSubmitting.current = false
@@ -197,14 +206,14 @@ function DiaryRegisterPage() {
   // 3. Navigation Blocking & Auto Save
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      isDirty && currentLocation.pathname !== nextLocation.pathname
+      isDirty && (currentLocation.pathname !== nextLocation.pathname || currentLocation.search !== nextLocation.search)
   )
 
   useEffect(() => {
     if (blocker.state === 'blocked') {
       const handleAutoSaveAndProceed = async () => {
         if (title.trim()) {
-          const success = await handleSubmit()
+          const success = await handleSubmit(true)
           if (success) {
             blocker.proceed()
           } else {
@@ -316,7 +325,7 @@ function DiaryRegisterPage() {
               <input
                 type="date"
                 value={diaryDate}
-                onChange={(e) => setDiaryDate(e.target.value)}
+                onChange={(e) => setSearchParams({ date: e.target.value })}
                 className="text-sm font-medium text-gray-700 bg-transparent focus:outline-none cursor-pointer"
               />
               <span className="text-xs text-gray-400 font-medium px-1 select-none">
@@ -377,7 +386,7 @@ function DiaryRegisterPage() {
           <Button 
             variant="action" 
             size="pill" 
-            onClick={handleSubmit} 
+            onClick={() => handleSubmit()} 
             disabled={!title.trim() || !isDirty || isSubmitting.current}
           >
             {isSubmitting.current ? '저장 중...' : '저장'}
@@ -393,7 +402,7 @@ function DiaryRegisterPage() {
         {showList && (
           <div className="w-[432px] shrink-0 bg-white rounded-xl shadow-sm border border-gray-200 p-3 self-start sticky top-4">
             <DiarySummaryList
-              onSelect={(ymd) => setDiaryDate(ymd)}
+              onSelect={(ymd) => setSearchParams({ date: ymd })}
             />
           </div>
         )}

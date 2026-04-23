@@ -24,10 +24,10 @@ function buildRange(weekOffset: number): { startYmd: string; endYmd: string; day
     cur.setDate(cur.getDate() + 1)
   }
 
-  return { 
-    startYmd: formatYmd(start), 
-    endYmd: formatYmd(end), 
-    days 
+  return {
+    startYmd: formatYmd(start),
+    endYmd: formatYmd(end),
+    days
   }
 }
 
@@ -54,7 +54,7 @@ export default function DiarySummaryList({ onSelect }: Props) {
   return (
     <div className="flex flex-col gap-1">
       <div className="text-xs text-muted-foreground mb-1 px-1">
-        {startYmd.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')} ~ {endYmd.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')}
+        {formatDate(startYmd)} ~ {formatDate(endYmd)}
       </div>
 
       <ul className="flex flex-col">
@@ -105,6 +105,9 @@ export default function DiarySummaryList({ onSelect }: Props) {
         <Button variant="outline" size="sm" onClick={() => setWeekOffset((o) => o - 1)}>
           <ChevronLeft className="w-4 h-4" />
           이전
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => { setWeekOffset(0); onSelect?.(formatDate(new Date(), false)); }}>
+          오늘
         </Button>
         <Button
           variant="outline"
