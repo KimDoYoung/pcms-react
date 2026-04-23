@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useBlocker } from 'react-router-dom'
 import { getDayOfWeek, formatYmd, formatDate } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, PanelRightOpen, PanelRightClose } from 'lucide-react'
+import { ChevronLeft, ChevronRight, PanelRightOpen, PanelRightClose, RotateCcw, AlertCircle } from 'lucide-react'
 import Toolbar from '@/shared/layout/Toolbar'
 import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/shared/components/ui/button'
@@ -36,6 +36,10 @@ function DiaryRegisterPage() {
   const [contentReady, setContentReady] = useState(false)
   // 저장된 시점의 스냅샷 — 현재 값과 비교해 변경 여부 판단
   const [savedSnapshot, setSavedSnapshot] = useState('')
+  const [hasDraft, setHasDraft] = useState(false)
+  const isSubmitting = useRef(false)
+
+  const getAutoSaveKey = useCallback((date: string) => `diary-autosave-${formatYmd(date)}`, [])
 
   useEffect(() => {
     setContentReady(false)
@@ -44,23 +48,42 @@ function DiaryRegisterPage() {
         const ymd = formatYmd(diaryDate)
         const res = await apiClient.get<DiaryApiResponse | null>(`/diary/date/${ymd}`)
 
+        let loadedTitle = ''
+        let loadedContent = ''
+
         if (res && typeof res === 'object' && 'id' in res) {
-          const loadedTitle = res.summary || ''
-          const loadedContent = res.content || ''
+          loadedTitle = res.summary || ''
+          loadedContent = res.content || ''
           setDiaryId(res.id)
           setTitle(loadedTitle)
           setContent(loadedContent)
           setAttachments(res.attachments || [])
-          setSavedSnapshot(JSON.stringify({ title: loadedTitle, content: loadedContent }))
         } else {
           setDiaryId(null)
           setTitle('')
           setContent('')
           setAttachments([])
-          setSavedSnapshot(JSON.stringify({ title: '', content: '' }))
         }
+        
+        const snapshot = JSON.stringify({ title: loadedTitle, content: loadedContent })
+        setSavedSnapshot(snapshot)
         setNewFiles([])
         setDeletedAttachmentIds([])
+
+        // Check for localStorage draft
+        const draft = localStorage.getItem(getAutoSaveKey(diaryDate))
+        if (draft) {
+          const parsedDraft = JSON.parse(draft)
+          if (parsedDraft.title !== loadedTitle || parsedDraft.content !== loadedContent) {
+            setHasDraft(true)
+          } else {
+            setHasDraft(false)
+            localStorage.removeItem(getAutoSaveKey(diaryDate))
+          }
+        } else {
+          setHasDraft(false)
+        }
+
       } catch (e) {
         console.error('Failed to fetch diary', e)
         setDiaryId(null)
@@ -70,18 +93,45 @@ function DiaryRegisterPage() {
         setNewFiles([])
         setDeletedAttachmentIds([])
         setSavedSnapshot(JSON.stringify({ title: '', content: '' }))
+        setHasDraft(false)
       } finally {
         setContentReady(true)
       }
     }
 
     fetchDiary()
-  }, [diaryDate])
+  }, [diaryDate, getAutoSaveKey])
 
   const isDirty =
     JSON.stringify({ title, content }) !== savedSnapshot ||
     newFiles.length > 0 ||
     deletedAttachmentIds.length > 0
+
+  // 1. LocalStorage Auto-save (Debounced)
+  useEffect(() => {
+    if (!contentReady || !isDirty) return
+
+    const timer = setTimeout(() => {
+      localStorage.setItem(
+        getAutoSaveKey(diaryDate),
+        JSON.stringify({ title, content, updatedAt: new Date().toISOString() })
+      )
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [title, content, diaryDate, getAutoSaveKey, contentReady, isDirty])
+
+  // 2. Browser Unload Protection
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty && !isSubmitting.current) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDirty])
 
   const changeDate = useCallback((days: number) => {
     const d = new Date(diaryDate)
@@ -90,6 +140,9 @@ function DiaryRegisterPage() {
   }, [diaryDate])
 
   const handleSubmit = useCallback(async () => {
+    if (!title.trim() || isSubmitting.current) return
+    isSubmitting.current = true
+
     const diaryPayload = {
       id: diaryId,
       ymd: formatYmd(diaryDate),
@@ -112,6 +165,10 @@ function DiaryRegisterPage() {
       })
       showMessage('저장되었습니다.', 'success')
       
+      // Clear auto-save draft
+      localStorage.removeItem(getAutoSaveKey(diaryDate))
+      setHasDraft(false)
+
       // 관련 쿼리 무효화 및 갱신 대기
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['diary-summary'] }),
@@ -127,22 +184,65 @@ function DiaryRegisterPage() {
         setDeletedAttachmentIds([])
         setSavedSnapshot(JSON.stringify({ title, content }))
       }
+      return true
     } catch (e) {
       console.error(e)
       showMessage('저장 중 오류가 발생했습니다.', 'error')
+      return false
+    } finally {
+      isSubmitting.current = false
     }
-  }, [diaryId, diaryDate, title, content, deletedAttachmentIds, newFiles, queryClient, showMessage])
+  }, [diaryId, diaryDate, title, content, deletedAttachmentIds, newFiles, queryClient, showMessage, getAutoSaveKey])
+
+  // 3. Navigation Blocking & Auto Save
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname
+  )
+
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      const handleAutoSaveAndProceed = async () => {
+        if (title.trim()) {
+          const success = await handleSubmit()
+          if (success) {
+            blocker.proceed()
+          } else {
+            if (window.confirm('저장에 실패했습니다. 무시하고 이동하시겠습니까?')) {
+              blocker.proceed()
+            } else {
+              blocker.reset()
+            }
+          }
+        } else {
+          if (window.confirm('제목이 없어 자동 저장할 수 없습니다. 변경사항을 무시하고 이동하시겠습니까?')) {
+            blocker.proceed()
+          } else {
+            blocker.reset()
+          }
+        }
+      }
+      handleAutoSaveAndProceed()
+    }
+  }, [blocker, handleSubmit, title])
+
+  const handleRestore = () => {
+    const draft = localStorage.getItem(getAutoSaveKey(diaryDate))
+    if (draft) {
+      const { title: dTitle, content: dContent } = JSON.parse(draft)
+      setTitle(dTitle)
+      setContent(dContent)
+      setHasDraft(false)
+      showMessage('임시 저장된 데이터를 불러왔습니다.', 'info')
+    }
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey) {
         if (e.key === 's' || e.key === 'S') {
           e.preventDefault()
-          const dirty =
-            JSON.stringify({ title, content }) !== savedSnapshot ||
-            newFiles.length > 0 ||
-            deletedAttachmentIds.length > 0
-          if (dirty && title.trim()) handleSubmit()
+          if (isDirty && title.trim()) handleSubmit()
         } else if (e.key === 'ArrowLeft') {
           e.preventDefault()
           changeDate(-1)
@@ -155,23 +255,49 @@ function DiaryRegisterPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [diaryDate, title, content, savedSnapshot, diaryId, attachments, newFiles, deletedAttachmentIds, handleSubmit, changeDate])
+  }, [diaryDate, title, content, savedSnapshot, diaryId, attachments, newFiles, deletedAttachmentIds, handleSubmit, changeDate, isDirty])
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
       <main className="container mx-auto px-4 py-6">
-        <div className="mb-4 flex items-center gap-2">
-          <h1 className="text-xl font-bold text-gray-800">✏️ 일지 등록/수정</h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowList((v) => !v)}
-            title={showList ? '목록 숨기기' : '목록 보기'}
-            className="text-gray-500"
-          >
-            {showList ? <PanelRightOpen className="w-5 h-5" /> : <PanelRightClose className="w-5 h-5" />}
-          </Button>
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-gray-800">✏️ 일지 등록/수정</h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowList((v) => !v)}
+              title={showList ? '목록 숨기기' : '목록 보기'}
+              className="text-gray-500"
+            >
+              {showList ? <PanelRightOpen className="w-5 h-5" /> : <PanelRightClose className="w-5 h-5" />}
+            </Button>
+          </div>
+          
+          {hasDraft && (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg shadow-sm animate-in fade-in slide-in-from-top-2">
+              <AlertCircle className="w-4 h-4 text-amber-500" />
+              <span className="text-sm font-medium text-amber-800">작성 중이던 임시 저장 데이터가 있습니다.</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRestore}
+                className="h-7 px-2 text-xs border-amber-300 hover:bg-amber-100 text-amber-900 gap-1"
+              >
+                <RotateCcw className="w-3 h-3" />
+                복구하기
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setHasDraft(false)}
+                className="h-7 px-2 text-xs text-amber-600 hover:text-amber-800"
+              >
+                무시
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-4 items-start">
@@ -248,8 +374,13 @@ function DiaryRegisterPage() {
           <Button variant="cancel" size="pill" onClick={() => navigate('/diary')}>
             취소
           </Button>
-          <Button variant="action" size="pill" onClick={handleSubmit} disabled={!title.trim() || !isDirty}>
-            저장
+          <Button 
+            variant="action" 
+            size="pill" 
+            onClick={handleSubmit} 
+            disabled={!title.trim() || !isDirty || isSubmitting.current}
+          >
+            {isSubmitting.current ? '저장 중...' : '저장'}
           </Button>
           <Button variant="init"  size="pill" onClick={() => navigate('/diary')}>
             일지찾기
@@ -269,6 +400,14 @@ function DiaryRegisterPage() {
 
         </div>{/* flex row end */}
       </main>
+      {blocker.state === 'blocked' && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-[1px] z-[9999] flex items-center justify-center">
+          <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col items-center gap-4">
+            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="font-medium text-gray-700">변경사항을 저장하고 이동 중입니다...</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
