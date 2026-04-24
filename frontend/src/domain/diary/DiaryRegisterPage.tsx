@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
+import type { ContentEditorHandle } from '@/shared/components/editor/ContentEditor'
 import { useNavigate, useSearchParams, useBlocker } from 'react-router-dom'
 import { getDayOfWeek, formatYmd, formatDate } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
@@ -38,6 +39,8 @@ function DiaryRegisterPage() {
   const [savedSnapshot, setSavedSnapshot] = useState('')
   const [hasDraft, setHasDraft] = useState(false)
   const isSubmitting = useRef(false)
+  const titleRef = useRef<HTMLInputElement>(null)
+  const contentEditorRef = useRef<ContentEditorHandle>(null)
 
   const getAutoSaveKey = useCallback((date: string) => `diary-autosave-${formatYmd(date)}`, [])
 
@@ -343,9 +346,16 @@ function DiaryRegisterPage() {
             <div className="hidden sm:block w-px h-6 bg-gray-300 mx-2" />
             
             <input
+              ref={titleRef}
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Tab' && !e.shiftKey) {
+                  e.preventDefault()
+                  contentEditorRef.current?.focus()
+                }
+              }}
               placeholder="제목을 입력하세요"
               className="flex-1 w-full text-lg font-semibold focus:outline-none placeholder:text-gray-300 bg-transparent"
             />
@@ -354,11 +364,13 @@ function DiaryRegisterPage() {
           {/* 에디터 본문 */}
           {contentReady && (
             <ContentEditor
+              ref={contentEditorRef}
               key={diaryDate}
               value={content}
               onChange={setContent}
               placeholder="오늘의 일지를 작성하세요..."
               minHeight="400px"
+              onShiftTab={() => titleRef.current?.focus()}
             />
           )}
 

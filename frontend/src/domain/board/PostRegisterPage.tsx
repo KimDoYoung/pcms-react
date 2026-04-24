@@ -7,10 +7,12 @@ import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
+import MdTextarea from '@/shared/components/editor/MdTextarea'
 import AttachmentUploader from '@/shared/components/AttachmentUploader'
 import { useAuthStore } from '@/shared/store/authStore'
 import { formatDate, formatYmd } from '@/lib/utils'
 import type { BoardDto } from '@/domain/board/types/board'
+import { tr } from 'date-fns/locale'
 
 export default function PostRegisterPage() {
   const navigate = useNavigate()
@@ -23,6 +25,7 @@ export default function PostRegisterPage() {
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [saving, setSaving] = useState(false)
   const contentAreaRef = useRef<HTMLDivElement>(null)
+  const [postId, setPostId] = useState<number | null>(null)
 
   const { data: board } = useQuery<BoardDto>({
     queryKey: ['board', boardId],
@@ -41,7 +44,7 @@ export default function PostRegisterPage() {
   const isHtml = board?.contentType === 'html'
   const isMarkdown = board?.contentType === 'markdown'
 
-  async function handleSubmit() {
+  async function handleSubmit(stay = false) {
     if (!form.title.trim()) { alert('제목을 입력하세요.'); return }
     if (!form.baseYmd) { alert('기준일을 입력하세요.'); return }
     if (!boardId) return
@@ -59,13 +62,13 @@ export default function PostRegisterPage() {
       formData.append('post', new Blob([JSON.stringify(payload)], { type: 'application/json' }))
       newFiles.forEach((f) => formData.append('files', f))
 
-      const res = await apiClient.post<{ id: number }>(
-        `/boards/${boardId}/posts`,
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      )
-      navigate(`/posts/${res.id}`, { state: { boardId } })
-    } catch {
+    const res = postId
+      ? await apiClient.put<{ id: number }>(`/boards/${boardId}/posts/${postId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      : await apiClient.post<{ id: number }>(`/boards/${boardId}/posts`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+
+    setPostId(res.id)
+    if (!stay) navigate(`/posts/${res.id}`, { state: { boardId } })
+        } catch {
       alert('저장 중 오류가 발생했습니다.')
     } finally {
       setSaving(false)
@@ -147,63 +150,10 @@ export default function PostRegisterPage() {
                 placeholder="내용을 입력하세요..."
               />
             ) : isMarkdown ? (
-              <textarea
-                rows={20}
-                placeholder="마크다운으로 내용을 입력하세요..."
+              <MdTextarea
                 value={form.content}
-                onChange={(e) => set('content', e.target.value)}
-                onPaste={async (e) => {
-                  const items = e.clipboardData?.items
-                  if (!items) return
-                  for (const item of Array.from(items)) {
-                    if (item.type.startsWith('image/')) {
-                      e.preventDefault()
-                      const file = item.getAsFile()
-                      if (!file) continue
-
-                      const textarea = e.currentTarget
-                      const start = textarea.selectionStart
-                      const end = textarea.selectionEnd
-                      const curVal = form.content
-
-                      const placeholderId = Date.now()
-                      const loadingText = `![Uploading image ${placeholderId}...]()\n`
-
-                      // 커서 위치에 로딩 텍스트 우선 삽입
-                      const newContent = curVal.substring(0, start) + loadingText + curVal.substring(end)
-                      set('content', newContent)
-
-                      // 나중에 커서 위치를 자연스럽게 유지하려면 타이밍 조절이 필요할 수 있으나,
-                      // React 상태 변경에 의한 비동기 처리에 맡깁니다.
-                      try {
-                        const formData = new FormData()
-                        formData.append('file', file)
-                        const res = await apiClient.post<any>('/files/editor-image', formData, {
-                          headers: { 'Content-Type': 'multipart/form-data' }
-                        })
-                        
-                        console.log('🎯 [PostRegisterPage] Upload API Response:', res)
-                        
-                        const actualUrl = typeof res === 'string' ? res : (res?.url || res?.data?.url || 'undefined_url_returned')
-                        const markdownImageInfo = `![image](${actualUrl})\n`
-                        
-                        setForm((f) => ({
-                          ...f,
-                          content: f.content.replace(loadingText, markdownImageInfo)
-                        }))
-                      } catch (err) {
-                        console.error('❌ [PostRegisterPage] Upload API Error:', err)
-                        alert('이미지 업로드 중 오류가 발생했습니다.')
-                        setForm((f) => ({
-                          ...f,
-                          content: f.content.replace(loadingText, '')
-                        }))
-                      }
-                      return // 이미지 하나만 처리
-                    }
-                  }
-                }}
-                className="border border-gray-200 rounded-lg px-4 py-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono w-full"
+                onChange={(v) => set('content', v)}
+                onSave={() => handleSubmit(true)}
               />
             ) : (
               <textarea
@@ -232,7 +182,7 @@ export default function PostRegisterPage() {
         {/* 버튼 */}
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="outline" onClick={() => navigate(`/posts?boardId=${boardId}`)}>취소</Button>
-          <Button onClick={handleSubmit} disabled={saving || !form.title.trim()}>
+          <Button onClick={() => handleSubmit(false)} disabled={saving || !form.title.trim()}>
             {saving ? '저장 중...' : '저장'}
           </Button>
         </div>

@@ -21,7 +21,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import ResizableImage from 'tiptap-extension-resize-image'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
-import { useEffect, useRef } from 'react'
+import { useEffect, useImperativeHandle, useRef, forwardRef } from 'react'
 import TipTapMenuBar from '@/shared/components/editor/TipTapMenuBar'
 
 interface Props {
@@ -30,15 +30,21 @@ interface Props {
   placeholder?: string
   minHeight?: string
   headingLevels?: (1 | 2 | 3)[]
+  onShiftTab?: () => void
 }
 
-export default function ContentEditor({
+export interface ContentEditorHandle {
+  focus: () => void
+}
+
+const ContentEditor = forwardRef<ContentEditorHandle, Props>(function ContentEditor({
   value,
   onChange,
   placeholder = '내용을 입력하세요...',
   minHeight = '250px',
   headingLevels,
-}: Props) {
+  onShiftTab,
+}, ref) {
   const editorRef = useRef<ReturnType<typeof useEditor>>(null)
   const initialValueRef = useRef(value)
 
@@ -57,6 +63,13 @@ export default function ContentEditor({
     },
     editorProps: {
       attributes: { class: `min-h-[${minHeight}] px-4 py-3 focus:outline-none` },
+      handleKeyDown(_view, event) {
+        if (event.key === 'Tab' && event.shiftKey) {
+          onShiftTab?.()
+          return true
+        }
+        return false
+      },
       handlePaste(_view, event) {
         const items = event.clipboardData?.items
         if (!items) return false
@@ -84,6 +97,10 @@ export default function ContentEditor({
     editorRef.current = editor
   }, [editor])
 
+  useImperativeHandle(ref, () => ({
+    focus: () => editorRef.current?.commands.focus(),
+  }))
+
   // 외부에서 value가 처음 들어올 때(편집 모드 비동기 로드) 한 번만 동기화.
   // key prop 변경으로 재마운트하면 syncedRef가 초기화되어 다음 value도 반영된다.
   const syncedRef = useRef(false)
@@ -99,4 +116,6 @@ export default function ContentEditor({
       <EditorContent editor={editor} />
     </div>
   )
-}
+})
+
+export default ContentEditor

@@ -8,6 +8,7 @@ import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
+import MdTextarea from '@/shared/components/editor/MdTextarea'
 import AttachmentUploader from '@/shared/components/AttachmentUploader'
 import { formatYmd } from '@/lib/utils'
 import type { AttachmentDto, BoardDto, PostDto } from '@/domain/board/types/board'
@@ -68,7 +69,7 @@ export default function PostEditPage() {
   const isHtml = board?.contentType === 'html'
   const isMarkdown = board?.contentType === 'markdown'
 
-  async function handleSubmit() {
+  async function handleSubmit(stay = false) {
     if (!form.title.trim()) { alert('제목을 입력하세요.'); return }
     if (!post || !boardId) return
 
@@ -94,7 +95,7 @@ export default function PostEditPage() {
       )
       queryClient.invalidateQueries({ queryKey: ['post', id] })
       queryClient.invalidateQueries({ queryKey: ['posts'] })
-      navigate(`/posts/${post.id}`, { state: { boardId } })
+      if (!stay) navigate(`/posts/${post.id}`, { state: { boardId } })
     } catch {
       alert('저장 중 오류가 발생했습니다.')
     } finally {
@@ -188,60 +189,10 @@ export default function PostEditPage() {
                 />
               )
             ) : isMarkdown ? (
-              <textarea
-                rows={20}
-                placeholder="마크다운으로 내용을 입력하세요..."
+              <MdTextarea
                 value={form.content}
-                onChange={(e) => set('content', e.target.value)}
-                onPaste={async (e) => {
-                  const items = e.clipboardData?.items
-                  if (!items) return
-                  for (const item of Array.from(items)) {
-                    if (item.type.startsWith('image/')) {
-                      e.preventDefault()
-                      const file = item.getAsFile()
-                      if (!file) continue
-
-                      const textarea = e.currentTarget
-                      const start = textarea.selectionStart
-                      const end = textarea.selectionEnd
-                      const curVal = form.content
-
-                      const placeholderId = Date.now()
-                      const loadingText = `![Uploading image ${placeholderId}...]()\n`
-
-                      const newContent = curVal.substring(0, start) + loadingText + curVal.substring(end)
-                      set('content', newContent)
-
-                      try {
-                        const formData = new FormData()
-                        formData.append('file', file)
-                        const res = await apiClient.post<any>('/files/editor-image', formData, {
-                          headers: { 'Content-Type': 'multipart/form-data' }
-                        })
-
-                        console.log('🎯 [PostEditPage] Upload API Response:', res)
-
-                        const actualUrl = typeof res === 'string' ? res : (res?.url || res?.data?.url || 'undefined_url_returned')
-                        const markdownImageInfo = `![image](${actualUrl})\n`
-                        
-                        setForm((f) => ({
-                          ...f,
-                          content: f.content.replace(loadingText, markdownImageInfo)
-                        }))
-                      } catch (err) {
-                        console.error('❌ [PostEditPage] Upload API Error:', err)
-                        alert('이미지 업로드 중 오류가 발생했습니다.')
-                        setForm((f) => ({
-                          ...f,
-                          content: f.content.replace(loadingText, '')
-                        }))
-                      }
-                      return
-                    }
-                  }
-                }}
-                className="border border-gray-200 rounded-lg px-4 py-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono w-full"
+                onChange={(v) => set('content', v)}
+                onSave={() => handleSubmit(true)}
               />
             ) : (
               <textarea

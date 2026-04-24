@@ -4,6 +4,7 @@ import { apiClient } from '@/lib/apiClient';
 interface Props {
     value: string;
     onChange: (value: string) => void;
+    onSave?: () => void;
 }
 
 // 컨텍스트 메뉴 위치를 위한 타입
@@ -13,7 +14,7 @@ interface MenuPosition {
     visible: boolean;
 }
 
-const MdTextarea: React.FC<Props> = ({ value, onChange }) => {
+const MdTextarea: React.FC<Props> = ({ value, onChange, onSave }) => {
     const [form, setForm] = useState({ content: value });
     const [menuPos, setMenuPos] = useState<MenuPosition>({ x: 0, y: 0, visible: false });
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -24,6 +25,11 @@ const MdTextarea: React.FC<Props> = ({ value, onChange }) => {
         window.addEventListener('click', handleClick);
         return () => window.removeEventListener('click', handleClick);
     }, []);
+
+    // 외부 value가 변경될 때(비동기 데이터 로드 등) 내부 state 동기화
+    useEffect(() => {
+        setForm({ content: value });
+    }, [value]);
 
     const updateContent = (textarea: HTMLTextAreaElement, start: number, end: number, newText: string) => {
         const updated = form.content.substring(0, start) + newText + form.content.substring(end);
@@ -49,20 +55,22 @@ const MdTextarea: React.FC<Props> = ({ value, onChange }) => {
             case 'bold':
                 updateContent(textarea, start, end, `**${selectedText}**`);
                 break;
-            case 'link':
+            case 'link': {
                 const url = prompt('URL을 입력하세요:');
                 if (url) updateContent(textarea, start, end, `[${selectedText}](${url})`);
                 break;
+            }
             case 'bullet':
                 updateContent(textarea, start, end, selectedText.split('\n').map((l) => `- ${l}`).join('\n'));
                 break;
             case 'number':
                 updateContent(textarea, start, end, selectedText.split('\n').map((l, i) => `${i + 1}. ${l}`).join('\n'));
                 break;
-            case 'table':
+            case 'table': {
                 const table = `\n| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Row 1    | Row 2    | Row 3    |\n`;
                 updateContent(textarea, start, end, table);
                 break;
+            }
         }
         setMenuPos((prev) => ({ ...prev, visible: false }));
     };
@@ -75,6 +83,11 @@ const MdTextarea: React.FC<Props> = ({ value, onChange }) => {
     const handleKeydown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.ctrlKey) {
             const key = e.key.toLowerCase();
+            if (key === 's') {
+                e.preventDefault();
+                onSave?.();
+                return;
+            }
             if (['b', 'l', '0', '9', ','].includes(key) || (e.shiftKey && key === '?')) {
                 const actionMap: Record<string, string> = {
                     b: 'bold', l: 'link', '0': 'bullet', '9': 'number', ',': 'table'
@@ -88,10 +101,48 @@ const MdTextarea: React.FC<Props> = ({ value, onChange }) => {
         }
     };
 
-    // 기존 handlePaste, handleChange 로직 유지...
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         onChange(e.target.value);
         setForm({ content: e.target.value });
+    };
+
+    const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (const item of Array.from(items)) {
+            if (item.type.startsWith('image/')) {
+                e.preventDefault();
+                const file = item.getAsFile();
+                if (!file) continue;
+
+                const textarea = e.currentTarget;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+
+                const placeholderId = Date.now();
+                const loadingText = `![Uploading image ${placeholderId}...]()\n`;
+                const newContent = form.content.substring(0, start) + loadingText + form.content.substring(end);
+                setForm({ content: newContent });
+                onChange(newContent);
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const res = await apiClient.post<{ url: string } | string>('/files/editor-image', formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                    });
+                    const actualUrl = typeof res === 'string' ? res : (res?.url ?? 'undefined_url_returned');
+                    const markdownImage = `![image](${actualUrl})\n`;
+                    setForm((prev) => ({ content: prev.content.replace(loadingText, markdownImage) }));
+                    onChange(form.content.replace(loadingText, markdownImage));
+                } catch {
+                    alert('이미지 업로드 중 오류가 발생했습니다.');
+                    setForm((prev) => ({ content: prev.content.replace(loadingText, '') }));
+                    onChange(form.content.replace(loadingText, ''));
+                }
+                return;
+            }
+        }
     };
 
     return (
@@ -103,6 +154,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange }) => {
                 value={form.content}
                 onChange={handleChange}
                 onKeyDown={handleKeydown}
+                onPaste={handlePaste}
                 onContextMenu={handleContextMenu}
                 className="border border-gray-200 rounded-lg px-4 py-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono w-full"
             />
