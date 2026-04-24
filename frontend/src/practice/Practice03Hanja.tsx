@@ -6,9 +6,11 @@
 import { useState } from 'react'
 import Toolbar from '@/shared/layout/Toolbar'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
+import MdTextarea from '@/shared/components/editor/MdTextarea'
 
 export default function Practice03Hanja() {
   const [content, setContent] = useState('<p>운명이라는 단어를 선택해서 漢 버튼을 눌러보세요.</p>')
+  const [content1, setContent1] = useState('# 마크다운으로 작성')
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -23,6 +25,8 @@ export default function Practice03Hanja() {
           <p className="text-xs text-gray-400 mb-1">현재 HTML 출력:</p>
           <pre className="text-xs text-gray-600 whitespace-pre-wrap break-all">{content}</pre>
         </div>
+        <h1 className="text-2xl font-bold mb-2">마크다운 실습</h1>
+        <MdTextarea value={content1} onChange={setContent1} />
       </main>
     </div>
   )
