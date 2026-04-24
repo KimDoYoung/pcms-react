@@ -100,7 +100,8 @@ redis-cli -h jskn.iptime.org -p 6379 -a "kalpa987!"
 - 페이지의 main div는  `<main className="container mx-auto px-4 py-6">`  을 사용한다.
 - 버튼의 이름은 : '찾기','초기화','수정','삭제'를 사용하며, '검색' 버튼 옆에는 항상 '초기화' 버튼을 둔다.
 - Ymd는 날짜이고 문자이고 yyyyMMdd 이다.
-
+- alert를 사용하지 말고  useMessage(showMessage)를 사용한다.
+- shared/component 즉 만들어 놓은 component의 사용을 우선시 한다.
 
 ## React Component를 새로 만들 때 또는 수정시 원칙
 

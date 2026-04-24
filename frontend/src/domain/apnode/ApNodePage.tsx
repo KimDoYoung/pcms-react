@@ -6,6 +6,7 @@ import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import type { ApNode } from '@/domain/apnode/types/apnode'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 // ──── utils ────────────────────────────────────────────────────────────────
 
@@ -169,6 +170,7 @@ interface Clipboard {
 
 export default function ApNodePage() {
   const queryClient = useQueryClient()
+  const { showMessage } = useMessage()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
@@ -277,28 +279,28 @@ export default function ApNodePage() {
       // 새로 생성된 폴더로 자동 이동
       navigate(newNode.id)
     },
-    onError: () => alert('폴더 생성 실패'),
+    onError: () => showMessage('폴더 생성 실패', 'error'),
   })
 
   const renameMutation = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) =>
       apiClient.put<ApNode>(`/apnode/${id}/rename`, { name }),
     onSuccess: () => { invalidate(); setRenameOpen(false); setRenameNode(null) },
-    onError: () => alert('이름 변경 실패'),
+    onError: () => showMessage('이름 변경 실패', 'error'),
   })
 
   const moveMutation = useMutation({
     mutationFn: ({ id, targetParentId }: { id: string; targetParentId: string | null }) =>
       apiClient.put<ApNode>(`/apnode/${id}/move`, { targetParentId }),
     onSuccess: () => { invalidate(); setClipboard(null) },
-    onError: () => alert('이동 실패'),
+    onError: () => showMessage('이동 실패', 'error'),
   })
 
   const createLinkMutation = useMutation({
     mutationFn: ({ name, targetId, parentId }: { name: string; targetId: string; parentId: string | null }) =>
       apiClient.post<ApNode>('/apnode/links', { name, targetId, parentId }),
     onSuccess: () => { invalidate(); setClipboard(null) },
-    onError: () => alert('링크 생성 실패'),
+    onError: () => showMessage('링크 생성 실패', 'error'),
   })
 
   const deleteMutation = useMutation({
@@ -311,7 +313,7 @@ export default function ApNodePage() {
         setCurrentFolderId(parentId)
       }
     },
-    onError: () => alert('삭제 실패'),
+    onError: () => showMessage('삭제 실패', 'error'),
   })
 
   // ── 이벤트 핸들러 ──
@@ -372,7 +374,7 @@ export default function ApNodePage() {
       window.URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Download failed:', error)
-      alert('다운로드에 실패했습니다.')
+      showMessage('다운로드에 실패했습니다.', 'error')
     } finally {
       setCtxMenu((m) => ({ ...m, show: false }))
     }
@@ -408,7 +410,7 @@ export default function ApNodePage() {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
       } catch {
-        alert(`"${file.name}" 업로드 실패`)
+        showMessage(`"${file.name}" 업로드 실패`, 'error')
       }
     }
     invalidate()
@@ -448,7 +450,7 @@ export default function ApNodePage() {
             handleDownload(node)
           }
         } catch {
-          alert('링크 대상을 찾을 수 없습니다.')
+          showMessage('링크 대상을 찾을 수 없습니다.', 'error')
         }
       }
     } else if (node.nodeType === 'F') {

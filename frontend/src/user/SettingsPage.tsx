@@ -2,9 +2,11 @@ import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { apiClient } from '@/lib/apiClient'
 import { useState } from 'react'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 function SettingsPage() {
   const [loading, setLoading] = useState(false)
+  const { showMessage } = useMessage()
 
   async function handleFetchHolidays() {
     if (!confirm('공휴일 정보를 가져오시겠습니까?')) return
@@ -13,10 +15,10 @@ function SettingsPage() {
     const currentYear = new Date().getFullYear()
     try {
       await apiClient.post(`/calendar/fetch-public-holiday/${currentYear}`)
-      alert('공휴일 정보를 성공적으로 가져왔습니다.')
+      showMessage('공휴일 정보를 성공적으로 가져왔습니다.', 'success')
     } catch (error) {
       console.error('Failed to fetch holidays:', error)
-      alert('공휴일 정보를 가져오는 데 실패했습니다.')
+      showMessage('공휴일 정보를 가져오는 데 실패했습니다.', 'error')
     } finally {
       setLoading(false)
     }

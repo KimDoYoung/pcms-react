@@ -9,6 +9,7 @@ import { Search, Plus, Pencil, Trash2 } from 'lucide-react'
 import StarRating from '@/shared/components/StarRating'
 import { formatCost, formatDate } from '@/lib/utils'
 import type { JangbiPageResponse } from '@/domain/jangbi/types/jangbi'
+import { useMessage } from '@/shared/hooks/useMessage'
 import { DateRangePicker } from '@/shared/components/DateRangePicker'
 
 const PAGE_SIZE = 10
@@ -16,6 +17,7 @@ const PAGE_SIZE = 10
 export default function JangbiPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { showMessage } = useMessage()
   const [searchParams, setSearchParams] = useSearchParams()
   const page = Number(searchParams.get('page') ?? 1)
   const keyword = searchParams.get('keyword') ?? ''
@@ -69,7 +71,7 @@ export default function JangbiPage() {
       await apiClient.delete(`/jangbi/${id}`)
       queryClient.invalidateQueries({ queryKey: ['jangbi-list'] })
     } catch {
-      alert('삭제 중 오류가 발생했습니다.')
+      showMessage('삭제 중 오류가 발생했습니다.', 'error')
     }
   }
 

@@ -9,11 +9,13 @@ import { Input } from '@/shared/components/ui/input'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
 import AttachmentUploader from '@/shared/components/AttachmentUploader'
 import type { AttachmentDto, JangbiDto } from '@/domain/jangbi/types/jangbi'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 export default function JangbiEditPage() {
   const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { showMessage } = useMessage()
 
   const { data: jangbi, isLoading } = useQuery<JangbiDto>({
     queryKey: ['jangbi', id],
@@ -58,7 +60,7 @@ export default function JangbiEditPage() {
   }
 
   async function handleSubmit() {
-    if (!form.item.trim()) { alert('품목을 입력하세요.'); return }
+    if (!form.item.trim()) { showMessage('품목을 입력하세요.', 'error'); return }
     if (!jangbi) return
 
     setSaving(true)
@@ -84,7 +86,7 @@ export default function JangbiEditPage() {
       queryClient.invalidateQueries({ queryKey: ['jangbi-list'] })
       navigate(`/jangbi/${id}`)
     } catch {
-      alert('저장 중 오류가 발생했습니다.')
+      showMessage('저장 중 오류가 발생했습니다.', 'error')
     } finally {
       setSaving(false)
     }
@@ -98,7 +100,7 @@ export default function JangbiEditPage() {
       queryClient.invalidateQueries({ queryKey: ['jangbi-list'] })
       navigate('/jangbi')
     } catch {
-      alert('삭제 중 오류가 발생했습니다.')
+      showMessage('삭제 중 오류가 발생했습니다.', 'error')
     }
   }
 

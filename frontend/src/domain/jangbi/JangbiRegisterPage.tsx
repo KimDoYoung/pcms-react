@@ -9,10 +9,12 @@ import { Input } from '@/shared/components/ui/input'
 import { formatDate, formatYmd } from '@/lib/utils'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
 import { DateRangeSetter } from '@/shared/components/DateRangeSetter'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 export default function JangbiRegisterPage() {
   const navigate = useNavigate()
   const today = formatDate(new Date(), false)
+  const { showMessage } = useMessage()
 
   const [form, setForm] = useState({
     ymd: today,
@@ -31,8 +33,8 @@ export default function JangbiRegisterPage() {
   }
 
   async function handleSubmit() {
-    if (!form.ymd) { alert('구입일을 입력하세요.'); return }
-    if (!form.item.trim()) { alert('품목을 입력하세요.'); return }
+    if (!form.ymd) { showMessage('구입일을 입력하세요.', 'error'); return }
+    if (!form.item.trim()) { showMessage('품목을 입력하세요.', 'error'); return }
 
     setSaving(true)
     try {
@@ -53,7 +55,7 @@ export default function JangbiRegisterPage() {
       })
       navigate(`/jangbi/${res.id}`)
     } catch {
-      alert('저장 중 오류가 발생했습니다.')
+      showMessage('저장 중 오류가 발생했습니다.', 'error')
     } finally {
       setSaving(false)
     }

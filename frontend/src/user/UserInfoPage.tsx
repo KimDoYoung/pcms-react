@@ -4,9 +4,11 @@ import { useAuthStore } from '@/shared/store/authStore'
 import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 function UserInfoPage() {
   const { userNm } = useAuthStore()
+  const { showMessage } = useMessage()
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -18,7 +20,7 @@ function UserInfoPage() {
     e.preventDefault()
     
     if (formData.newPassword !== formData.confirmPassword) {
-      alert('새로운 비밀번호와 확인 비밀번호가 일치하지 않습니다.')
+      showMessage('새로운 비밀번호와 확인 비밀번호가 일치하지 않습니다.', 'error')
       return
     }
 
@@ -28,20 +30,20 @@ function UserInfoPage() {
     try {
       const response = await apiClient.post<{ success: boolean; message?: string }>('/user/change-password', formData)
       if (response.success) {
-        alert('비밀번호가 성공적으로 변경되었습니다.')
+        showMessage('비밀번호가 성공적으로 변경되었습니다.', 'success')
         setFormData({
           currentPassword: '',
           newPassword: '',
           confirmPassword: '',
         })
       } else {
-        alert(response.message || '비밀번호 변경에 실패했습니다.')
+        showMessage(response.message || '비밀번호 변경에 실패했습니다.', 'error')
       }
     } catch (error: unknown) {
       console.error('Password change error:', error)
       const axiosError = error as { response?: { data?: { message?: string } } }
       const msg = axiosError.response?.data?.message || '비밀번호 변경 중 오류가 발생했습니다.'
-      alert(msg)
+      showMessage(msg, 'error')
     } finally {
       setLoading(false)
     }

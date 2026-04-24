@@ -8,12 +8,14 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { formatRelativeDateTime } from '@/lib/utils'
 import type { BoardWithCodeDto, PostListDto, PostsPageResponse } from '@/domain/board/types/board'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 const PAGE_SIZE = 10
 
 export default function PostsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { showMessage } = useMessage()
   const [searchParams, setSearchParams] = useSearchParams()
   const boardId = searchParams.get('boardId') ? Number(searchParams.get('boardId')) : null
 
@@ -62,7 +64,7 @@ export default function PostsPage() {
       await apiClient.delete(`/boards/${post.boardId}/posts/${post.id}`)
       queryClient.invalidateQueries({ queryKey: ['posts'] })
     } catch {
-      alert('삭제 중 오류가 발생했습니다.')
+      showMessage('삭제 중 오류가 발생했습니다.', 'error')
     }
   }
 

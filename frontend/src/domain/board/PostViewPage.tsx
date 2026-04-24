@@ -9,12 +9,14 @@ import AttachmentList from '@/shared/components/AttachmentList'
 import type { BoardDto, PostDto } from '@/domain/board/types/board'
 import { formatDate } from '@/lib/utils'
 import MarkdownViewer from '@/domain/board/components/MarkdownViewer'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 export default function PostViewPage() {
   const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
+  const { showMessage } = useMessage()
 
   // boardId는 list → view 내비게이션 state 또는 query param에서 읽음
   const stateboardId = (location.state as { boardId?: number } | null)?.boardId
@@ -49,7 +51,7 @@ export default function PostViewPage() {
       queryClient.invalidateQueries({ queryKey: ['posts'] })
       navigate(-1)
     } catch {
-      alert('삭제 중 오류가 발생했습니다.')
+      showMessage('삭제 중 오류가 발생했습니다.', 'error')
     }
   }
 

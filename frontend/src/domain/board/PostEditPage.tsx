@@ -12,12 +12,14 @@ import MdTextarea from '@/shared/components/editor/MdTextarea'
 import AttachmentUploader from '@/shared/components/AttachmentUploader'
 import { formatYmd } from '@/lib/utils'
 import type { AttachmentDto, BoardDto, PostDto } from '@/domain/board/types/board'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 export default function PostEditPage() {
   const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
+  const { showMessage } = useMessage()
 
   const stateboardId = (location.state as { boardId?: number } | null)?.boardId
   const paramBoardId = new URLSearchParams(location.search).get('boardId')
@@ -70,7 +72,7 @@ export default function PostEditPage() {
   const isMarkdown = board?.contentType === 'markdown'
 
   async function handleSubmit(stay = false) {
-    if (!form.title.trim()) { alert('제목을 입력하세요.'); return }
+    if (!form.title.trim()) { showMessage('제목을 입력하세요.', 'error'); return }
     if (!post || !boardId) return
 
     setSaving(true)
@@ -97,7 +99,7 @@ export default function PostEditPage() {
       queryClient.invalidateQueries({ queryKey: ['posts'] })
       if (!stay) navigate(`/posts/${post.id}`, { state: { boardId } })
     } catch {
-      alert('저장 중 오류가 발생했습니다.')
+      showMessage('저장 중 오류가 발생했습니다.', 'error')
     } finally {
       setSaving(false)
     }
@@ -111,7 +113,7 @@ export default function PostEditPage() {
       queryClient.invalidateQueries({ queryKey: ['posts'] })
       navigate(`/posts?boardId=${boardId}`)
     } catch {
-      alert('삭제 중 오류가 발생했습니다.')
+      showMessage('삭제 중 오류가 발생했습니다.', 'error')
     }
   }
 
@@ -225,7 +227,7 @@ export default function PostEditPage() {
           </Button>
           <div className="flex gap-2">
             <Button variant="action" onClick={() => navigate(`/posts/${id}`, { state: { boardId } })}>취소</Button>
-            <Button onClick={handleSubmit} disabled={saving || !form.title.trim()}>
+            <Button onClick={() => handleSubmit(false)} disabled={saving || !form.title.trim()}>
               {saving ? '저장 중...' : '저장'}
             </Button>
           </div>

@@ -13,12 +13,14 @@ import { Input } from '@/shared/components/ui/input'
 import { Search, Plus, Pencil, Trash2 } from 'lucide-react'
 import { formatRelativeDateTime } from '@/lib/utils'
 import type { SnotePageResponse } from '@/domain/snote/types/snote'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 const PAGE_SIZE = 10
 
 export default function SNoteListPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { showMessage } = useMessage()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const page = Number(searchParams.get('page') ?? 1)
@@ -56,7 +58,7 @@ export default function SNoteListPage() {
       await apiClient.delete(`/snote/${id}`)
       queryClient.invalidateQueries({ queryKey: ['snote-list'] })
     } catch {
-      alert('삭제 중 오류가 발생했습니다.')
+      showMessage('삭제 중 오류가 발생했습니다.', 'error')
     }
   }
 

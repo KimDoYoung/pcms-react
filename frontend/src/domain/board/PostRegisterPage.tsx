@@ -12,7 +12,7 @@ import AttachmentUploader from '@/shared/components/AttachmentUploader'
 import { useAuthStore } from '@/shared/store/authStore'
 import { formatDate, formatYmd } from '@/lib/utils'
 import type { BoardDto } from '@/domain/board/types/board'
-import { tr } from 'date-fns/locale'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 export default function PostRegisterPage() {
   const navigate = useNavigate()
@@ -20,6 +20,7 @@ export default function PostRegisterPage() {
   const boardId = searchParams.get('boardId') ? Number(searchParams.get('boardId')) : null
   const today = formatDate(new Date(), false)
   const { userNm } = useAuthStore()
+  const { showMessage } = useMessage()
 
   const [form, setForm] = useState({ title: '', author: userNm ?? '', baseYmd: today, content: '' })
   const [newFiles, setNewFiles] = useState<File[]>([])
@@ -45,8 +46,8 @@ export default function PostRegisterPage() {
   const isMarkdown = board?.contentType === 'markdown'
 
   async function handleSubmit(stay = false) {
-    if (!form.title.trim()) { alert('제목을 입력하세요.'); return }
-    if (!form.baseYmd) { alert('기준일을 입력하세요.'); return }
+    if (!form.title.trim()) { showMessage('제목을 입력하세요.', 'error'); return }
+    if (!form.baseYmd) { showMessage('기준일을 입력하세요.', 'error'); return }
     if (!boardId) return
 
     setSaving(true)
@@ -69,7 +70,7 @@ export default function PostRegisterPage() {
     setPostId(res.id)
     if (!stay) navigate(`/posts/${res.id}`, { state: { boardId } })
         } catch {
-      alert('저장 중 오류가 발생했습니다.')
+      showMessage('저장 중 오류가 발생했습니다.', 'error')
     } finally {
       setSaving(false)
     }

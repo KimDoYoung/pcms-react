@@ -7,6 +7,7 @@ import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import type { BoardDetailDto } from '@/domain/board/types/board'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 const CONTENT_TYPE_LABEL: Record<string, string> = {
   html: 'HTML',
@@ -26,6 +27,7 @@ const emptyForm = { id: null as number | null, boardCode: '', boardNameKor: '', 
 export default function BoardsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { showMessage } = useMessage()
 
   const [showModal, setShowModal] = useState(false)
   const [isEdit, setIsEdit] = useState(false)
@@ -55,8 +57,8 @@ export default function BoardsPage() {
   }
 
   async function handleSave() {
-    if (!form.boardNameKor.trim()) { alert('게시판 이름을 입력하세요.'); return }
-    if (!isEdit && !form.boardCode.trim()) { alert('게시판 코드를 입력하세요.'); return }
+    if (!form.boardNameKor.trim()) { showMessage('게시판 이름을 입력하세요.', 'error'); return }
+    if (!isEdit && !form.boardCode.trim()) { showMessage('게시판 코드를 입력하세요.', 'error'); return }
 
     setSaving(true)
     try {
@@ -68,7 +70,7 @@ export default function BoardsPage() {
       queryClient.invalidateQueries({ queryKey: ['boards'] })
       closeModal()
     } catch {
-      alert('저장 중 오류가 발생했습니다.')
+      showMessage('저장 중 오류가 발생했습니다.', 'error')
     } finally {
       setSaving(false)
     }
@@ -80,7 +82,7 @@ export default function BoardsPage() {
       await apiClient.delete(`/boards/${board.id}`)
       queryClient.invalidateQueries({ queryKey: ['boards'] })
     } catch {
-      alert('삭제 중 오류가 발생했습니다.')
+      showMessage('삭제 중 오류가 발생했습니다.', 'error')
     }
   }
 

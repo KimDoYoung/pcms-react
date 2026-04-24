@@ -10,6 +10,7 @@ import StarRating from '@/shared/components/StarRating'
 import AttachmentList from '@/shared/components/AttachmentList'
 import { formatCost, formatDate } from '@/lib/utils'
 import type { JangbiDto } from '@/domain/jangbi/types/jangbi'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 export default function JangbiViewPage() {
   const { id } = useTabParams<{ id: string }>()
@@ -18,6 +19,7 @@ export default function JangbiViewPage() {
   const queryClient = useQueryClient()
 
   const goBack = () => navigate(returnPath)
+  const { showMessage } = useMessage()
 
   const { data: jangbi, isLoading, isError } = useQuery<JangbiDto>({
     queryKey: ['jangbi', id],
@@ -33,7 +35,7 @@ export default function JangbiViewPage() {
       queryClient.invalidateQueries({ queryKey: ['jangbi-list'] })
       navigate('/jangbi')
     } catch {
-      alert('삭제 중 오류가 발생했습니다.')
+      showMessage('삭제 중 오류가 발생했습니다.', 'error')
     }
   }
 
