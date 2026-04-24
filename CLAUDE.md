@@ -107,4 +107,4 @@ redis-cli -h jskn.iptime.org -p 6379 -a "kalpa987!"
 
 - component의 1. 목적(용도), 2. 사용법, 3. props 를 기술한다.
 - component의 수정시에 서술했던 목적(용도), 사용법, props 설명도 같이 수정한다.
-- lint 명령을 수행 ' fm.sh lint ' 를 수행해서 0개의 warning, 0개의  error 여야한다.
+- lint 명령을 수행 ' fm.sh lint ' 를 수행해서 0개의 warning, 0개의  error 여야한다. 
