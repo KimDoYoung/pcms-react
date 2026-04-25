@@ -7,21 +7,9 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import type { ApNode } from '@/domain/apnode/types/apnode'
 import { useMessage } from '@/shared/hooks/useMessage'
+import { formatDate, formatFileSize } from '@/lib/utils'
 
 // ──── utils ────────────────────────────────────────────────────────────────
-
-function formatSize(bytes: number | null | undefined): string {
-  if (bytes == null) return '-'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`
-}
-
-function formatDate(dt: string | null | undefined): string {
-  if (!dt) return '-'
-  return new Date(dt).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
-}
 
 function isImage(node: ApNode): boolean {
   return !!node.contentType?.startsWith('image/') || !!node.name.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)
@@ -687,7 +675,7 @@ export default function ApNodePage() {
                           <p className="text-[10px] text-gray-400 mt-0.5">
                             {item.nodeType === 'D'
                               ? `${item.childCount}개 항목`
-                              : formatSize(item.fileSize)}
+                              : formatFileSize(item.fileSize ?? 0)}
                           </p>
                         </div>
                       </div>
@@ -772,10 +760,10 @@ export default function ApNodePage() {
                               </div>
                             </td>
                             <td className="p-3 text-gray-500 text-right">
-                              {item.nodeType === 'D' ? '-' : formatSize(item.fileSize)}
+                              {item.nodeType === 'D' ? '-' : formatFileSize(item.fileSize ?? 0)}
                             </td>
                             <td className="p-3 text-gray-500">
-                              {formatDate(item.modifyDt || item.createDt)}
+                              {formatDate(item.modifyDt ?? item.createDt ?? undefined, false)}
                             </td>
                           </tr>
                         )

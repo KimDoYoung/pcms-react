@@ -67,16 +67,45 @@ redis-cli -h jskn.iptime.org -p 6379 -a "kalpa987!"
 - **설계 문서**: `docs/설계.md` (아키텍처 결정사항), `docs/frontend-init.md` (프론트엔드 초기 세팅 내역).
 - **디자인** : shadcn을 주로 사용하기로 함
 
+## 배포 구조 및 주의사항
+
+### 환경별 URL
+| 환경 | 프론트엔드 | API |
+|------|-----------|-----|
+| 개발 | `http://localhost:5173` (Vite dev server) | `http://localhost:8585/pcms` |
+| 배포 | `http://jskn.iptime.org/pcms` (Tomcat) | `/pcms` (same-origin) |
+
+### 배포 방식
+- `deploy/deploy.sh` 실행: 프론트 빌드 → `backend/src/main/resources/static/` 복사 → WAR 빌드 → Tomcat 전송
+- React `dist/`가 Spring Boot static 리소스로 패키징되어 WAR 하나로 배포됨
+- Tomcat에서 `pcms.war` → context-path `/pcms` 자동 설정
+
+### API baseURL (`frontend/src/lib/apiClient.ts`)
+- `import.meta.env.PROD`가 `true`(빌드 시)이면 `/pcms` 사용 (same-origin)
+- 개발 시 `http://localhost:8585/pcms` 사용
+- `VITE_API_BASE_URL` 환경변수로 오버라이드 가능
+
+### SPA 라우팅 (정적 파일 서빙 주의)
+- `SpaController` (`@Profile("!development")`) : 명시적 SPA 경로를 `index.html`로 forward
+- `SpaFallbackController` : catch-all fallback. 패턴 `/{p:[^\\.]+}/**` 구조로 **각 세그먼트에 `.`이 없는 경우만** 매칭 → `/assets/xxx.css` 같은 static 파일은 제외됨
+- static asset은 Spring의 `ResourceHttpRequestHandler`가 `classpath:/static/`에서 서빙
+
+### vite.config.ts
+- 프로덕션 빌드 시 `base: '/pcms/'` → 모든 asset 경로가 `/pcms/assets/...`로 생성됨
+- `test` 블록은 vitest 미설치로 제거됨. vitest 도입 시 `/// <reference types="vitest" />`와 함께 복원
+
 ## React Page를 만들때 원칙
 
+- Page의 파일명은 추가: <domain>RegisterPage, 리스트: <domain>ListPage, 수정: <domain>EditPage, 삭제 : <domain>DeletePage와 같은 형태로 작성한다.
 - 날짜,숫자표현등 format과 관련된 함수는 lib/Utils.ts에 있는 함수를 우선적으로 사용한다.
 - 페이지의 main div는  `<main className="container mx-auto px-4 py-6">`  을 사용한다.
 - 버튼의 이름은 : '찾기','초기화','수정','삭제'를 사용하며, '검색' 버튼 옆에는 항상 '초기화' 버튼을 둔다.
-- 각 domain 폴더는 domain에서 사용되는 types를 types폴더에 <domain lowcase>.ts에 보관한다.
-- 각 domain 폴더는 domain에서 사용되는 components를 components 폴더에 작성한다.
 - Ymd는 날짜이고 문자이고 yyyyMMdd 이다.
+- alert를 사용하지 말고  useMessage(showMessage)를 사용한다.
+- shared/component 즉 만들어 놓은 component의 사용을 우선시 한다.
 
-## React Component를 만들 때 원칙
+## React Component를 새로 만들 때 또는 수정시 원칙
 
-- component의 목적(용도)를 기술한다.
-- component의 사용법을 기술한다.
+- component의 1. 목적(용도), 2. 사용법, 3. props 를 기술한다.
+- component의 수정시에 서술했던 목적(용도), 사용법, props 설명도 같이 수정한다.
+- lint 명령을 수행 ' fm.sh lint ' 를 수행해서 0개의 warning, 0개의  error 여야한다. 
