@@ -22,19 +22,36 @@ function DiaryItem({ item }: { item: DiaryListDto }) {
   return (
     <li className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden">
       <div
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+        className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={() => setExpanded((v) => !v)}
       >
-        <span className="shrink-0 text-xs font-mono text-gray-400 w-36">
-          {formatDate(displayDate)}
-        </span>
+        <div className="flex items-center justify-between sm:justify-start gap-2">
+          <span className="shrink-0 text-xs font-mono text-gray-400 sm:w-36">
+            {formatDate(displayDate)}
+          </span>
+          <div className="flex items-center gap-1 sm:hidden">
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate(`/diary/${item.id}`) }}
+              className="p-2 text-gray-400 hover:text-green-500 rounded transition-colors"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate(`/diary/register?date=${displayDate}`) }}
+              className="p-2 text-gray-400 hover:text-blue-500 rounded transition-colors"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            {expanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+          </div>
+        </div>
         <span
-          className="flex-1 text-sm text-gray-800 truncate hover:text-blue-600 hover:underline cursor-pointer"
+          className="flex-1 text-sm font-medium sm:font-normal text-gray-800 truncate hover:text-blue-600 hover:underline cursor-pointer"
           onClick={(e) => { e.stopPropagation(); navigate(`/diary/${item.id}`) }}
         >
           {item.summary ?? <span className="text-gray-300 italic">제목 없음</span>}
         </span>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="hidden sm:flex items-center gap-2 shrink-0">
           {item.attachmentCount > 0 && (
             <span className="text-xs text-gray-400">📎 {item.attachmentCount}</span>
           )}
@@ -66,7 +83,7 @@ function DiaryItem({ item }: { item: DiaryListDto }) {
 
       {expanded && (
         <div
-          className="px-4 py-4 border-t border-gray-100 prose prose-sm max-w-none text-gray-700"
+          className="px-4 py-4 border-t border-gray-100 prose prose-sm max-w-none text-gray-700 overflow-x-auto"
           dangerouslySetInnerHTML={{ __html: item.content ?? '' }}
         />
       )}
@@ -133,77 +150,84 @@ export default function DiaryPage() {
         <h1 className="text-xl font-bold text-gray-800 mb-4">🔍 일지 찾기</h1>
 
         {/* 검색 폼 */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3 mb-4 flex flex-wrap gap-3 items-end">
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-500 shrink-0">시작일</label>
-            <Input
-              type="date"
-              value={form.startYmd}
-              onChange={(e) => setForm((f) => ({ ...f, startYmd: e.target.value }))}
-              onKeyDown={handleKeyDown}
-              className="w-38 text-sm"
-            />
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-4 mb-4 flex flex-col sm:flex-row sm:flex-wrap gap-3 items-stretch sm:items-end">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <label className="text-xs text-gray-500 shrink-0">시작일</label>
+              <Input
+                type="date"
+                value={form.startYmd}
+                onChange={(e) => setForm((f) => ({ ...f, startYmd: e.target.value }))}
+                onKeyDown={handleKeyDown}
+                className="text-sm"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <label className="text-xs text-gray-500 shrink-0">종료일</label>
+              <Input
+                type="date"
+                value={form.endYmd}
+                onChange={(e) => setForm((f) => ({ ...f, endYmd: e.target.value }))}
+                onKeyDown={handleKeyDown}
+                className="text-sm"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-500 shrink-0">종료일</label>
-            <Input
-              type="date"
-              value={form.endYmd}
-              onChange={(e) => setForm((f) => ({ ...f, endYmd: e.target.value }))}
-              onKeyDown={handleKeyDown}
-              className="w-38 text-sm"
-            />
-          </div>
-          <div className="relative">
+            <div className="relative flex-1 sm:flex-none">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPicker((v) => !v)}
+                className="w-full sm:w-auto shrink-0"
+                title="기간 빠른 선택"
+              >
+                <CalendarRange className="w-4 h-4 mr-2 sm:mr-0" />
+                <span className="sm:hidden text-xs">기간 빠른 선택</span>
+              </Button>
+              {showPicker && (
+                <DateRangeSetter
+                  onRangeChange={(start, end) => {
+                    setForm((f) => ({
+                      ...f,
+                      startYmd: format(start, 'yyyy-MM-dd'),
+                      endYmd: format(end, 'yyyy-MM-dd'),
+                    }))
+                  }}
+                  onClose={() => setShowPicker(false)}
+                />
+              )}
+            </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowPicker((v) => !v)}
-              className="shrink-0"
-              title="기간 빠른 선택"
+              onClick={() => setForm((f) => ({ ...f, sort: f.sort === 'desc' ? 'asc' : 'desc' }))}
+              className="flex-1 sm:w-auto shrink-0 gap-1.5"
+              title={form.sort === 'desc' ? '최신순' : '오래된순'}
             >
-              <CalendarRange className="w-4 h-4" />
+              <ArrowDownUp className="w-3.5 h-3.5" />
+              <span className="text-xs">{form.sort === 'desc' ? '최신순' : '오래된순'}</span>
             </Button>
-            {showPicker && (
-              <DateRangeSetter
-                onRangeChange={(start, end) => {
-                  setForm((f) => ({
-                    ...f,
-                    startYmd: format(start, 'yyyy-MM-dd'),
-                    endYmd: format(end, 'yyyy-MM-dd'),
-                  }))
-                }}
-                onClose={() => setShowPicker(false)}
-              />
-            )}
           </div>
-          <div className="flex items-center gap-2 flex-1 min-w-40">
-            <label className="text-xs text-gray-500 shrink-0">검색어</label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
+            <label className="text-xs text-gray-500 shrink-0 sm:hidden">검색어</label>
             <Input
               type="text"
-              placeholder="내용 또는 제목"
+              placeholder="내용 또는 제목 검색"
               value={form.keyword}
               onChange={(e) => setForm((f) => ({ ...f, keyword: e.target.value }))}
               onKeyDown={handleKeyDown}
-              className="text-sm"
+              className="text-sm w-full"
             />
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setForm((f) => ({ ...f, sort: f.sort === 'desc' ? 'asc' : 'desc' }))}
-            className="shrink-0 gap-1.5"
-            title={form.sort === 'desc' ? '최신순' : '오래된순'}
-          >
-            <ArrowDownUp className="w-3.5 h-3.5" />
-            <span className="text-xs">{form.sort === 'desc' ? '최신순' : '오래된순'}</span>
-          </Button>
-          <Button onClick={handleSearch} className="shrink-0">
-            <Search className="w-4 h-4 mr-1" /> 찾기
-          </Button>
-          <Button variant="outline" onClick={handleReset} className="shrink-0">
-            초기화
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleSearch} className="flex-1 sm:flex-none shrink-0">
+              <Search className="w-4 h-4 mr-1" /> 찾기
+            </Button>
+            <Button variant="outline" onClick={handleReset} className="flex-1 sm:flex-none shrink-0">
+              초기화
+            </Button>
+          </div>
         </div>
 
         {/* 결과 */}

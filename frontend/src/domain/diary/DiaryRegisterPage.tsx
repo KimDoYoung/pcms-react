@@ -312,12 +312,12 @@ function DiaryRegisterPage() {
           )}
         </div>
 
-        <div className="flex gap-4 items-start">
-        <div className="flex-1 min-w-0 flex flex-col">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
+        <div className="flex flex-col lg:flex-row gap-4 items-start">
+        <div className="flex-1 w-full min-w-0 flex flex-col">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
           {/* 날짜 네비게이션 및 제목 */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 px-4 py-3 border-b border-gray-200">
-            <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+          <div className="flex flex-col md:flex-row md:items-center gap-3 px-4 py-3 border-b border-gray-200">
+            <div className="flex items-center justify-between md:justify-start gap-2 bg-gray-100 p-1 rounded-lg">
               <button 
                 onClick={() => changeDate(-1)} 
                 className="p-1 hover:bg-white rounded text-gray-600 shadow-sm transition-all"
@@ -325,15 +325,17 @@ function DiaryRegisterPage() {
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <input
-                type="date"
-                value={diaryDate}
-                onChange={(e) => setSearchParams({ date: e.target.value })}
-                className="text-sm font-medium text-gray-700 bg-transparent focus:outline-none cursor-pointer"
-              />
-              <span className="text-xs text-gray-400 font-medium px-1 select-none">
-                {getDayOfWeek(diaryDate)}
-              </span>
+              <div className="flex items-center gap-1">
+                <input
+                  type="date"
+                  value={diaryDate}
+                  onChange={(e) => setSearchParams({ date: e.target.value })}
+                  className="text-sm font-medium text-gray-700 bg-transparent focus:outline-none cursor-pointer"
+                />
+                <span className="text-[10px] md:text-xs text-gray-400 font-medium select-none">
+                  ({getDayOfWeek(diaryDate)})
+                </span>
+              </div>
               <button 
                 onClick={() => changeDate(1)} 
                 className="p-1 hover:bg-white rounded text-gray-600 shadow-sm transition-all"
@@ -343,7 +345,7 @@ function DiaryRegisterPage() {
               </button>
             </div>
             
-            <div className="hidden sm:block w-px h-6 bg-gray-300 mx-2" />
+            <div className="hidden md:block w-px h-6 bg-gray-300 mx-2" />
             
             <input
               ref={titleRef}
@@ -357,7 +359,7 @@ function DiaryRegisterPage() {
                 }
               }}
               placeholder="제목을 입력하세요"
-              className="flex-1 w-full text-lg font-semibold focus:outline-none placeholder:text-gray-300 bg-transparent"
+              className="flex-1 w-full text-base md:text-lg font-semibold focus:outline-none placeholder:text-gray-300 bg-transparent"
             />
           </div>
 
@@ -391,28 +393,29 @@ function DiaryRegisterPage() {
         </div>{/* editor card end */}
 
         {/* 저장 버튼 */}
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="cancel" size="pill" onClick={() => navigate('/diary')}>
+        <div className="mt-4 flex flex-wrap justify-end gap-2 px-1">
+          <Button variant="cancel" size="pill" onClick={() => navigate('/diary')} className="flex-1 sm:flex-none">
             취소
           </Button>
           <Button 
             variant="action" 
             size="pill" 
+            className="flex-1 sm:flex-none px-8"
             onClick={() => handleSubmit()} 
             disabled={!title.trim() || !isDirty || isSubmitting.current}
           >
             {isSubmitting.current ? '저장 중...' : '저장'}
           </Button>
-          <Button variant="init"  size="pill" onClick={() => navigate('/diary')}>
+          <Button variant="init" size="pill" onClick={() => navigate('/diary')} className="flex-1 sm:flex-none">
             일지찾기
           </Button>
         </div>
 
         </div>{/* left col end */}
 
-        {/* 일지 목록 패널 */}
+        {/* 일지 목록 패널 - 모바일에서 숨김 */}
         {showList && (
-          <div className="w-[432px] shrink-0 bg-white rounded-xl shadow-sm border border-gray-200 p-3 self-start sticky top-4">
+          <div className="hidden lg:block w-[432px] shrink-0 bg-white rounded-xl shadow-sm border border-gray-200 p-3 self-start sticky top-4">
             <DiarySummaryList
               onSelect={(ymd) => setSearchParams({ date: ymd })}
             />
@@ -420,6 +423,7 @@ function DiaryRegisterPage() {
         )}
 
         </div>{/* flex row end */}
+
       </main>
       {blocker.state === 'blocked' && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-[1px] z-[9999] flex items-center justify-center">

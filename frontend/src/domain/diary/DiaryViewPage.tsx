@@ -68,10 +68,10 @@ export default function DiaryViewPage() {
       <main className="container mx-auto px-4 py-6">
 
         {/* 헤더 */}
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <p className="text-xl text-blue-500 mb-1 font-mono">{displayDate}</p>
-            <h1 className="text-xl font-bold text-gray-800">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+          <div className="min-w-0">
+            <p className="text-lg md:text-xl text-blue-500 mb-1 font-mono">{displayDate}</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800 break-words">
               {diary.summary ?? <span className="text-gray-300 italic">제목 없음</span>}
             </h1>
           </div>
@@ -79,21 +79,22 @@ export default function DiaryViewPage() {
             <Button
               variant="outline"
               size="sm"
+              className="flex-1 sm:flex-none"
               onClick={() => navigate(`/diary/register?date=${displayDate}`)}
             >
               <Pencil className="w-3.5 h-3.5 mr-1" /> 수정
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate(returnPath)}>
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => navigate(returnPath)}>
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> 목록
             </Button>
           </div>
         </div>
 
         {/* 본문 */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-6 mb-4">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 md:px-6 py-6 mb-4 overflow-hidden">
           {diary.content ? (
             <div
-              className="prose prose-sm max-w-none text-gray-700"
+              className="prose prose-sm max-w-none text-gray-700 overflow-x-auto"
               dangerouslySetInnerHTML={{ __html: diary.content }}
             />
           ) : (
