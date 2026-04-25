@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { Folder, FolderOpen, File, ChevronRight, ChevronDown, Upload, FolderPlus, Download, Pencil, Trash2, X, List, Grid3X3, Link2, Copy, Scissors, ClipboardPaste, FileText, FileImage, FileAudio, FileVideo, FileArchive, FileCode, FileSpreadsheet, FileJson, Presentation } from 'lucide-react'
+import { Folder, FolderOpen, File, ChevronRight, ChevronDown, Upload, FolderPlus, Download, Pencil, Trash2, X, List, Grid3X3, Link2, Copy, Scissors, ClipboardPaste, FileText, FileImage, FileAudio, FileVideo, FileArchive, FileCode, FileSpreadsheet, FileJson, Presentation, Eye } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
@@ -13,6 +13,13 @@ import { formatDate, formatFileSize } from '@/lib/utils'
 
 function isImage(node: ApNode): boolean {
   return !!node.contentType?.startsWith('image/') || !!node.name.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)
+}
+
+function canView(node: ApNode): boolean {
+  if (isImage(node)) return true
+  const ext = node.name.split('.').pop()?.toLowerCase()
+  if (!ext) return false
+  return ['pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'hwp'].includes(ext)
 }
 
 function getNodeIcon(node: ApNode) {
@@ -368,6 +375,18 @@ export default function ApNodePage() {
     }
   }
 
+  async function handleView(node: ApNode) {
+    try {
+      const data = await apiClient.get<{ url: string }>(`/apnode/${node.id}/view-url`)
+      window.open(data.url, '_blank')
+    } catch (error) {
+      console.error('View failed:', error)
+      showMessage('파일 보기에 실패했습니다.', 'error')
+    } finally {
+      setCtxMenu((m) => ({ ...m, show: false }))
+    }
+  }
+
   function handlePaste() {
     if (!clipboard) return
     if (clipboard.type === 'cut') {
@@ -435,14 +454,22 @@ export default function ApNodePage() {
           if (targetNode.nodeType === 'D') {
             navigate(targetNode.id)
           } else {
-            handleDownload(node)
+            if (canView(node)) {
+              handleView(node)
+            } else {
+              handleDownload(node)
+            }
           }
         } catch {
           showMessage('링크 대상을 찾을 수 없습니다.', 'error')
         }
       }
     } else if (node.nodeType === 'F') {
-      handleDownload(node)
+      if (canView(node)) {
+        handleView(node)
+      } else {
+        handleDownload(node)
+      }
     }
   }
 
@@ -634,6 +661,15 @@ export default function ApNodePage() {
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
+                          {canView(item) && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleView(item) }}
+                              className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-full transition-colors"
+                              title="보기"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           {(item.nodeType === 'F' || item.nodeType === 'L') && (
                             <button
                               onClick={(e) => { e.stopPropagation(); handleDownload(item) }}
@@ -740,6 +776,15 @@ export default function ApNodePage() {
                                   >
                                     <Pencil className="w-3.5 h-3.5" />
                                   </button>
+                                  {canView(item) && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleView(item) }}
+                                      className="p-1 text-gray-400 hover:text-indigo-500 rounded"
+                                      title="보기"
+                                    >
+                                      <Eye className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
                                   {(item.nodeType === 'F' || item.nodeType === 'L') && (
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleDownload(item) }}
@@ -805,6 +850,14 @@ export default function ApNodePage() {
               >
                 <Pencil className="w-4 h-4 text-gray-400" /> 이름 변경
               </button>
+              {canView(ctxMenu.node!) && (
+                <button
+                  onClick={() => handleView(ctxMenu.node!)}
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-indigo-700 transition-colors"
+                >
+                  <Eye className="w-4 h-4 text-indigo-400" /> 보기 (AView)
+                </button>
+              )}
               <button
                 onClick={() => { setClipboard({ id: ctxMenu.node!.id, name: ctxMenu.node!.name, type: 'cut' }); setCtxMenu((m) => ({ ...m, show: false })) }}
                 className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 transition-colors"

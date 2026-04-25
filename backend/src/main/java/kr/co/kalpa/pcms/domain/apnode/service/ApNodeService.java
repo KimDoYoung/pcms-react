@@ -25,4 +25,6 @@ public interface ApNodeService {
     void delete(String id);
 
     FileDownloadDto getFileForDownload(String id);
+
+    String getAviewUrl(String id);
 }

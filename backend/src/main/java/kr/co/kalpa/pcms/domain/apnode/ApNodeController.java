@@ -123,4 +123,10 @@ public class ApNodeController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedName)
                 .body(resource);
     }
+
+    @GetMapping("/{id}/view-url")
+    public ResponseEntity<Map<String, String>> getViewUrl(@PathVariable String id) {
+        String url = apNodeService.getAviewUrl(id);
+        return ResponseEntity.ok(Map.of("url", url));
+    }
 }

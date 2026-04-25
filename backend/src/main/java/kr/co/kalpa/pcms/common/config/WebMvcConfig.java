@@ -28,5 +28,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
         String apnodeAbsolutePath = Paths.get(apnodeBaseDir).toAbsolutePath().normalize().toString();
         registry.addResourceHandler("/apnodes/**")
                 .addResourceLocations("file:" + apnodeAbsolutePath + "/");
+
+        String tempAbsolutePath = Paths.get(fileProperties.getTempDir()).toAbsolutePath().normalize().toString();
+        registry.addResourceHandler("/temp/**")
+                .addResourceLocations("file:" + tempAbsolutePath + "/");
     }
 }

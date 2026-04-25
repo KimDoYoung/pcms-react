@@ -51,6 +51,7 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/error"),
                     new AntPathRequestMatcher("/editor-images/**"),
                     new AntPathRequestMatcher("/apnodes/**"),
+                    new AntPathRequestMatcher("/temp/**"),
                     // React SPA 정적 파일 및 라우트 (Security는 API 레벨에서 적용)
                     new AntPathRequestMatcher("/"),
                     new AntPathRequestMatcher("/index.html"),

@@ -13,6 +13,7 @@ public class FileProperties {
 
     private Upload upload = new Upload();
     private Image image = new Image();
+    private String tempDir;
 
     @Getter
     @Setter

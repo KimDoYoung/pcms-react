@@ -9,6 +9,7 @@ import kr.co.kalpa.pcms.domain.apnode.dto.NodeMoveDto;
 import kr.co.kalpa.pcms.domain.apnode.dto.NodeRenameDto;
 
 
+import kr.co.kalpa.pcms.common.config.FileProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,12 +43,16 @@ public class ApNodeServiceImpl implements ApNodeService {
 
     private final ApNodeMapper apNodeMapper;
     private final ApFileMapper apFileMapper;
+    private final FileProperties fileProperties;
 
     @Value("${apnode.file.base-dir}")
     private String apnodeBaseDir;
 
     @Value("${apnode.file.base-url}")
     private String apnodeBaseUrl;
+
+    @Value("${aview.url}")
+    private String aviewUrl;
 
     @Override
     @Transactional(readOnly = true)
@@ -353,6 +360,33 @@ public class ApNodeServiceImpl implements ApNodeService {
                 .orElseThrow(() -> new RuntimeException("파일 정보를 찾을 수 없습니다."));
 
         return new FileDownloadDto(apFile.getSavedPath(), apFile.getOriginalName(), apFile.getContentType());
+    }
+
+    @Override
+    public String getAviewUrl(String id) {
+        FileDownloadDto info = getFileForDownload(id);
+        Path sourcePath = Paths.get(apnodeBaseDir, info.getSavedPath());
+
+        String tempDirStr = fileProperties.getTempDir();
+        Path targetDir = Paths.get(tempDirStr, "aview");
+        try {
+            Files.createDirectories(targetDir);
+            String ext = getExtension(info.getOriginalName());
+            String physicalName = UUID.randomUUID().toString().replace("-", "") + (ext.isEmpty() ? "" : ext);
+            Path targetPath = targetDir.resolve(physicalName);
+            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            String tempBaseUrl = apnodeBaseUrl.replace("/apnodes/", "/temp/");
+            String publicUrl = tempBaseUrl + "aview/" + physicalName;
+
+            String encodedUrl = URLEncoder.encode(publicUrl, StandardCharsets.UTF_8);
+            String encodedName = URLEncoder.encode(info.getOriginalName(), StandardCharsets.UTF_8);
+
+            return String.format("%s?url=%s&onm=%s", aviewUrl, encodedUrl, encodedName);
+        } catch (IOException e) {
+            log.error("AView 연동을 위한 파일 복사 실패", e);
+            throw new RuntimeException("파일 보기 준비 중 오류가 발생했습니다.");
+        }
     }
 
     /**
