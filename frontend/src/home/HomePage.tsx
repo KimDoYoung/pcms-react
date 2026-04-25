@@ -33,8 +33,8 @@ function HomePage() {
         )}
 
         <div className="flex flex-wrap justify-center gap-4">
-          {todos?.map((todo) => (
-            <TodoCard key={todo.id} todo={todo} onDelete={(id) => deleteMutation.mutate(id)} />
+          {todos?.map((todo, index) => (
+            <TodoCard key={todo.id} todo={todo} index={index} onDelete={(id) => deleteMutation.mutate(id)} />
           ))}
 
           {/* 할일 추가 템플릿 카드 */}
