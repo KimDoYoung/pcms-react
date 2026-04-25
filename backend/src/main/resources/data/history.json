@@ -1,0 +1,10 @@
+[
+  {
+    "version": "0.0.9",
+    "date": "2026-04-25",
+    "revisions": [
+      "반응형 화면으로 수정 (Toolbar, 일지 목록/등록/조회)",
+      "Aview 파일 보기 기능 도입 (ApNodePage)"
+    ]
+  }
+]
