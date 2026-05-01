@@ -78,7 +78,7 @@ export default function JangbiPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
-      <main className="container mx-auto px-6 py-6">
+      <main className="container mx-auto px-4 md:px-6 py-6">
 
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-5">
@@ -140,13 +140,13 @@ export default function JangbiPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500">
-                    <th className="px-4 py-3 text-left font-medium">구입일</th>
+                    <th className="hidden md:table-cell px-4 py-3 text-left font-medium">구입일</th>
                     <th className="px-4 py-3 text-left font-medium">품목</th>
-                    <th className="px-4 py-3 text-left font-medium">위치</th>
-                    <th className="px-4 py-3 text-right font-medium">가격(원)</th>
+                    <th className="hidden md:table-cell px-4 py-3 text-left font-medium">위치</th>
+                    <th className="hidden md:table-cell px-4 py-3 text-right font-medium">가격(원)</th>
                     <th className="px-4 py-3 text-center font-medium">만족도</th>
-                    <th className="px-4 py-3 text-center font-medium">첨부</th>
-                    <th className="px-4 py-3 text-center font-medium">액션</th>
+                    <th className="hidden md:table-cell px-4 py-3 text-center font-medium">첨부</th>
+                    <th className="hidden md:table-cell px-4 py-3 text-center font-medium">액션</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -159,7 +159,7 @@ export default function JangbiPage() {
                   )}
                   {data?.dtoList?.map((j) => (
                     <tr key={j.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-gray-500 font-mono text-xs">{formatDate(j.ymd)}</td>
+                      <td className="hidden md:table-cell px-4 py-3 text-gray-500 font-mono text-xs">{formatDate(j.ymd)}</td>
                       <td className="px-4 py-3 font-medium">
                         <button
                           onClick={() => navigate(`/jangbi/${j.id}`)}
@@ -168,15 +168,15 @@ export default function JangbiPage() {
                           {j.item}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-gray-500">{j.location || '-'}</td>
-                      <td className="px-4 py-3 text-right text-gray-700">{formatCost(j.cost)}</td>
+                      <td className="hidden md:table-cell px-4 py-3 text-gray-500">{j.location || '-'}</td>
+                      <td className="hidden md:table-cell px-4 py-3 text-right text-gray-700">{formatCost(j.cost)}</td>
                       <td className="px-4 py-3 text-center">
                         <StarRating value={parseInt(j.lvl, 10)} max={3} size="sm" filled={true} />
                       </td>
-                      <td className="px-4 py-3 text-center text-xs text-gray-400">
+                      <td className="hidden md:table-cell px-4 py-3 text-center text-xs text-gray-400">
                         {j.attachmentCount > 0 ? `📎 ${j.attachmentCount}` : '-'}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="hidden md:table-cell px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => navigate(`/jangbi/${j.id}/edit`)}
