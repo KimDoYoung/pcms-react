@@ -6,6 +6,7 @@ import DiaryPage from '@/domain/diary/DiaryPage'
 import DiaryRegisterPage from '@/domain/diary/DiaryRegisterPage'
 import DiaryViewPage from '@/domain/diary/DiaryViewPage'
 import JangbiPage from '@/domain/jangbi/JangbiPage'
+import JangbiRegisterPage from '@/domain/jangbi/JangbiRegisterPage'
 import JangbiViewPage from '@/domain/jangbi/JangbiViewPage'
 import JangbiEditPage from '@/domain/jangbi/JangbiEditPage'
 import BoardsPage from '@/domain/board/BoardsPage'
@@ -59,6 +60,7 @@ export const APP_ROUTES: AppRoute[] = [
 
   // 취미
   { path: '/jangbi', label: '🖥️ 장비', Component: JangbiPage, menuGroup: '🔧 취미', tabGroup: 'jangbi' },
+  { path: '/jangbi/new', label: '🖥️ 새 장비 등록', Component: JangbiRegisterPage, tabGroup: 'jangbi' },
   { path: '/apnode', label: '📂 파일관리', Component: ApNodePage, menuGroup: '🔧 취미', tabGroup: 'apnode' },
 
   // 영화
