@@ -50,7 +50,11 @@ const ContentEditor = forwardRef<ContentEditorHandle, Props>(function ContentEdi
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: {
+          levels: headingLevels || [1, 2, 3],
+        },
+      }),
       Placeholder.configure({ placeholder }),
       // @ts-expect-error ResizableImage has no type declarations
       ResizableImage.configure({ inline: false, allowBase64: true }),
@@ -62,7 +66,7 @@ const ContentEditor = forwardRef<ContentEditorHandle, Props>(function ContentEdi
       onChange(editor.getHTML())
     },
     editorProps: {
-      attributes: { class: `min-h-[${minHeight}] px-4 py-3 focus:outline-none` },
+      attributes: { class: `markdown-body ProseMirror min-h-[${minHeight}] px-4 py-3 focus:outline-none` },
       handleKeyDown(_view, event) {
         if (event.key === 'Tab' && event.shiftKey) {
           onShiftTab?.()

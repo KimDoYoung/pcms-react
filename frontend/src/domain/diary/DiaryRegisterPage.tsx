@@ -4,7 +4,7 @@ import type { ContentEditorHandle } from '@/shared/components/editor/ContentEdit
 import { useNavigate, useSearchParams, useBlocker } from 'react-router-dom'
 import { getDayOfWeek, formatYmd, formatDate } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, PanelRightOpen, PanelRightClose, RotateCcw, AlertCircle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, PanelRightOpen, PanelRightClose, RotateCcw, AlertCircle } from 'lucide-react'
 import Toolbar from '@/shared/layout/Toolbar'
 import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/shared/components/ui/button'
@@ -342,6 +342,13 @@ function DiaryRegisterPage() {
                 title="다음 날짜"
               >
                 <ChevronRight className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setSearchParams({ date: today })} 
+                className="p-1 hover:bg-white rounded text-gray-600 shadow-sm transition-all"
+                title="오늘 날짜"
+              >
+                <Calendar className="w-4 h-4" />
               </button>
             </div>
             

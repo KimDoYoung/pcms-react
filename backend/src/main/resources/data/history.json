@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.1.1",
+    "date": "2026-05-01",
+    "revisions": [
+      "tiptap H1, H2, H3 동작하지 않는 것 수정",
+      "일지기록 오늘 icon 추가"
+    ]
+  },
+  {
     "version": "0.1.0",
     "date": "2026-05-01",
     "revisions": [

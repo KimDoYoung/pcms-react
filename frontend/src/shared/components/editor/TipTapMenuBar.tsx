@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useEditor } from '@tiptap/react'
 import HanjaSearchModal from '@/shared/components/editor/HanjaSearchModal'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 
 const TEXT_COLORS = [
   { label: '기본', value: '' },
@@ -105,21 +110,22 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
       <span className="w-px bg-gray-200 mx-1" />
 
       {/* 글씨 색상 */}
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setShowColors((v) => !v)}
-          className="flex items-center gap-1 px-2 py-1 text-sm rounded text-gray-600 hover:bg-gray-100 transition-colors"
-        >
-          <span
-            className="inline-block w-4 h-4 rounded-sm border border-gray-300"
-            style={{ backgroundColor: currentColor || '#000000' }}
-          />
-          <span>색상</span>
-          <span className="text-xs opacity-50">▾</span>
-        </button>
-        {showColors && (
-          <div className="absolute top-full left-0 mt-1 z-30 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex flex-wrap gap-1 w-44">
+      <Popover open={showColors} onOpenChange={setShowColors}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center gap-1 px-2 py-1 text-sm rounded text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <span
+              className="inline-block w-4 h-4 rounded-sm border border-gray-300"
+              style={{ backgroundColor: currentColor || '#000000' }}
+            />
+            <span>색상</span>
+            <span className="text-xs opacity-50">▾</span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-44 p-2" align="start">
+          <div className="flex flex-wrap gap-1">
             {TEXT_COLORS.map((c) => (
               <button
                 key={c.value}
@@ -143,8 +149,8 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
               </button>
             ))}
           </div>
-        )}
-      </div>
+        </PopoverContent>
+      </Popover>
 
       <span className="w-px bg-gray-200 mx-1" />
 
