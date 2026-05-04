@@ -516,6 +516,11 @@ export default function ApNodePage() {
                 <ClipboardPaste className="w-4 h-4 mr-1" /> 붙여넣기 ({clipboard.type === 'cut' ? '이동' : '링크'})
               </Button>
             )}
+            {/* 업로드 (모바일에서 사이드바 숨김 대비) */}
+            <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="w-4 h-4 mr-1" /> 업로드
+            </Button>
+
             {/* 뷰 전환 */}
             <div className="flex border border-gray-200 rounded-lg overflow-hidden ml-2">
               <button
