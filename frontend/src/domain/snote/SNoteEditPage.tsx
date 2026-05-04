@@ -14,7 +14,7 @@ import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Lock, Unlock } from 'lucide-react'
 import { extractHint, validatePassword, decryptNote, encryptNote } from '@/domain/snote/snote_crypto'
-import { formatRelativeDateTime } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import type { SnoteDto } from '@/domain/snote/types/snote'
 
 export default function SNoteEditPage() {
@@ -129,7 +129,7 @@ export default function SNoteEditPage() {
 
             {/* 메타 정보 */}
             <div className="flex items-center gap-4 text-xs text-gray-400">
-              <span>등록일: {snote?.createDt ? formatRelativeDateTime(snote.createDt) : '-'}</span>
+              <span>등록일: {snote?.createDt ? formatDate(snote.createDt, false) : '-'}</span>
               {hint && <span>힌트: <strong className="text-gray-600">{hint}</strong></span>}
             </div>
 

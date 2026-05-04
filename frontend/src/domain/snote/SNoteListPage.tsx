@@ -11,7 +11,7 @@ import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Search, Plus, Pencil, Trash2 } from 'lucide-react'
-import { formatRelativeDateTime } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import type { SnotePageResponse } from '@/domain/snote/types/snote'
 import { useMessage } from '@/shared/hooks/useMessage'
 
@@ -137,7 +137,7 @@ export default function SNoteListPage() {
                           </button>
                         </td>
                         <td className="px-4 py-3 text-center text-xs text-gray-400">
-                          {item.createDt ? formatRelativeDateTime(item.createDt) : '-'}
+                          {item.createDt ? formatDate(item.createDt, false) : '-'}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-1">

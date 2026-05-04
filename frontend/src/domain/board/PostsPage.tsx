@@ -6,7 +6,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-import { formatRelativeDateTime } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import type { BoardWithCodeDto, PostListDto, PostsPageResponse } from '@/domain/board/types/board'
 import { useMessage } from '@/shared/hooks/useMessage'
 
@@ -190,7 +190,7 @@ export default function PostsPage() {
                           </td>
                           <td className="px-4 py-3 text-center text-gray-500">{post.author || '관리자'}</td>
                           <td className="px-4 py-3 text-center text-gray-400 text-xs">{post.viewCount}</td>
-                          <td className="px-4 py-3 text-center text-gray-400 text-xs">{formatRelativeDateTime(post.createdAt)}</td>
+                          <td className="px-4 py-3 text-center text-gray-400 text-xs">{formatDate(post.createdAt, false)}</td>
                           <td className="px-4 py-3 text-center">
                             <div className="flex items-center justify-center gap-1">
                               <button

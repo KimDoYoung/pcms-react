@@ -23,3 +23,16 @@ export interface ApNode {
   width?: number
   height?: number
 }
+
+export interface CtxMenu {
+  show: boolean
+  x: number
+  y: number
+  node: ApNode | null
+}
+
+export interface Clipboard {
+  id: string
+  name: string
+  type: 'cut' | 'copy'
+}
