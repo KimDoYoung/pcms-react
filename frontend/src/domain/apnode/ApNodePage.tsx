@@ -1,8 +1,15 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { ChevronRight, ClipboardPaste, Grid3X3, List, Upload } from 'lucide-react'
+import { ChevronDown, ChevronRight, ClipboardPaste, FolderPlus, Grid3X3, List, Pencil, Trash2, Upload } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
 import { useMessage } from '@/shared/hooks/useMessage'
 import ApNodeSidebar from '@/domain/apnode/components/ApNodeSidebar'
 import ApNodeContextMenu from '@/domain/apnode/components/ApNodeContextMenu'
@@ -242,9 +249,35 @@ export default function ApNodePage() {
                 <ClipboardPaste className="w-4 h-4 mr-1" /> 붙여넣기 ({clipboard.type === 'cut' ? '이동' : '링크'})
               </Button>
             )}
-            <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-              <Upload className="w-4 h-4 mr-1" /> 업로드
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  액션 <ChevronDown className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="w-4 h-4 mr-2 text-green-500" /> 업로드
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCreateFolderOpen(true)}>
+                  <FolderPlus className="w-4 h-4 mr-2 text-blue-500" /> 새 폴더
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled={!currentFolderId}
+                  onClick={() => { const n = breadcrumb[breadcrumb.length - 1]; if (n) openRename(n) }}
+                >
+                  <Pencil className="w-4 h-4 mr-2 text-gray-400" /> 이름 변경
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={!currentFolderId}
+                  className="text-red-600 focus:text-red-600"
+                  onClick={() => { const n = breadcrumb[breadcrumb.length - 1]; if (n) handleDelete(n) }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> 삭제
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <div className="flex border border-gray-200 rounded-lg overflow-hidden ml-2">
               <button
                 onClick={() => setViewMode('grid')}
