@@ -103,7 +103,7 @@ export default function PostViewPage() {
         {/* 내용 */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5 mb-4 min-h-[200px]">
           {contentType === 'html' ? (
-            <div className="prose prose-sm max-w-none text-gray-800" dangerouslySetInnerHTML={{ __html: post.content ?? '' }} />
+            <div className="markdown-body max-w-none" dangerouslySetInnerHTML={{ __html: post.content ?? '' }} />
           ) : contentType === 'markdown' ? (
             <MarkdownViewer content={post.content ?? ''} />
           ) : (

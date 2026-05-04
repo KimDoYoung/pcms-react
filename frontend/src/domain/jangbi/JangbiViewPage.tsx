@@ -112,7 +112,7 @@ export default function JangbiViewPage() {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-5 mb-4">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">📋 스펙 / 특징</h2>
             <div
-              className="prose prose-sm max-w-none text-gray-700"
+              className="markdown-body max-w-none"
               dangerouslySetInnerHTML={{ __html: jangbi.spec }}
             />
           </div>

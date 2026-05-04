@@ -18,7 +18,7 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import ResizableImage from 'tiptap-extension-resize-image'
+import ResizableInlineImage from '@/shared/components/editor/ResizableInlineImage'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { useEffect, useImperativeHandle, useRef, forwardRef } from 'react'
@@ -56,8 +56,7 @@ const ContentEditor = forwardRef<ContentEditorHandle, Props>(function ContentEdi
         },
       }),
       Placeholder.configure({ placeholder }),
-      // @ts-expect-error ResizableImage has no type declarations
-      ResizableImage.configure({ inline: false, allowBase64: true }),
+      ResizableInlineImage.configure({ allowBase64: true }),
       TextStyle,
       Color,
     ],

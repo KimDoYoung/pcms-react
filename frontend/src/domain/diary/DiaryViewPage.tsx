@@ -94,7 +94,7 @@ export default function DiaryViewPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 md:px-6 py-6 mb-4 overflow-hidden">
           {diary.content ? (
             <div
-              className="prose prose-sm max-w-none text-gray-700 overflow-x-auto"
+              className="markdown-body max-w-none overflow-x-auto"
               dangerouslySetInnerHTML={{ __html: diary.content }}
             />
           ) : (

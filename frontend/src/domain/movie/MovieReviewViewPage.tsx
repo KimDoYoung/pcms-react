@@ -96,7 +96,7 @@ export default function MovieReviewViewPage() {
           {/* 본문 섹션 */}
           <div className="p-8">
             <div 
-              className="prose prose-blue max-w-none min-h-[300px]"
+              className="markdown-body max-w-none min-h-[300px]"
               dangerouslySetInnerHTML={{ __html: data.content || '<p className="text-gray-400 italic">내용이 없습니다.</p>' }}
             />
           </div>

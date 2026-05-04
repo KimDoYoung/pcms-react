@@ -83,7 +83,7 @@ function DiaryItem({ item }: { item: DiaryListDto }) {
 
       {expanded && (
         <div
-          className="px-4 py-4 border-t border-gray-100 prose prose-sm max-w-none text-gray-700 overflow-x-auto"
+          className="px-4 py-4 border-t border-gray-100 markdown-body max-w-none overflow-x-auto"
           dangerouslySetInnerHTML={{ __html: item.content ?? '' }}
         />
       )}

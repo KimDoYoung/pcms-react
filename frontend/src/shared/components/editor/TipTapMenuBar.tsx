@@ -174,6 +174,36 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
         }}
       />
 
+      {/* onMouseDown + preventDefault: 에디터 포커스/selection 유지하면서 실행 */}
+      <button
+        type="button"
+        onMouseDown={(e) => {
+          e.preventDefault()
+          const { state, dispatch } = editor.view
+          const { from } = state.selection
+
+          // 문서의 최상위 블록 목록과 현재 커서가 속한 블록 인덱스를 파악
+          const blocks: Array<{ offset: number; nodeSize: number }> = []
+          let foundIdx = -1
+          state.doc.forEach((node, offset) => {
+            if (from > offset && from <= offset + node.nodeSize) {
+              foundIdx = blocks.length
+            }
+            blocks.push({ offset, nodeSize: node.nodeSize })
+          })
+
+          if (foundIdx <= 0) return
+
+          const prev = blocks[foundIdx - 1]
+          const curr = blocks[foundIdx]
+          // prev 블록의 닫힘 토큰과 curr 블록의 열림 토큰을 삭제 → 두 블록 병합
+          dispatch(state.tr.delete(prev.offset + prev.nodeSize - 1, curr.offset + 1))
+        }}
+        className="px-2 py-1 text-sm rounded text-gray-600 hover:bg-gray-100 transition-colors"
+      >
+        ← 합치기
+      </button>
+
       <span className="w-px bg-gray-200 mx-1" />
 
       {/* 한자 변환 */}
