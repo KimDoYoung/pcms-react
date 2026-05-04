@@ -7,6 +7,20 @@ REMOTE_WEBAPPS="/data/docker/apps/tomcat/webapps"
 PROJECT_ROOT="$(cd "$(dirname "$0")/." && pwd)"
 STATIC_DIR="$PROJECT_ROOT/backend/src/main/resources/static"
 
+echo "=== pcms 배포 절차 ==="
+echo ""
+echo "  [1/4] 프론트엔드 빌드          (npm run build)"
+echo "  [2/4] React dist → static 복사  ($STATIC_DIR)"
+echo "  [3/4] 백엔드 WAR 빌드           (gradlew war -x test)"
+echo "  [4/4] jskn Tomcat으로 전송      ($JSKN:$REMOTE_WEBAPPS/pcms.war)"
+echo ""
+read -r -p "배포를 진행하시겠습니까? (y/n) " CONFIRM
+if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
+  echo "배포를 취소했습니다."
+  exit 0
+fi
+
+echo ""
 echo "=== pcms 배포 시작 ==="
 
 # 1. 프론트엔드 빌드

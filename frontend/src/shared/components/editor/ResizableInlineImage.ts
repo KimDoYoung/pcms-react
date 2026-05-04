@@ -104,12 +104,15 @@ const ResizableInlineImage = Image.extend({
           handle.style.display = 'none'
 
           if (typeof getPos === 'function') {
-            view.dispatch(
-              view.state.tr.setNodeMarkup(getPos(), null, {
-                ...node.attrs,
-                width: img.offsetWidth,
-              }),
-            )
+            const pos = getPos()
+            if (pos !== undefined) {
+              view.dispatch(
+                view.state.tr.setNodeMarkup(pos, null, {
+                  ...node.attrs,
+                  width: img.offsetWidth,
+                }),
+              )
+            }
           }
 
           document.removeEventListener('mousemove', onMouseMove)
