@@ -190,7 +190,7 @@ export default function PostsPage() {
                           </td>
                           <td className="px-4 py-3 text-center text-gray-500">{post.author || '관리자'}</td>
                           <td className="px-4 py-3 text-center text-gray-400 text-xs">{post.viewCount}</td>
-                          <td className="px-4 py-3 text-center text-gray-400 text-xs">{formatDate(post.createdAt, false)}</td>
+                          <td className="px-4 py-3 text-center text-gray-400 text-xs">{formatDate(post.createdAt ?? undefined, false)}</td>
                           <td className="px-4 py-3 text-center">
                             <div className="flex items-center justify-center gap-1">
                               <button
