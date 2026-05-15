@@ -61,7 +61,7 @@
                   AND fm.file_type = 'attachment') as attachmentCount
         FROM cms.posts p
         <include refid="search"/>
-        ORDER BY id DESC
+        ORDER BY COALESCE(updated_at, created_at) DESC
         LIMIT #{size} OFFSET #{skip}
     </select>
 

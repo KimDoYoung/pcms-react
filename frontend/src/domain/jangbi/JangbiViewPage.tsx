@@ -7,7 +7,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import StarRating from '@/shared/components/StarRating'
-import AttachmentList from '@/shared/components/AttachmentList'
+import AttachmentsView from '@/shared/components/AttachmentsView'
 import { formatCost, formatDate } from '@/lib/utils'
 import type { JangbiDto } from '@/domain/jangbi/types/jangbi'
 import { useMessage } from '@/shared/hooks/useMessage'
@@ -119,7 +119,7 @@ export default function JangbiViewPage() {
         )}
 
         {/* 첨부파일 */}
-        <AttachmentList attachments={jangbi.attachments ?? []} className="mb-6" />
+        <AttachmentsView attachments={jangbi.attachments ?? []} className="mb-6" />
 
         {/* 하단 버튼 */}
         {/* <div className="flex justify-start">

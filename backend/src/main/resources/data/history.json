@@ -1,4 +1,11 @@
 [
+    {
+    "version": "0.1.4",
+    "date": "2026-06-16",
+    "revisions": [
+      "게시판 리스트 order by createdAt desc로 변경"
+    ]
+  },
   {
     "version": "0.1.3",
     "date": "2026-05-04",

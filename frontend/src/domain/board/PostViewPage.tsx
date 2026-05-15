@@ -5,7 +5,7 @@ import { Pencil, Trash2, ArrowLeft } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
-import AttachmentList from '@/shared/components/AttachmentList'
+import AttachmentsView from '@/shared/components/AttachmentsView'
 import type { BoardDto, PostDto } from '@/domain/board/types/board'
 import { formatDate } from '@/lib/utils'
 import MarkdownViewer from '@/domain/board/components/MarkdownViewer'
@@ -112,7 +112,7 @@ export default function PostViewPage() {
         </div>
 
         {/* 첨부파일 */}
-        <AttachmentList attachments={post.attachments ?? []} className="mb-6" />
+        <AttachmentsView attachments={post.attachments ?? []} className="mb-6" />
 
       </main>
     </div>

@@ -7,7 +7,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { formatDate, addYmd } from '@/lib/utils'
-import AttachmentList from '@/shared/components/AttachmentList'
+import AttachmentsView from '@/shared/components/AttachmentsView'
 import type { DiaryDto } from '@/domain/diary/types/diary'
 
 export default function DiaryViewPage() {
@@ -103,7 +103,7 @@ export default function DiaryViewPage() {
         </div>
 
         {/* 첨부파일 */}
-        <AttachmentList attachments={diary.attachments ?? []} hideIfEmpty />
+        <AttachmentsView attachments={diary.attachments ?? []} />
 
         {/* 이전 / 이후 네비게이션 */}
         <div className="flex justify-between mt-4">
