@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import ButtonsOfEdit from '@/shared/components/ButtonsOfEdit'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
 import MdTextarea from '@/shared/components/editor/MdTextarea'
 import AttachmentUploader from '@/shared/components/AttachmentUploader'
@@ -92,6 +93,11 @@ export default function PostRegisterPage() {
           <h1 className="text-xl font-bold text-gray-800">
             ✏️ {board?.boardNameKor} - 새 글 쓰기
           </h1>
+          <div className="ml-auto">
+            <Button onClick={() => handleSubmit(false)} disabled={saving || !form.title.trim()}>
+              {saving ? '저장 중...' : '저장'}
+            </Button>
+          </div>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
@@ -181,12 +187,12 @@ export default function PostRegisterPage() {
         </div>
 
         {/* 버튼 */}
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="outline" onClick={() => navigate(`/posts?boardId=${boardId}`)}>취소</Button>
-          <Button onClick={() => handleSubmit(false)} disabled={saving || !form.title.trim()}>
-            {saving ? '저장 중...' : '저장'}
-          </Button>
-        </div>
+        <ButtonsOfEdit
+          onCancel={() => navigate(`/posts?boardId=${boardId}`)}
+          onSave={() => handleSubmit(false)}
+          saving={saving}
+          saveDisabled={!form.title.trim()}
+        />
       </main>
     </div>
   )

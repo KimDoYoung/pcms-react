@@ -4,8 +4,8 @@ import { useTabParams } from '@/shared/layout/useTabParams'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
-import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import ButtonsOfEdit from '@/shared/components/ButtonsOfEdit'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
 import AttachmentUploader from '@/shared/components/AttachmentUploader'
 import type { AttachmentDto, JangbiDto } from '@/domain/jangbi/types/jangbi'
@@ -215,17 +215,13 @@ export default function JangbiEditPage() {
         </div>
 
         {/* 버튼 */}
-        <div className="mt-4 flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
-            삭제
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate(`/jangbi/${id}`)}>취소</Button>
-            <Button onClick={handleSubmit} disabled={saving || !form.item.trim()}>
-              {saving ? '저장 중...' : '저장'}
-            </Button>
-          </div>
-        </div>
+        <ButtonsOfEdit
+          onDelete={handleDelete}
+          onCancel={() => navigate(`/jangbi/${id}`)}
+          onSave={handleSubmit}
+          saving={saving}
+          saveDisabled={!form.item.trim()}
+        />
       </main>
     </div>
   )

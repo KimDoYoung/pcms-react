@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
 import { Button } from '@/shared/components/ui/button'
 import type { ApNode } from '@/domain/apnode/types/apnode'
-export { isImage, canView, getNodeIcon } from '@/domain/apnode/utils/apNodeUtils'
 
 interface TreeNodeProps {
   node: ApNode

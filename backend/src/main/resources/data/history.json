@@ -3,7 +3,8 @@
     "version": "0.1.4",
     "date": "2026-06-16",
     "revisions": [
-      "게시판 리스트 order by createdAt desc로 변경"
+      "게시판 리스트 order by createdAt desc로 변경",
+      "첨부파일 보기 기능 추가"
     ]
   },
   {

@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import ButtonsOfEdit from '@/shared/components/ButtonsOfEdit'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
 import MdTextarea from '@/shared/components/editor/MdTextarea'
 import AttachmentUploader from '@/shared/components/AttachmentUploader'
@@ -137,6 +138,11 @@ export default function PostEditPage() {
           <h1 className="text-xl font-bold text-gray-800">
             ✏️ {board?.boardNameKor} - 글 수정
           </h1>
+          <div className="ml-auto">
+            <Button onClick={() => handleSubmit(false)} disabled={saving || !form.title.trim()}>
+              {saving ? '저장 중...' : '저장'}
+            </Button>
+          </div>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
@@ -221,17 +227,13 @@ export default function PostEditPage() {
         </div>
 
         {/* 버튼 */}
-        <div className="mt-4 flex items-center justify-between">
-          <Button variant="delete" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
-            삭제
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="action" onClick={() => navigate(`/posts/${id}`, { state: { boardId } })}>취소</Button>
-            <Button onClick={() => handleSubmit(false)} disabled={saving || !form.title.trim()}>
-              {saving ? '저장 중...' : '저장'}
-            </Button>
-          </div>
-        </div>
+        <ButtonsOfEdit
+          onDelete={handleDelete}
+          onCancel={() => navigate(`/posts/${id}`, { state: { boardId } })}
+          onSave={() => handleSubmit(false)}
+          saving={saving}
+          saveDisabled={!form.title.trim()}
+        />
       </main>
     </div>
   )

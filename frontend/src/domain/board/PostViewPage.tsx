@@ -1,11 +1,10 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTabParams } from '@/shared/layout/useTabParams'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Trash2, ArrowLeft } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
-import { Button } from '@/shared/components/ui/button'
 import AttachmentsView from '@/shared/components/AttachmentsView'
+import ButtonsOfView from '@/shared/components/ButtonsOfView'
 import type { BoardDto, PostDto } from '@/domain/board/types/board'
 import { formatDate } from '@/lib/utils'
 import MarkdownViewer from '@/domain/board/components/MarkdownViewer'
@@ -86,17 +85,11 @@ export default function PostViewPage() {
 
             <div className="flex-1" />
 
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate(`/posts/${post.id}/edit`, { state: { boardId } })}>
-                <Pencil className="w-3.5 h-3.5 mr-1" /> 수정
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
-                <Trash2 className="w-3.5 h-3.5 mr-1" /> 삭제
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/posts?boardId=${boardId}`)}>
-                <ArrowLeft className="w-3.5 h-3.5 mr-1" /> 목록으로
-              </Button>
-            </div>
+            <ButtonsOfView
+              onEdit={() => navigate(`/posts/${post.id}/edit`, { state: { boardId } })}
+              onDelete={handleDelete}
+              onList={() => navigate(`/posts?boardId=${boardId}`)}
+            />
           </div>
         </div>
 
@@ -113,7 +106,11 @@ export default function PostViewPage() {
 
         {/* 첨부파일 */}
         <AttachmentsView attachments={post.attachments ?? []} className="mb-6" />
-
+        <ButtonsOfView
+          onEdit={() => navigate(`/posts/${post.id}/edit`, { state: { boardId } })}
+          onDelete={handleDelete}
+          onList={() => navigate(`/posts?boardId=${boardId}`)}
+        />
       </main>
     </div>
   )

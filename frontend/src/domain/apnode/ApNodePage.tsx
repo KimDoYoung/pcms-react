@@ -203,13 +203,15 @@ export default function ApNodePage() {
         try {
           const target = await apiClient.get<ApNode>(`/apnode/${node.linkTargetId}`)
           if (target.nodeType === 'D') navigate(target.id)
-          else canView(node) ? handleView(node) : handleDownload(node)
+          else if (canView(node)) handleView(node)
+          else handleDownload(node)
         } catch {
           showMessage('링크 대상을 찾을 수 없습니다.', 'error')
         }
       }
     } else {
-      canView(node) ? handleView(node) : handleDownload(node)
+      if (canView(node)) handleView(node)
+      else handleDownload(node)
     }
   }
 

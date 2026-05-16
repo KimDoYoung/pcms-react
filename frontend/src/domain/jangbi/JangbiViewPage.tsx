@@ -1,12 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { useTabParams } from '@/shared/layout/useTabParams'
-import { useTabReturnPath } from '@/shared/layout/useTabReturnPath'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Trash2, ArrowLeft } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
-import { Button } from '@/shared/components/ui/button'
 import StarRating from '@/shared/components/StarRating'
+import ButtonsOfView from '@/shared/components/ButtonsOfView'
 import AttachmentsView from '@/shared/components/AttachmentsView'
 import { formatCost, formatDate } from '@/lib/utils'
 import type { JangbiDto } from '@/domain/jangbi/types/jangbi'
@@ -15,10 +13,7 @@ import { useMessage } from '@/shared/hooks/useMessage'
 export default function JangbiViewPage() {
   const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
-  const returnPath = useTabReturnPath()
   const queryClient = useQueryClient()
-
-  const goBack = () => navigate(returnPath)
   const { showMessage } = useMessage()
 
   const { data: jangbi, isLoading, isError } = useQuery<JangbiDto>({
@@ -68,17 +63,12 @@ export default function JangbiViewPage() {
             <h1 className="text-2xl font-bold text-gray-800">{jangbi.item}</h1>
             <p className="text-sm text-gray-400 mt-1">구입일: {formatDate(jangbi.ymd, false)}</p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={() => navigate(`/jangbi/${id}/edit`)}>
-              <Pencil className="w-3.5 h-3.5 mr-1" /> 수정
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
-              <Trash2 className="w-3.5 h-3.5 mr-1" /> 삭제
-            </Button>
-            <Button variant="outline" size="sm" onClick={goBack}>
-              <ArrowLeft className="w-3.5 h-3.5 mr-1" /> 목록으로
-            </Button>
-          </div>
+          <ButtonsOfView
+            onEdit={() => navigate(`/jangbi/${id}/edit`)}
+            onDelete={handleDelete}
+            onList={() => navigate('/jangbi')}
+            className="shrink-0"
+          />
         </div>
 
         {/* 기본 정보 카드 */}
@@ -120,14 +110,11 @@ export default function JangbiViewPage() {
 
         {/* 첨부파일 */}
         <AttachmentsView attachments={jangbi.attachments ?? []} className="mb-6" />
-
-        {/* 하단 버튼 */}
-        {/* <div className="flex justify-start">
-          <Button variant="outline" size="sm" onClick={() => navigate('/jangbi')}>
-            <ArrowLeft className="w-4 h-4 mr-1" /> 목록으로
-          </Button>
-        </div> */}
-
+        <ButtonsOfView
+          onEdit={() => navigate(`/jangbi/${id}/edit`)}
+          onDelete={handleDelete}
+          onList={() => navigate('/jangbi')}
+        />
       </main>
     </div>
   )

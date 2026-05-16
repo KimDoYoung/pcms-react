@@ -23,6 +23,7 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { useEffect, useImperativeHandle, useRef, forwardRef } from 'react'
 import TipTapMenuBar from '@/shared/components/editor/TipTapMenuBar'
+import { apiClient } from '@/lib/apiClient'
 
 interface Props {
   value: string
@@ -81,13 +82,17 @@ const ContentEditor = forwardRef<ContentEditorHandle, Props>(function ContentEdi
             event.preventDefault()
             const file = item.getAsFile()
             if (!file) continue
-            const reader = new FileReader()
-            reader.onload = (e) => {
-              const src = e.target?.result as string
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ;(editorRef.current?.chain().focus() as any)?.setImage({ src }).run()
-            }
-            reader.readAsDataURL(file)
+            console.log('[ContentEditor] image paste detected:', file.name, file.type, file.size)
+            const formData = new FormData()
+            formData.append('file', file)
+            apiClient
+              .post<{ url: string }>('/files/editor-image', formData)
+              .then(({ url }) => {
+                editorRef.current?.chain().focus().insertContent({ type: 'text', text: `![](${url})` }).run()
+              })
+              .catch((err) => {
+                console.error('[ContentEditor] image upload failed:', err)
+              })
             return true
           }
         }
