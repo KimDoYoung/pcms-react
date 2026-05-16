@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
 import { format, parse, startOfWeek, endOfWeek, addDays } from 'date-fns'
 
 import { apiClient } from '@/lib/apiClient'
@@ -155,6 +155,13 @@ function Calendar1Page() {
     setCurrentMonth(today.getMonth() + 1)
   }
 
+  async function deleteEvent(id: string, content: string) {
+    if (!confirm(`'${content}' 일정을 삭제하시겠습니까?`)) return
+    const numericId = id.replace(/^C_/, '')
+    await apiClient.delete(`/calendar/my/${numericId}`)
+    queryClient.invalidateQueries({ queryKey: ['calendar-events'] })
+  }
+
   return (
     <>
     <div className="min-h-screen bg-gray-50 pb-10">
@@ -280,8 +287,17 @@ function Calendar1Page() {
                     {day.events.map(e => {
                       const c = COLOR_MAP[e.color ?? DEFAULT_COLOR] ?? COLOR_MAP[DEFAULT_COLOR]
                       return (
-                        <div key={e.id} className={`text-[12px] font-medium px-1.5 py-0.5 rounded truncate border leading-tight ${c.bg} ${c.text} ${c.border}`}>
-                          {e.content}
+                        <div key={e.id} className={`text-[12px] font-medium px-1.5 py-0.5 rounded border leading-tight flex items-center gap-0.5 ${c.bg} ${c.text} ${c.border}`}>
+                          <span className="truncate flex-1">{e.content}</span>
+                          {e.gubun === 'S' && (
+                            <button
+                              onClick={ev => { ev.stopPropagation(); deleteEvent(e.id, e.content) }}
+                              className="flex-shrink-0 opacity-60 hover:opacity-100"
+                              title="삭제"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       )
                     })}
