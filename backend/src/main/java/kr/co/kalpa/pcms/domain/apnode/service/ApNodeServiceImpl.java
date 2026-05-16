@@ -30,6 +30,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -360,6 +361,20 @@ public class ApNodeServiceImpl implements ApNodeService {
                 .orElseThrow(() -> new RuntimeException("파일 정보를 찾을 수 없습니다."));
 
         return new FileDownloadDto(apFile.getSavedPath(), apFile.getOriginalName(), apFile.getContentType());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FileDownloadDto> getFilesForDownload(List<String> ids) {
+        List<FileDownloadDto> result = new ArrayList<>();
+        for (String id : ids) {
+            try {
+                result.add(getFileForDownload(id));
+            } catch (Exception e) {
+                log.warn("Skipping node {} for zip download: {}", id, e.getMessage());
+            }
+        }
+        return result;
     }
 
     @Override

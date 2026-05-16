@@ -12,7 +12,7 @@
  *   - onClick: 배경 클릭 (선택 해제 등)
  *   - onItemClick/onItemDblClick: 아이템 클릭/더블클릭
  *   - onSelectAll: 전체 선택 토글
- *   - onSetSelectedIds: 선택 상태 업데이트
+ *   - onSetSelectedIds: 선택 상태 업데이트 (그리드/리스트 체크박스 공통)
  *   - onRename/onView/onDownload/onDelete: 아이템 액션 콜백
  */
 import { Download, Eye, Folder, Pencil, Trash2, Upload } from 'lucide-react'
@@ -100,6 +100,7 @@ export default function ApNodeFileArea({
             onItemClick={onItemClick}
             onItemDblClick={onItemDblClick}
             onContextMenu={onContextMenu}
+            onSetSelectedIds={onSetSelectedIds}
             onRename={onRename}
             onView={onView}
             onDownload={onDownload}
@@ -142,13 +143,14 @@ interface GridViewProps {
   onItemClick: (e: React.MouseEvent, id: string) => void
   onItemDblClick: (node: ApNode) => void
   onContextMenu: (e: React.MouseEvent, node: ApNode) => void
+  onSetSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>
   onRename: (node: ApNode) => void
   onView: (node: ApNode) => void
   onDownload: (node: ApNode) => void
   onDelete: (node: ApNode) => void
 }
 
-function GridView({ items, selectedIds, onItemClick, onItemDblClick, onContextMenu, onRename, onView, onDownload, onDelete }: GridViewProps) {
+function GridView({ items, selectedIds, onItemClick, onItemDblClick, onContextMenu, onSetSelectedIds, onRename, onView, onDownload, onDelete }: GridViewProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
       {items.map((item) => {
@@ -163,6 +165,19 @@ function GridView({ items, selectedIds, onItemClick, onItemDblClick, onContextMe
               isSelected ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200' : 'bg-white border-gray-100 hover:border-gray-200'
             }`}
           >
+            <div className="absolute top-2 left-2 z-10" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="checkbox"
+                className={`rounded border-gray-300 cursor-pointer transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                checked={isSelected}
+                onChange={() => onSetSelectedIds((prev) => {
+                  const next = new Set(prev)
+                  if (next.has(item.id)) next.delete(item.id)
+                  else next.add(item.id)
+                  return next
+                })}
+              />
+            </div>
             <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
               <button
                 onClick={(e) => { e.stopPropagation(); onRename(item) }}

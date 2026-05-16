@@ -28,12 +28,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @RestController
 @RequestMapping("/apnode")
@@ -122,6 +127,22 @@ public class ApNodeController {
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedName)
                 .body(resource);
+    }
+
+    @PostMapping("/download-zip")
+    public void downloadZip(@RequestBody List<String> ids, HttpServletResponse response) throws IOException {
+        List<FileDownloadDto> files = apNodeService.getFilesForDownload(ids);
+        response.setContentType("application/zip");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''selected_files.zip");
+        try (ZipOutputStream zos = new ZipOutputStream(response.getOutputStream())) {
+            for (FileDownloadDto file : files) {
+                Path path = Paths.get(apnodeBaseDir, file.getSavedPath());
+                if (!Files.exists(path)) continue;
+                zos.putNextEntry(new ZipEntry(file.getOriginalName()));
+                Files.copy(path, zos);
+                zos.closeEntry();
+            }
+        }
     }
 
     @GetMapping("/{id}/view-url")

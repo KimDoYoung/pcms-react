@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { ChevronDown, ChevronRight, ClipboardPaste, FolderPlus, Grid3X3, List, Pencil, Trash2, Upload } from 'lucide-react'
+import { ChevronDown, ChevronRight, ClipboardPaste, Download, FolderPlus, Grid3X3, List, Pencil, Trash2, Upload } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
@@ -104,6 +104,27 @@ export default function ApNodePage() {
   function handleDelete(node: ApNode) {
     if (!confirm(`"${node.name}" 및 하위 모든 항목을 삭제하시겠습니까?`)) return
     deleteMutation.mutate(node.id)
+  }
+
+  async function handleDownloadSelected() {
+    if (selectedIds.size === 0) {
+      showMessage('선택된 파일이 없습니다.', 'error')
+      return
+    }
+    try {
+      const ids = Array.from(selectedIds)
+      const blob = await apiClient.post<Blob>('/apnode/download-zip', ids, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([blob]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'selected_files.zip')
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode?.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch {
+      showMessage('다운로드에 실패했습니다.', 'error')
+    }
   }
 
   async function handleDownload(node: ApNode) {
@@ -264,6 +285,13 @@ export default function ApNodePage() {
                 <DropdownMenuItem onClick={() => setCreateFolderOpen(true)}>
                   <FolderPlus className="w-4 h-4 mr-2 text-blue-500" /> 새 폴더
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={selectedIds.size === 0}
+                  onClick={handleDownloadSelected}
+                  className="text-green-700 focus:text-green-700"
+                >
+                  <Download className="w-4 h-4 mr-2" /> 선택파일 다운로드 {selectedIds.size > 0 && `(${selectedIds.size}개)`}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   disabled={!currentFolderId}
@@ -348,7 +376,9 @@ export default function ApNodePage() {
       <ApNodeContextMenu
         ctxMenu={ctxMenu}
         clipboard={clipboard}
+        selectedCount={selectedIds.size}
         onClose={() => setCtxMenu((m) => ({ ...m, show: false }))}
+        onDownloadSelected={handleDownloadSelected}
         onRename={openRename}
         onView={handleView}
         onCut={(node) => setClipboard({ id: node.id, name: node.name, type: 'cut' })}

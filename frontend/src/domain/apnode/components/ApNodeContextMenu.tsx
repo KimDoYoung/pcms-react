@@ -4,10 +4,12 @@
  * props:
  *   - ctxMenu: 메뉴 표시 여부, 좌표, 대상 노드
  *   - clipboard: 현재 클립보드 상태 (이동/링크용)
+ *   - selectedCount: 현재 선택된 아이템 수
  *   - onClose: 메뉴 닫기 콜백
  *   - onRename/onView/onCut/onCopy/onDownload/onDelete: 노드 액션 콜백
  *   - onCreateFolder: 빈 공간 우클릭 시 새 폴더 생성
  *   - onPaste: 클립보드 붙여넣기
+ *   - onDownloadSelected: 선택된 파일들 zip 다운로드
  */
 import { ClipboardPaste, Copy, Download, Eye, FolderPlus, Pencil, Scissors, Trash2 } from 'lucide-react'
 import type { ApNode, Clipboard, CtxMenu } from '../types/apnode'
@@ -16,6 +18,7 @@ import { canView } from '../utils/apNodeUtils'
 interface ApNodeContextMenuProps {
   ctxMenu: CtxMenu
   clipboard: Clipboard | null
+  selectedCount: number
   onClose: () => void
   onRename: (node: ApNode) => void
   onView: (node: ApNode) => void
@@ -25,11 +28,13 @@ interface ApNodeContextMenuProps {
   onDelete: (node: ApNode) => void
   onCreateFolder: () => void
   onPaste: () => void
+  onDownloadSelected: () => void
 }
 
 export default function ApNodeContextMenu({
   ctxMenu,
   clipboard,
+  selectedCount,
   onClose,
   onRename,
   onView,
@@ -39,6 +44,7 @@ export default function ApNodeContextMenu({
   onDelete,
   onCreateFolder,
   onPaste,
+  onDownloadSelected,
 }: ApNodeContextMenuProps) {
   if (!ctxMenu.show) return null
 
@@ -50,6 +56,17 @@ export default function ApNodeContextMenu({
       style={{ top: ctxMenu.y, left: ctxMenu.x }}
       onClick={(e) => e.stopPropagation()}
     >
+      {selectedCount > 0 && (
+        <>
+          <button
+            className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-green-700 transition-colors"
+            onClick={() => { onDownloadSelected(); onClose() }}
+          >
+            <Download className="w-4 h-4" /> 선택파일 다운로드 ({selectedCount}개)
+          </button>
+          <hr className="my-1 border-gray-100" />
+        </>
+      )}
       {ctxMenu.node ? (
         <>
           <button className={itemCls} onClick={() => { onRename(ctxMenu.node!); onClose() }}>
