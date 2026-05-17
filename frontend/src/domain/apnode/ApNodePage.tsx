@@ -113,11 +113,18 @@ export default function ApNodePage() {
     }
     try {
       const ids = Array.from(selectedIds)
-      const blob = await apiClient.post<Blob>('/apnode/download-zip', ids, { responseType: 'blob' })
-      const url = window.URL.createObjectURL(new Blob([blob]))
+      const folderName = breadcrumb.length > 0 ? breadcrumb[breadcrumb.length - 1].name : 'root'
+      const blob = await apiClient.post<Blob>(
+        `/apnode/download-zip?folderName=${encodeURIComponent(folderName)}`,
+        ids,
+        { responseType: 'blob' }
+      )
+      const now = new Date()
+      const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`
+      const url = window.URL.createObjectURL(blob as unknown as Blob)
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', 'selected_files.zip')
+      link.setAttribute('download', `${folderName}_${ts}.zip`)
       document.body.appendChild(link)
       link.click()
       link.parentNode?.removeChild(link)

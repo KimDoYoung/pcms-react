@@ -371,7 +371,7 @@ public class ApNodeServiceImpl implements ApNodeService {
             try {
                 result.add(getFileForDownload(id));
             } catch (Exception e) {
-                log.warn("Skipping node {} for zip download: {}", id, e.getMessage());
+                log.error("Skipping node {} for zip download: {}", id, e.getMessage(), e);
             }
         }
         return result;

@@ -130,14 +130,29 @@ public class ApNodeController {
     }
 
     @PostMapping("/download-zip")
-    public void downloadZip(@RequestBody List<String> ids, HttpServletResponse response) throws IOException {
+    public void downloadZip(
+            @RequestBody List<String> ids,
+            @RequestParam(defaultValue = "selected") String folderName,
+            HttpServletResponse response) throws IOException {
+        log.info("download-zip: {} ids received: {}", ids.size(), ids);
         List<FileDownloadDto> files = apNodeService.getFilesForDownload(ids);
+        log.info("download-zip: {} files resolved", files.size());
+
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String zipName = URLEncoder.encode(folderName + "_" + timestamp + ".zip", StandardCharsets.UTF_8)
+                .replace("+", "%20");
+
         response.setContentType("application/zip");
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''selected_files.zip");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + zipName);
         try (ZipOutputStream zos = new ZipOutputStream(response.getOutputStream())) {
             for (FileDownloadDto file : files) {
                 Path path = Paths.get(apnodeBaseDir, file.getSavedPath());
-                if (!Files.exists(path)) continue;
+                log.info("download-zip: adding entry {} -> {}", file.getOriginalName(), path);
+                if (!Files.exists(path)) {
+                    log.warn("download-zip: file not found: {}", path);
+                    continue;
+                }
                 zos.putNextEntry(new ZipEntry(file.getOriginalName()));
                 Files.copy(path, zos);
                 zos.closeEntry();
