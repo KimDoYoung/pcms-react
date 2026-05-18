@@ -133,12 +133,14 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave }) => {
                     });
                     const actualUrl = typeof res === 'string' ? res : (res?.url ?? 'undefined_url_returned');
                     const markdownImage = `![image](${actualUrl})\n`;
-                    setForm((prev) => ({ content: prev.content.replace(loadingText, markdownImage) }));
-                    onChange(form.content.replace(loadingText, markdownImage));
+                    const finalContent = newContent.replace(loadingText, markdownImage);
+                    setForm({ content: finalContent });
+                    onChange(finalContent);
                 } catch {
                     alert('이미지 업로드 중 오류가 발생했습니다.');
-                    setForm((prev) => ({ content: prev.content.replace(loadingText, '') }));
-                    onChange(form.content.replace(loadingText, ''));
+                    const revertedContent = newContent.replace(loadingText, '');
+                    setForm({ content: revertedContent });
+                    onChange(revertedContent);
                 }
                 return;
             }
