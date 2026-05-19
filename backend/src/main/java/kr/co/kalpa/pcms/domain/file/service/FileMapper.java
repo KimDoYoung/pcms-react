@@ -17,6 +17,7 @@ public interface FileMapper {
             @Param("fileType") String fileType
     );
     List<CmsFile> selectFilesByIds(@Param("fileIds") List<Long> fileIds);
+    CmsFile selectFileById(@Param("fileId") Long fileId);
     void deleteFileMatchByTarget(
             @Param("tableName") String tableName,
             @Param("targetId") Long targetId,

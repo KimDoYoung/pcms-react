@@ -75,6 +75,8 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/posts/**"),
                     new AntPathRequestMatcher("/apnode"),
                     new AntPathRequestMatcher("/apnode/**"),
+                    new AntPathRequestMatcher("/files/*/download"),
+                    new AntPathRequestMatcher("/files/*/download/**"),
                     new AntPathRequestMatcher("/practice/**")
                 ).permitAll()
                 .anyRequest().authenticated()
