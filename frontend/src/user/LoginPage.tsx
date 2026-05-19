@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { useAuthStore } from '@/shared/store/authStore'
 
@@ -69,21 +70,23 @@ function LoginPage() {
           {/* 비밀번호 */}
           <div className="mb-3">
             <label className="block text-sm text-gray-600 mb-1">🔒 비밀번호</label>
-            <div className="flex">
+            <div className="flex rounded-lg border border-gray-300 overflow-hidden">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 readOnly
                 placeholder="••••"
-                className="flex-1 h-11 px-4 border border-gray-300 rounded-l-lg text-center text-xl font-bold tracking-[8px] focus:outline-none"
+                className="flex-1 min-w-0 h-11 px-4 border-none bg-white text-center text-xl font-bold tracking-[8px] focus:outline-none select-none"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 disabled={isLoading}
-                className="w-11 h-11 border border-l-0 border-gray-300 rounded-r-lg flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                className="w-11 h-11 border-l border-gray-300 bg-white flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
+                title={showPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
               >
-                {showPassword ? '🙈' : '👁️'}
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
 
