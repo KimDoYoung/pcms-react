@@ -88,7 +88,7 @@ const ContentEditor = forwardRef<ContentEditorHandle, Props>(function ContentEdi
             apiClient
               .post<{ url: string }>('/files/editor-image', formData)
               .then(({ url }) => {
-                editorRef.current?.chain().focus().insertContent({ type: 'text', text: `![](${url})` }).run()
+                editorRef.current?.chain().focus().setImage({ src: url }).run()
               })
               .catch((err) => {
                 console.error('[ContentEditor] image upload failed:', err)
