@@ -14,6 +14,8 @@ export interface ApNode {
   // L 전용
   linkTargetId?: string
   brokenLink?: boolean
+  // 검색 결과 전용
+  pathStr?: string
   // F / L(resolved) 공통
   fileUrl?: string
   thumbnailUrl?: string
@@ -32,7 +34,6 @@ export interface CtxMenu {
 }
 
 export interface Clipboard {
-  id: string
-  name: string
+  items: { id: string; name: string }[]
   type: 'cut' | 'copy'
 }

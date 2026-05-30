@@ -144,4 +144,13 @@
         WHERE id = CAST(#{id} AS UUID)
     </update>
 
+    <select id="searchByName" resultType="kr.co.kalpa.pcms.domain.apnode.entity.ApNode">
+        SELECT <include refid="selectColumns"/>
+        FROM cms.ap_node
+        WHERE name ILIKE CONCAT('%', #{keyword}, '%')
+          AND is_deleted = FALSE
+        ORDER BY node_type ASC, name ASC
+        LIMIT 100
+    </select>
+
 </mapper>

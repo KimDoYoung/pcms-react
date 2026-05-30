@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { ChevronDown, ChevronRight, ClipboardPaste, Download, FolderPlus, Grid3X3, List, Pencil, Trash2, Upload } from 'lucide-react'
+import { ChevronDown, ChevronRight, ClipboardPaste, Download, FolderPlus, Grid3X3, List, Pencil, Search, Trash2, Upload, X } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
@@ -14,6 +14,7 @@ import { useMessage } from '@/shared/hooks/useMessage'
 import ApNodeSidebar from '@/domain/apnode/components/ApNodeSidebar'
 import ApNodeContextMenu from '@/domain/apnode/components/ApNodeContextMenu'
 import ApNodeModals from '@/domain/apnode/components/ApNodeModals'
+import ApNodeSearchModal from '@/domain/apnode/components/ApNodeSearchModal'
 import ApNodeFileArea from '@/domain/apnode/components/ApNodeFileArea'
 import { useApNodeData } from '@/domain/apnode/hooks/useApNodeData'
 import { useApNodeMutations } from '@/domain/apnode/hooks/useApNodeMutations'
@@ -31,6 +32,9 @@ export default function ApNodePage() {
   const [isDragging, setIsDragging] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sidebarWidth, setSidebarWidth] = useState(240)
+
+  const [filterText, setFilterText] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const [createFolderOpen, setCreateFolderOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
@@ -71,15 +75,20 @@ export default function ApNodePage() {
   // ── 데이터 ──
   const { currentItems, breadcrumb, ancestorIds, isLoading, rootDirs } = useApNodeData(currentFolderId)
 
+  const displayItems = filterText.trim()
+    ? currentItems.filter((n) => n.name.toLowerCase().includes(filterText.toLowerCase()))
+    : currentItems
+
   // ── 네비게이션 ──
   const navigate = useCallback((id: string | null) => {
     setCurrentFolderId(id)
     setSelectedIds(new Set())
     setCtxMenu((m) => ({ ...m, show: false }))
+    setFilterText('')
   }, [])
 
   // ── Mutations ──
-  const { createDirMutation, renameMutation, moveMutation, createLinkMutation, deleteMutation, invalidate } =
+  const { createDirMutation, renameMutation, deleteMutation, invalidate } =
     useApNodeMutations({
       currentFolderId,
       breadcrumb,
@@ -90,8 +99,6 @@ export default function ApNodePage() {
         navigate(newNode.id)
       },
       onRenamed: () => { setRenameOpen(false); setRenameNode(null) },
-      onMoved: () => setClipboard(null),
-      onLinkCreated: () => setClipboard(null),
     })
 
   // ── 핸들러 ──
@@ -159,12 +166,30 @@ export default function ApNodePage() {
     }
   }
 
-  function handlePaste() {
+  async function handlePaste() {
     if (!clipboard) return
-    if (clipboard.type === 'cut') {
-      moveMutation.mutate({ id: clipboard.id, targetParentId: currentFolderId })
-    } else {
-      createLinkMutation.mutate({ name: `${clipboard.name} 링크`, targetId: clipboard.id, parentId: currentFolderId })
+    try {
+      if (clipboard.type === 'cut') {
+        await Promise.all(
+          clipboard.items.map((item) =>
+            apiClient.put(`/apnode/${item.id}/move`, { targetParentId: currentFolderId })
+          )
+        )
+      } else {
+        await Promise.all(
+          clipboard.items.map((item) =>
+            apiClient.post('/apnode/links', {
+              name: `${item.name} 링크`,
+              targetId: item.id,
+              parentId: currentFolderId,
+            })
+          )
+        )
+      }
+      setClipboard(null)
+      invalidate()
+    } catch {
+      showMessage('붙여넣기에 실패했습니다.', 'error')
     }
   }
 
@@ -251,7 +276,7 @@ export default function ApNodePage() {
 
         {/* 상단 헤더 */}
         <header className="bg-white border-b border-gray-100 px-6 py-3 flex items-center gap-4">
-          <nav className="flex items-center gap-1 text-sm flex-1 min-w-0">
+          <nav className="hidden sm:flex items-center gap-1 text-sm flex-1 min-w-0">
             <button
               onClick={() => navigate(null)}
               className="px-2 py-1 rounded hover:bg-blue-50 hover:text-blue-600 transition-colors text-gray-500 font-medium"
@@ -273,10 +298,33 @@ export default function ApNodePage() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-1.5">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+                placeholder="현재 폴더 필터..."
+                className="pl-8 pr-7 py-1 text-sm border border-gray-200 rounded-lg w-44 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              />
+              {filterText && (
+                <button
+                  type="button"
+                  onClick={() => setFilterText('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 ml-auto">
             {clipboard && (
               <Button size="sm" variant="ghost" className="text-blue-600 hover:bg-blue-50" onClick={handlePaste}>
-                <ClipboardPaste className="w-4 h-4 mr-1" /> 붙여넣기 ({clipboard.type === 'cut' ? '이동' : '링크'})
+                <ClipboardPaste className="w-4 h-4 mr-1" />
+                붙여넣기{clipboard.items.length > 1 ? ` ${clipboard.items.length}개` : ''} ({clipboard.type === 'cut' ? '이동' : '링크'})
               </Button>
             )}
             <DropdownMenu>
@@ -286,6 +334,10 @@ export default function ApNodePage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setSearchOpen(true)}>
+                  <Search className="w-4 h-4 mr-2 text-purple-500" /> 찾기
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
                   <Upload className="w-4 h-4 mr-2 text-green-500" /> 업로드
                 </DropdownMenuItem>
@@ -349,7 +401,7 @@ export default function ApNodePage() {
           />
 
           <ApNodeFileArea
-            currentItems={currentItems}
+            currentItems={displayItems}
             isLoading={isLoading}
             viewMode={viewMode}
             selectedIds={selectedIds}
@@ -384,16 +436,41 @@ export default function ApNodePage() {
         ctxMenu={ctxMenu}
         clipboard={clipboard}
         selectedCount={selectedIds.size}
+        isMultiSelected={!!(ctxMenu.node && selectedIds.has(ctxMenu.node.id) && selectedIds.size > 1)}
         onClose={() => setCtxMenu((m) => ({ ...m, show: false }))}
         onDownloadSelected={handleDownloadSelected}
         onRename={openRename}
         onView={handleView}
-        onCut={(node) => setClipboard({ id: node.id, name: node.name, type: 'cut' })}
-        onCopy={(node) => setClipboard({ id: node.id, name: node.name, type: 'copy' })}
+        onCut={(node) => {
+          const useSelected = selectedIds.has(node.id) && selectedIds.size > 1
+          const items = useSelected
+            ? Array.from(selectedIds).flatMap((id) => {
+                const n = currentItems.find((x) => x.id === id)
+                return n ? [{ id: n.id, name: n.name }] : []
+              })
+            : [{ id: node.id, name: node.name }]
+          setClipboard({ items, type: 'cut' })
+        }}
+        onCopy={(node) => {
+          const useSelected = selectedIds.has(node.id) && selectedIds.size > 1
+          const items = useSelected
+            ? Array.from(selectedIds).flatMap((id) => {
+                const n = currentItems.find((x) => x.id === id)
+                return n ? [{ id: n.id, name: n.name }] : []
+              })
+            : [{ id: node.id, name: node.name }]
+          setClipboard({ items, type: 'copy' })
+        }}
         onDownload={handleDownload}
         onDelete={handleDelete}
         onCreateFolder={() => setCreateFolderOpen(true)}
         onPaste={handlePaste}
+      />
+
+      <ApNodeSearchModal
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={(id) => { navigate(id); setSearchOpen(false) }}
       />
 
       <ApNodeModals

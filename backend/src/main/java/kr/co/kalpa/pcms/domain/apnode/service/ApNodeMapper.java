@@ -16,6 +16,8 @@ public interface ApNodeMapper {
     List<ApNode> selectChildren(String parentId);
     List<ApNode> selectAncestors(String id);
 
+    List<ApNode> searchByName(String keyword);
+
     void softDelete(String id);
     void softDeleteDescendants(String id);
     void updateName(@Param("id") String id, @Param("name") String name);

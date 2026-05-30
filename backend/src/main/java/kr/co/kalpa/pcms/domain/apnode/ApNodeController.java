@@ -56,6 +56,11 @@ public class ApNodeController {
         return ResponseEntity.ok(apNodeService.listRoots());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<ApNodeDto>> search(@RequestParam String q) {
+        return ResponseEntity.ok(apNodeService.searchNodes(q));
+    }
+
     @GetMapping("/{id}/children")
     public ResponseEntity<List<ApNodeDto>> listChildren(@PathVariable String id) {
         return ResponseEntity.ok(apNodeService.listChildren(id));

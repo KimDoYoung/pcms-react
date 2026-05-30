@@ -5,6 +5,7 @@
  *   - ctxMenu: 메뉴 표시 여부, 좌표, 대상 노드
  *   - clipboard: 현재 클립보드 상태 (이동/링크용)
  *   - selectedCount: 현재 선택된 아이템 수
+ *   - isMultiSelected: 우클릭 노드가 다중 선택에 포함된 경우 true
  *   - onClose: 메뉴 닫기 콜백
  *   - onRename/onView/onCut/onCopy/onDownload/onDelete: 노드 액션 콜백
  *   - onCreateFolder: 빈 공간 우클릭 시 새 폴더 생성
@@ -19,6 +20,7 @@ interface ApNodeContextMenuProps {
   ctxMenu: CtxMenu
   clipboard: Clipboard | null
   selectedCount: number
+  isMultiSelected: boolean
   onClose: () => void
   onRename: (node: ApNode) => void
   onView: (node: ApNode) => void
@@ -35,6 +37,7 @@ export default function ApNodeContextMenu({
   ctxMenu,
   clipboard,
   selectedCount,
+  isMultiSelected,
   onClose,
   onRename,
   onView,
@@ -49,6 +52,8 @@ export default function ApNodeContextMenu({
   if (!ctxMenu.show) return null
 
   const itemCls = 'flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 transition-colors'
+  const disabledCls = 'flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-300 opacity-40 cursor-not-allowed'
+  const n = selectedCount
 
   return (
     <div
@@ -69,21 +74,29 @@ export default function ApNodeContextMenu({
       )}
       {ctxMenu.node ? (
         <>
-          <button className={itemCls} onClick={() => { onRename(ctxMenu.node!); onClose() }}>
-            <Pencil className="w-4 h-4 text-gray-400" /> 이름 변경
-          </button>
-          {canView(ctxMenu.node) && (
+          {isMultiSelected ? (
+            <span className={disabledCls}>
+              <Pencil className="w-4 h-4" /> 이름 변경 (1개만 가능)
+            </span>
+          ) : (
+            <button className={itemCls} onClick={() => { onRename(ctxMenu.node!); onClose() }}>
+              <Pencil className="w-4 h-4 text-gray-400" /> 이름 변경
+            </button>
+          )}
+          {!isMultiSelected && canView(ctxMenu.node) && (
             <button className={itemCls + ' !text-indigo-700'} onClick={() => { onView(ctxMenu.node!); onClose() }}>
               <Eye className="w-4 h-4 text-indigo-400" /> 보기 (AView)
             </button>
           )}
           <button className={itemCls} onClick={() => { onCut(ctxMenu.node!); onClose() }}>
-            <Scissors className="w-4 h-4 text-gray-400" /> 이동 (잘라내기)
+            <Scissors className="w-4 h-4 text-gray-400" />
+            {isMultiSelected ? `${n}개 이동 (잘라내기)` : '이동 (잘라내기)'}
           </button>
           <button className={itemCls} onClick={() => { onCopy(ctxMenu.node!); onClose() }}>
-            <Copy className="w-4 h-4 text-gray-400" /> 링크 복사
+            <Copy className="w-4 h-4 text-gray-400" />
+            {isMultiSelected ? `${n}개 링크 복사` : '링크 복사'}
           </button>
-          {(ctxMenu.node.nodeType === 'F' || ctxMenu.node.nodeType === 'L') && (
+          {!isMultiSelected && (ctxMenu.node.nodeType === 'F' || ctxMenu.node.nodeType === 'L') && (
             <button className={itemCls} onClick={() => { onDownload(ctxMenu.node!); onClose() }}>
               <Download className="w-4 h-4 text-gray-400" /> 다운로드
             </button>
@@ -106,7 +119,8 @@ export default function ApNodeContextMenu({
               className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-blue-50 text-blue-700 transition-colors"
               onClick={() => { onPaste(); onClose() }}
             >
-              <ClipboardPaste className="w-4 h-4" /> 붙여넣기 ({clipboard.type === 'cut' ? '이동' : '링크'})
+              <ClipboardPaste className="w-4 h-4" />
+              붙여넣기{clipboard.items.length > 1 ? ` ${clipboard.items.length}개` : ''} ({clipboard.type === 'cut' ? '이동' : '링크'})
             </button>
           )}
         </>

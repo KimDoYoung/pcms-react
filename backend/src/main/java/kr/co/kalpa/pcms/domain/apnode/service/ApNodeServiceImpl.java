@@ -65,6 +65,22 @@ public class ApNodeServiceImpl implements ApNodeService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<ApNodeDto> searchNodes(String keyword) {
+        return apNodeMapper.searchByName(keyword).stream()
+                .map(node -> {
+                    ApNodeDto dto = resolveNodeDto(node);
+                    List<ApNode> ancestors = apNodeMapper.selectAncestors(node.getId());
+                    String pathStr = ancestors.stream()
+                            .map(ApNode::getName)
+                            .collect(Collectors.joining(" / "));
+                    dto.setPathStr(pathStr);
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<ApNodeDto> listChildren(String parentId) {
         return apNodeMapper.selectChildren(parentId).stream()
                 .map(this::resolveNodeDto)

@@ -19,10 +19,7 @@ export function isImage(node: ApNode): boolean {
 }
 
 export function canView(node: ApNode): boolean {
-  if (isImage(node)) return true
-  const ext = node.name.split('.').pop()?.toLowerCase()
-  if (!ext) return false
-  return ['pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'hwp'].includes(ext)
+  return node.nodeType === 'F' || node.nodeType === 'L'
 }
 
 export function getNodeIcon(node: ApNode) {

@@ -16,6 +16,8 @@ public interface ApNodeService {
     List<ApNodeDto> getPath(String id);
     ApNodeDto getNode(String id);
 
+    List<ApNodeDto> searchNodes(String keyword);
+
     ApNodeDto createDirectory(DirectoryCreateDto dto);
     ApNodeDto uploadFile(String parentId, MultipartFile file) throws IOException;
     ApNodeDto createLink(LinkCreateDto dto);

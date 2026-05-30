@@ -10,8 +10,8 @@ interface Options {
   onNavigate: (id: string | null) => void
   onFolderCreated: (node: ApNode) => void
   onRenamed: () => void
-  onMoved: () => void
-  onLinkCreated: () => void
+  onMoved?: () => void
+  onLinkCreated?: () => void
 }
 
 export function useApNodeMutations({
@@ -52,14 +52,14 @@ export function useApNodeMutations({
   const moveMutation = useMutation({
     mutationFn: ({ id, targetParentId }: { id: string; targetParentId: string | null }) =>
       apiClient.put<ApNode>(`/apnode/${id}/move`, { targetParentId }),
-    onSuccess: () => { invalidate(); onMoved() },
+    onSuccess: () => { invalidate(); onMoved?.() },
     onError: () => showMessage('이동 실패', 'error'),
   })
 
   const createLinkMutation = useMutation({
     mutationFn: ({ name, targetId, parentId }: { name: string; targetId: string; parentId: string | null }) =>
       apiClient.post<ApNode>('/apnode/links', { name, targetId, parentId }),
-    onSuccess: () => { invalidate(); onLinkCreated() },
+    onSuccess: () => { invalidate(); onLinkCreated?.() },
     onError: () => showMessage('링크 생성 실패', 'error'),
   })
 
