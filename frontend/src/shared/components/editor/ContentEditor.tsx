@@ -21,6 +21,10 @@ import Placeholder from '@tiptap/extension-placeholder'
 import ResizableInlineImage from '@/shared/components/editor/ResizableInlineImage'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
+import { Table } from '@tiptap/extension-table'
+import { TableRow } from '@tiptap/extension-table-row'
+import { TableHeader } from '@tiptap/extension-table-header'
+import { TableCell } from '@tiptap/extension-table-cell'
 import { useEffect, useImperativeHandle, useRef, forwardRef } from 'react'
 import TipTapMenuBar from '@/shared/components/editor/TipTapMenuBar'
 import { apiClient } from '@/lib/apiClient'
@@ -60,6 +64,10 @@ const ContentEditor = forwardRef<ContentEditorHandle, Props>(function ContentEdi
       ResizableInlineImage.configure({ allowBase64: true }),
       TextStyle,
       Color,
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: initialValueRef.current,
     onUpdate({ editor }) {

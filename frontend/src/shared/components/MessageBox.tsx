@@ -9,25 +9,21 @@ const POSITION_CLASSES: Record<MessagePosition, string> = {
   'bottom-center': 'bottom-4 left-1/2 -translate-x-1/2',
 }
 
-const TYPE_CLASSES: Record<Message['type'], { container: string; bar: string; icon: string }> = {
+const TYPE_CLASSES: Record<Message['type'], { container: string; icon: string }> = {
   success: {
     container: 'bg-green-50 border-green-200 text-green-800',
-    bar: 'bg-green-400',
     icon: '✓',
   },
   error: {
     container: 'bg-red-50 border-red-200 text-red-800',
-    bar: 'bg-red-400',
     icon: '✕',
   },
   warning: {
     container: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    bar: 'bg-yellow-400',
     icon: '⚠',
   },
   info: {
     container: 'bg-blue-50 border-blue-200 text-blue-800',
-    bar: 'bg-blue-400',
     icon: 'ℹ',
   },
 }
@@ -61,20 +57,6 @@ function MessageItem({ message }: { message: Message }) {
         </button>
       </div>
 
-      {/* 카운트다운 바 */}
-      <div
-        className={`absolute bottom-0 left-0 h-1 ${style.bar}`}
-        style={{
-          animation: `countdown ${message.duration}ms linear forwards`,
-        }}
-      />
-
-      <style>{`
-        @keyframes countdown {
-          from { width: 100%; }
-          to { width: 0%; }
-        }
-      `}</style>
     </div>
   )
 }

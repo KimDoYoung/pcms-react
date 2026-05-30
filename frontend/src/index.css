@@ -337,6 +337,19 @@
   background: #f9fafb;
   font-weight: 600;
 }
+/* TipTap 테이블 선택 셀 */
+.ProseMirror .selectedCell::after {
+  z-index: 2;
+  position: absolute;
+  content: '';
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(59, 130, 246, 0.15);
+  pointer-events: none;
+}
+.ProseMirror td, .ProseMirror th {
+  position: relative;
+  min-width: 1em;
+}
 .markdown-body hr {
   border: none;
   border-top: 1px solid #e5e7eb;
