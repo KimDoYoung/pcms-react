@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Pencil, Plus, X } from 'lucide-react'
 import { format, parse, startOfWeek, endOfWeek, addDays } from 'date-fns'
 
 import { apiClient } from '@/lib/apiClient'
@@ -28,9 +28,17 @@ function Calendar1Page() {
   const [currentMonth, setCurrentMonth] = useState(todayDate.getMonth() + 1)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [selectedYmd, setSelectedYmd] = useState('')
+  const [editTarget, setEditTarget] = useState<CalendarEvent | null>(null)
 
   function openAddDialog(ymd: string) {
     setSelectedYmd(ymd)
+    setEditTarget(null)
+    setAddDialogOpen(true)
+  }
+
+  function openEditDialog(e: CalendarEvent) {
+    setSelectedYmd(e.ymd)
+    setEditTarget(e)
     setAddDialogOpen(true)
   }
 
@@ -290,13 +298,22 @@ function Calendar1Page() {
                         <div key={e.id} className={`text-[12px] font-medium px-1.5 py-0.5 rounded border leading-tight flex items-center gap-0.5 ${c.bg} ${c.text} ${c.border}`}>
                           <span className="truncate flex-1">{e.content}</span>
                           {e.gubun === 'S' && (
-                            <button
-                              onClick={ev => { ev.stopPropagation(); deleteEvent(e.id, e.content) }}
-                              className="flex-shrink-0 opacity-60 hover:opacity-100"
-                              title="삭제"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
+                            <>
+                              <button
+                                onClick={ev => { ev.stopPropagation(); openEditDialog(e) }}
+                                className="flex-shrink-0 opacity-60 hover:opacity-100"
+                                title="수정"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={ev => { ev.stopPropagation(); deleteEvent(e.id, e.content) }}
+                                className="flex-shrink-0 opacity-60 hover:opacity-100"
+                                title="삭제"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </>
                           )}
                         </div>
                       )
@@ -314,6 +331,7 @@ function Calendar1Page() {
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         selectedYmd={selectedYmd}
+        editTarget={editTarget}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['calendar-events'] })}
       />
 

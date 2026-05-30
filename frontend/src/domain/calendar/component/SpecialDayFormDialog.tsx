@@ -1,13 +1,14 @@
 /**
- * 특정 날짜(S타입) 일정 빠른 추가 다이얼로그
+ * 특정 날짜(S타입) 일정 추가/수정 다이얼로그
  *
  * 사용법:
- *   <SpecialDayFormDialog
- *     open={addDialogOpen}
- *     onOpenChange={setAddDialogOpen}
- *     selectedYmd="20260414"
- *     onSuccess={() => queryClient.invalidateQueries({ queryKey: ['calendar-events'] })}
- *   />
+ *   // 추가
+ *   <SpecialDayFormDialog open={open} onOpenChange={...} selectedYmd="20260414" onSuccess={...} />
+ *   // 수정
+ *   <SpecialDayFormDialog open={open} onOpenChange={...} selectedYmd="20260414" editTarget={event} onSuccess={...} />
+ *
+ * props:
+ *   editTarget - 수정할 기존 이벤트. 전달 시 수정 모드(PUT), 없으면 추가 모드(POST)
  */
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -19,35 +20,48 @@ import {
 } from '@/shared/components/ui/dialog'
 import { EVENT_COLORS, DEFAULT_COLOR } from '@/domain/calendar/component/eventColors'
 import type { EventColorName } from '@/domain/calendar/component/eventColors'
+import type { CalendarEvent } from '@/domain/calendar/types/calendar'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   selectedYmd: string
+  editTarget?: CalendarEvent | null
   onSuccess: () => void
 }
 
-function SpecialDayFormDialog({ open, onOpenChange, selectedYmd, onSuccess }: Props) {
+function SpecialDayFormDialog({ open, onOpenChange, selectedYmd, editTarget, onSuccess }: Props) {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<{ content: string }>()
   const [selectedColor, setSelectedColor] = useState<EventColorName>(DEFAULT_COLOR)
+  const isEdit = !!editTarget
 
-  // 다이얼로그가 열릴 때마다 폼·색상 초기화
   useEffect(() => {
     if (open) {
-      reset({ content: '' })
-      setSelectedColor(DEFAULT_COLOR)
+      reset({ content: editTarget?.content ?? '' })
+      setSelectedColor((editTarget?.color as EventColorName) ?? DEFAULT_COLOR)
     }
-  }, [open, reset])
+  }, [open, editTarget, reset])
 
   async function onSubmit(data: { content: string }) {
-    await apiClient.post('/calendar/my', {
-      gubun: 'S', sorl: 'S', ymd: selectedYmd, content: data.content, color: selectedColor,
-    })
+    if (isEdit) {
+      const numericId = editTarget!.id.replace(/^C_/, '')
+      await apiClient.put(`/calendar/my/${numericId}`, {
+        gubun: editTarget!.gubun ?? 'S',
+        sorl: 'S',
+        ymd: editTarget!.ymd,
+        content: data.content,
+        color: selectedColor,
+      })
+    } else {
+      await apiClient.post('/calendar/my', {
+        gubun: 'S', sorl: 'S', ymd: selectedYmd, content: data.content, color: selectedColor,
+      })
+    }
     onSuccess()
     onOpenChange(false)
   }
 
-  const title = selectedYmd
+  const dateStr = selectedYmd
     ? `${selectedYmd.substring(0, 4)}-${selectedYmd.substring(4, 6)}-${selectedYmd.substring(6, 8)}`
     : ''
 
@@ -55,7 +69,7 @@ function SpecialDayFormDialog({ open, onOpenChange, selectedYmd, onSuccess }: Pr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>일정 추가 — {title}</DialogTitle>
+          <DialogTitle>{isEdit ? '일정 수정' : `일정 추가 — ${dateStr}`}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
           <div className="space-y-1">
@@ -85,7 +99,7 @@ function SpecialDayFormDialog({ open, onOpenChange, selectedYmd, onSuccess }: Pr
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>취소</Button>
-            <Button type="submit">추가</Button>
+            <Button type="submit">{isEdit ? '수정' : '추가'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
