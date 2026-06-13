@@ -7,7 +7,7 @@
  *   - selectedCount: 현재 선택된 아이템 수
  *   - isMultiSelected: 우클릭 노드가 다중 선택에 포함된 경우 true
  *   - onClose: 메뉴 닫기 콜백
- *   - onRename/onView/onCut/onCopy/onDownload/onDelete: 노드 액션 콜백
+ *   - onRename/onView/onCut/onCopy/onDownload/onDelete: 노드 액션 콜백 (선택항목 0개면 onDelete 비활성)
  *   - onCreateFolder: 빈 공간 우클릭 시 새 폴더 생성
  *   - onPaste: 클립보드 붙여넣기
  *   - onDownloadSelected: 선택된 파일들 zip 다운로드
@@ -56,11 +56,13 @@ export default function ApNodeContextMenu({
   const n = selectedCount
 
   return (
-    <div
-      className="fixed bg-white shadow-xl rounded-lg border border-gray-100 py-1 z-50 min-w-[160px]"
-      style={{ top: ctxMenu.y, left: ctxMenu.x }}
-      onClick={(e) => e.stopPropagation()}
-    >
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div
+        className="fixed bg-white shadow-xl rounded-lg border border-gray-100 py-1 z-50 min-w-[160px]"
+        style={{ top: ctxMenu.y, left: ctxMenu.x }}
+        onClick={(e) => e.stopPropagation()}
+      >
       {selectedCount > 0 && (
         <>
           <button
@@ -102,12 +104,18 @@ export default function ApNodeContextMenu({
             </button>
           )}
           <hr className="my-1 border-gray-100" />
-          <button
-            className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-red-50 text-red-600 transition-colors"
-            onClick={() => { onDelete(ctxMenu.node!); onClose() }}
-          >
-            <Trash2 className="w-4 h-4" /> 삭제
-          </button>
+          {selectedCount === 0 ? (
+            <span className={disabledCls}>
+              <Trash2 className="w-4 h-4" /> 삭제 (선택 필요)
+            </span>
+          ) : (
+            <button
+              className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-red-50 text-red-600 transition-colors"
+              onClick={() => { onDelete(ctxMenu.node!); onClose() }}
+            >
+              <Trash2 className="w-4 h-4" /> {selectedCount > 1 ? `${selectedCount}개 삭제` : '삭제'}
+            </button>
+          )}
         </>
       ) : (
         <>
@@ -125,6 +133,7 @@ export default function ApNodeContextMenu({
           )}
         </>
       )}
-    </div>
+      </div>
+    </>
   )
 }
