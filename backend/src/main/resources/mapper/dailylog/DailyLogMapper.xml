@@ -5,8 +5,8 @@
 <mapper namespace="kr.co.kalpa.pcms.domain.dailylog.service.DailyLogMapper">
 
     <insert id="insertDailyLog" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO cms.daily_logs (ymd, title, value)
-        VALUES (#{ymd}, #{title}, #{value})
+        INSERT INTO cms.daily_logs (ymd, title, value, color)
+        VALUES (#{ymd}, #{title}, #{value}, #{color})
     </insert>
 
     <update id="updateDailyLog">
@@ -14,6 +14,7 @@
         SET ymd        = #{ymd},
             title      = #{title},
             value      = #{value},
+            color      = #{color},
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>
@@ -22,11 +23,21 @@
         DELETE FROM cms.daily_logs WHERE id = #{id}
     </delete>
 
+    <delete id="deleteDailyLogsByYmd">
+        DELETE FROM cms.daily_logs WHERE ymd = #{ymd}
+    </delete>
+
     <select id="selectDailyLogByRange" resultType="kr.co.kalpa.pcms.domain.dailylog.entity.DailyLog">
-        SELECT id, ymd, title, value, created_at as createdAt, updated_at as updatedAt
+        SELECT id, ymd, title, value, color, created_at as createdAt, updated_at as updatedAt
         FROM cms.daily_logs
         WHERE ymd BETWEEN #{start} AND #{end}
         ORDER BY ymd, id
+    </select>
+
+    <select id="selectTitleTemplates" resultType="kr.co.kalpa.pcms.domain.dailylog.dto.TitleTemplateDto">
+        SELECT DISTINCT ON (title) title, value, color
+        FROM cms.daily_logs
+        ORDER BY title, id ASC
     </select>
 
 </mapper>

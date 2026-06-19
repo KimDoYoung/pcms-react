@@ -10,6 +10,7 @@ import { Button } from '@/shared/components/ui/button'
 import AnniversaryFormDialog from '@/domain/calendar/component/AnniversaryFormDialog'
 import SpecialDayFormDialog from '@/domain/calendar/component/SpecialDayFormDialog'
 import DailyLogCrudDialog from '@/domain/calendar/component/DailyLogCrudDialog'
+import DailyLogQuickAddDialog from '@/domain/calendar/component/DailyLogQuickAddDialog'
 import { COLOR_MAP, DEFAULT_COLOR } from '@/domain/calendar/component/eventColors'
 import type { CalendarEvent, CalendarDay, LunarDateDto } from '@/domain/calendar/types/calendar'
 import type { DailyLogDto } from '@/domain/dailyLog/types/dailyLog'
@@ -46,8 +47,16 @@ function Calendar1Page() {
 
   // 헤더 추가 버튼 - 전체 폼 (Y/M/S)
   const [fullDialogOpen, setFullDialogOpen] = useState(false)
-  // 헤더 이벤트추가 버튼 - daily_logs CRUD 모달
+  // 헤더 "습관등록" 버튼 - 새 습관 등록 + 기록 관리 모달
   const [dailyLogModalOpen, setDailyLogModalOpen] = useState(false)
+  // day cell 호버 "습관추가" 버튼 - 기존 습관을 그 날짜에 빠르게 기록하는 모달
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
+  const [quickAddYmd, setQuickAddYmd] = useState('')
+
+  function openQuickAddDialog(ymd: string) {
+    setQuickAddYmd(ymd)
+    setQuickAddOpen(true)
+  }
 
   const [startYmd, endYmd] = useMemo(() => getStartEndYmd(currentYear, currentMonth), [currentYear, currentMonth])
 
@@ -237,7 +246,7 @@ function Calendar1Page() {
                   onClick={() => setDailyLogModalOpen(true)}
                   className="bg-white/20 border-white/30 text-white hover:bg-white/40 px-3 py-1.5 h-8 text-sm font-bold shadow-inner"
                 >
-                  <Plus className="w-4 h-4 mr-1" />이벤트추가
+                  <Plus className="w-4 h-4 mr-1" />습관등록
                 </Button>
               </div>
             </div>
@@ -291,13 +300,22 @@ function Calendar1Page() {
                         </span>
                       )}
                     </div>
-                    <button
-                      onClick={() => openAddDialog(day.ymd)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 rounded-full bg-rose-200 hover:bg-rose-300 flex items-center justify-center"
-                      title="일정 추가"
-                    >
-                      <Plus className="w-3 h-3 text-rose-500" />
-                    </button>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                      <button
+                        onClick={() => openAddDialog(day.ymd)}
+                        className="w-5 h-5 rounded-full bg-rose-200 hover:bg-rose-300 flex items-center justify-center"
+                        title="일정 추가"
+                      >
+                        <Plus className="w-3 h-3 text-rose-500" />
+                      </button>
+                      <button
+                        onClick={() => openQuickAddDialog(day.ymd)}
+                        className="w-5 h-5 rounded-full bg-emerald-200 hover:bg-emerald-300 flex items-center justify-center"
+                        title="습관추가"
+                      >
+                        <Plus className="w-3 h-3 text-emerald-600" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Holidays */}
@@ -342,11 +360,14 @@ function Calendar1Page() {
                   {/* Daily Logs (습관기록) - 스케줄 다음에 표시 */}
                   {day.dailyLogs.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1.5">
-                      {day.dailyLogs.map(l => (
-                        <span key={l.id} className="text-[10px] font-medium px-1 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 leading-none whitespace-nowrap">
-                          {l.value} {l.title}
-                        </span>
-                      ))}
+                      {day.dailyLogs.map(l => {
+                        const c = COLOR_MAP[l.color ?? DEFAULT_COLOR] ?? COLOR_MAP[DEFAULT_COLOR]
+                        return (
+                          <span key={l.id} className={`text-[10px] font-medium px-1 py-0.5 rounded border leading-none whitespace-nowrap ${c.bg} ${c.text} ${c.border}`}>
+                            {l.value} {l.title}
+                          </span>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -377,6 +398,12 @@ function Calendar1Page() {
         onOpenChange={setDailyLogModalOpen}
         startYmd={startYmd}
         endYmd={endYmd}
+      />
+
+      <DailyLogQuickAddDialog
+        open={quickAddOpen}
+        onOpenChange={setQuickAddOpen}
+        ymd={quickAddYmd}
       />
     </>
   )

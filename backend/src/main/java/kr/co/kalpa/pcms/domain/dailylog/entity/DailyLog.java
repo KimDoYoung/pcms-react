@@ -16,6 +16,7 @@ public class DailyLog {
     private String ymd;
     private String title;
     private String value;
+    private String color;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }

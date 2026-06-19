@@ -21,4 +21,6 @@ public class DailyLogDto {
 
     @NotBlank(message = "값을 입력해 주세요.")
     private String value;
+
+    private String color;
 }

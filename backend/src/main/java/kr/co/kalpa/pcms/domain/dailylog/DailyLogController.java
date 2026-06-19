@@ -1,6 +1,7 @@
 package kr.co.kalpa.pcms.domain.dailylog;
 
 import kr.co.kalpa.pcms.domain.dailylog.dto.DailyLogDto;
+import kr.co.kalpa.pcms.domain.dailylog.dto.TitleTemplateDto;
 import kr.co.kalpa.pcms.domain.dailylog.service.DailyLogService;
 
 import jakarta.validation.Valid;
@@ -49,8 +50,20 @@ public class DailyLogController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/by-ymd/{ymd}")
+    public ResponseEntity<Void> removeByYmd(@PathVariable String ymd) {
+        log.info("remove dailyLogs by ymd: {}", ymd);
+        dailyLogService.removeByYmd(ymd);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/range/{startYmd}/{endYmd}")
     public ResponseEntity<List<DailyLogDto>> getByRange(@PathVariable String startYmd, @PathVariable String endYmd) {
         return ResponseEntity.ok(dailyLogService.getByRange(startYmd, endYmd));
+    }
+
+    @GetMapping("/title-templates")
+    public ResponseEntity<List<TitleTemplateDto>> getTitleTemplates() {
+        return ResponseEntity.ok(dailyLogService.getTitleTemplates());
     }
 }
