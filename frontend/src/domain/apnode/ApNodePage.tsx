@@ -113,6 +113,18 @@ export default function ApNodePage() {
     deleteMutation.mutate(node.id)
   }
 
+  async function handleDeleteSelected() {
+    if (selectedIds.size === 0) return
+    if (!confirm(`선택된 ${selectedIds.size}개 항목을 삭제하시겠습니까?`)) return
+    try {
+      await Promise.all(Array.from(selectedIds).map((id) => apiClient.delete(`/apnode/${id}`)))
+      setSelectedIds(new Set())
+      invalidate()
+    } catch {
+      showMessage('삭제에 실패했습니다.', 'error')
+    }
+  }
+
   async function handleDownloadSelected() {
     if (selectedIds.size === 0) {
       showMessage('선택된 파일이 없습니다.', 'error')
@@ -299,6 +311,17 @@ export default function ApNodePage() {
           </nav>
 
           <div className="hidden sm:flex items-center gap-1.5">
+            {selectedIds.size > 0 && (
+              <label className="flex items-center gap-1.5 cursor-pointer select-none text-sm text-blue-600 font-medium px-2 py-1 bg-blue-50 rounded-md whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size > 0}
+                  onChange={() => setSelectedIds(new Set())}
+                  className="accent-blue-600 cursor-pointer"
+                />
+                {selectedIds.size}개 선택됨
+              </label>
+            )}
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
               <input
@@ -359,11 +382,11 @@ export default function ApNodePage() {
                   <Pencil className="w-4 h-4 mr-2 text-gray-400" /> 이름 변경
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  disabled={!currentFolderId}
+                  disabled={selectedIds.size === 0}
                   className="text-red-600 focus:text-red-600"
-                  onClick={() => { const n = breadcrumb[breadcrumb.length - 1]; if (n) handleDelete(n) }}
+                  onClick={handleDeleteSelected}
                 >
-                  <Trash2 className="w-4 h-4 mr-2" /> 삭제
+                  <Trash2 className="w-4 h-4 mr-2" /> 선택항목 삭제 {selectedIds.size > 0 && `(${selectedIds.size}개)`}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -462,7 +485,10 @@ export default function ApNodePage() {
           setClipboard({ items, type: 'copy' })
         }}
         onDownload={handleDownload}
-        onDelete={handleDelete}
+        onDelete={(node) => {
+          if (selectedIds.has(node.id) && selectedIds.size > 1) handleDeleteSelected()
+          else handleDelete(node)
+        }}
         onCreateFolder={() => setCreateFolderOpen(true)}
         onPaste={handlePaste}
       />
