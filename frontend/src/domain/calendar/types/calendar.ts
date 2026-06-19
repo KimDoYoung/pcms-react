@@ -1,3 +1,5 @@
+import type { DailyLogDto } from '@/domain/dailyLog/types/dailyLog'
+
 // Calendar1Page - API 응답
 export interface CalendarEvent {
   id: string
@@ -20,6 +22,7 @@ export interface CalendarDay {
   holidays: CalendarEvent[]
   seasonal: CalendarEvent[]
   events: CalendarEvent[]
+  dailyLogs: DailyLogDto[]
 }
 
 // AnniversaryPage - 기념일 목록 아이템

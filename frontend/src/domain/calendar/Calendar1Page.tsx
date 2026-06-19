@@ -9,8 +9,10 @@ import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import AnniversaryFormDialog from '@/domain/calendar/component/AnniversaryFormDialog'
 import SpecialDayFormDialog from '@/domain/calendar/component/SpecialDayFormDialog'
+import DailyLogCrudDialog from '@/domain/calendar/component/DailyLogCrudDialog'
 import { COLOR_MAP, DEFAULT_COLOR } from '@/domain/calendar/component/eventColors'
 import type { CalendarEvent, CalendarDay, LunarDateDto } from '@/domain/calendar/types/calendar'
+import type { DailyLogDto } from '@/domain/dailyLog/types/dailyLog'
 
 const todayDate = new Date()
 
@@ -44,6 +46,8 @@ function Calendar1Page() {
 
   // 헤더 추가 버튼 - 전체 폼 (Y/M/S)
   const [fullDialogOpen, setFullDialogOpen] = useState(false)
+  // 헤더 이벤트추가 버튼 - daily_logs CRUD 모달
+  const [dailyLogModalOpen, setDailyLogModalOpen] = useState(false)
 
   const [startYmd, endYmd] = useMemo(() => getStartEndYmd(currentYear, currentMonth), [currentYear, currentMonth])
 
@@ -66,6 +70,11 @@ function Calendar1Page() {
     queryFn: () => apiClient.get<CalendarEvent[]>(`/calendar/${startYmd}/${endYmd}`),
   })
 
+  const { data: dailyLogs = [] } = useQuery<DailyLogDto[]>({
+    queryKey: ['daily-logs-range', startYmd, endYmd],
+    queryFn: () => apiClient.get<DailyLogDto[]>(`/daily-logs/range/${startYmd}/${endYmd}`),
+  })
+
   const days = useMemo(() => {
     const result: CalendarDay[] = []
     let currentDate = parse(startYmd, 'yyyyMMdd', new Date())
@@ -82,6 +91,7 @@ function Calendar1Page() {
       const holidays = dayEvents.filter(e => e.type === 'HOLIDAY')
       const seasonal = dayEvents.filter(e => e.type === 'SEASONAL')
       const normalEvents = dayEvents.filter(e => e.type !== 'HOLIDAY' && e.type !== 'SEASONAL')
+      const dayLogs = dailyLogs.filter(l => l.ymd === ymd)
 
       const isHoliday = holidays.length > 0
       const isSunday = index % 7 === 0
@@ -99,14 +109,15 @@ function Calendar1Page() {
         isSaturday,
         holidays,
         seasonal,
-        events: normalEvents
+        events: normalEvents,
+        dailyLogs: dayLogs
       })
 
       currentDate = addDays(currentDate, 1)
       index++
     }
     return result
-  }, [currentYear, currentMonth, startYmd, endYmd, events])
+  }, [currentYear, currentMonth, startYmd, endYmd, events, dailyLogs])
 
   // 음력 표시용 3개 날짜 선택:
   // 1~5 중 랜덤 offset → days[offset], days[offset+7], days[offset+16]
@@ -218,7 +229,15 @@ function Calendar1Page() {
                   onClick={() => setFullDialogOpen(true)}
                   className="bg-white/20 border-white/30 text-white hover:bg-white/40 px-3 py-1.5 h-8 text-sm font-bold shadow-inner"
                 >
-                  <Plus className="w-4 h-4 mr-1" />추가
+                  <Plus className="w-4 h-4 mr-1" />스케줄추가
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setDailyLogModalOpen(true)}
+                  className="bg-white/20 border-white/30 text-white hover:bg-white/40 px-3 py-1.5 h-8 text-sm font-bold shadow-inner"
+                >
+                  <Plus className="w-4 h-4 mr-1" />이벤트추가
                 </Button>
               </div>
             </div>
@@ -319,6 +338,17 @@ function Calendar1Page() {
                       )
                     })}
                   </div>
+
+                  {/* Daily Logs (습관기록) - 스케줄 다음에 표시 */}
+                  {day.dailyLogs.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {day.dailyLogs.map(l => (
+                        <span key={l.id} className="text-[10px] font-medium px-1 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 leading-none whitespace-nowrap">
+                          {l.value} {l.title}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -340,6 +370,13 @@ function Calendar1Page() {
         onOpenChange={setFullDialogOpen}
         editTarget={null}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['calendar-events'] })}
+      />
+
+      <DailyLogCrudDialog
+        open={dailyLogModalOpen}
+        onOpenChange={setDailyLogModalOpen}
+        startYmd={startYmd}
+        endYmd={endYmd}
       />
     </>
   )
