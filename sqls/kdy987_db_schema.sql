@@ -330,3 +330,27 @@ COMMENT ON COLUMN movie_review.lastmodify_dt IS '최종수정일시';
 select * from cms.hdd limit 100;
 select * from cms.movie limit 100;
 select * from cms.movie_review  limit 100;
+
+
+-- daily_logs 테이블 생성
+CREATE TABLE cms.daily_logs (
+    id         BIGSERIAL PRIMARY KEY,                  -- 대용량 데이터를 대비한 Auto Increment PK
+    ymd        CHAR(8) NOT NULL,                       -- 날짜 (예: '20260619'), 인덱싱 및 고정 길이 고려
+    title      VARCHAR(100) NOT NULL,                  -- 활동/기록 이름 (예: '아침체조', '혈압측정')
+    value      VARCHAR(255) NOT NULL,                  -- 달력에 표기할 값/이모지 (예: '🤸', '150/80')
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), -- 생성일시 (타임존 포함)
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()  -- 수정일시 (타임존 포함)
+);
+
+-- 3. 코멘트 추가 (데이터베이스 문서화용)
+COMMENT ON TABLE cms.daily_logs IS '일별 활동 및 건강 데이터 측정 기록 로그';
+COMMENT ON COLUMN cms.daily_logs.id IS '로그 고유 ID';
+COMMENT ON COLUMN cms.daily_logs.ymd IS '기록 일자 (YYYYMMDD)';
+COMMENT ON COLUMN cms.daily_logs.title IS '기록 명칭 (예: 아침체조, 혈압측정)';
+COMMENT ON COLUMN cms.daily_logs.value IS '달력 표시 내용 (이모지 또는 측정값)';
+COMMENT ON COLUMN cms.daily_logs.created_at IS '로그 생성일시';
+COMMENT ON COLUMN cms.daily_logs.updated_at IS '로그 수정일시';
+
+-- 4. 인덱스 생성
+-- 달력 기능 특성상 특정 월(202606%)이나 기간 조회가 빈번하므로 ymd 필드에 인덱스는 필수입니다.
+CREATE INDEX idx_daily_logs_ymd ON cms.daily_logs (ymd);
