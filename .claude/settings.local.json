@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//home/kdy987/work/kalpadb-api2/src/main/resources/templates/boards/**)",
+      "Read(//home/kdy987/work/kalpadb-api2/src/main/resources/templates/posts/**)",
+      "Bash(npx tsc:*)",
+      "Bash(find:*)",
+      "Bash(curl -s -H \"Authorization: Bearer test\" http://localhost:8585/pcms/boards)",
+      "WebFetch(domain:milkdown.dev)",
+      "WebSearch",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm install:*)",
+      "Bash(xargs cat:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(PGPASSWORD=kalpa987! psql:*)",
+      "Bash(./gradlew compileJava)"
+    ]
+  }
+}
