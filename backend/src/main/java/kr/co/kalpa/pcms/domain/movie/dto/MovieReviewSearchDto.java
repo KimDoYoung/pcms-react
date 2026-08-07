@@ -11,4 +11,6 @@ public class MovieReviewSearchDto extends PageRequestDto {
     private String startYmd;
     private String endYmd;
     private Integer minLvl;
+    private String nara;
+    private String year;
 }

@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -91,6 +93,30 @@ public class MovieReviewServiceImpl implements MovieReviewService {
                 .total(total)
                 .pageRequestDto(searchDto)
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> getAdjacentIds(Long id, MovieReviewSearchDto searchDto) {
+        MovieReview current = movieReviewMapper.selectOne(id);
+        if (current == null) {
+            throw new RuntimeException("MovieReview not found: " + id);
+        }
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("keyword", searchDto.getKeyword());
+        params.put("startYmd", searchDto.getStartYmd());
+        params.put("endYmd", searchDto.getEndYmd());
+        params.put("minLvl", searchDto.getMinLvl());
+        params.put("nara", searchDto.getNara());
+        params.put("year", searchDto.getYear());
+        params.put("currentId", current.getId());
+        params.put("currentYmd", current.getYmd());
+
+        Map<String, Long> result = new HashMap<>();
+        result.put("prevId", movieReviewMapper.selectPrevId(params));
+        result.put("nextId", movieReviewMapper.selectNextId(params));
+        return result;
     }
 
     private MovieReviewDto toDto(MovieReview entity) {

@@ -83,6 +83,12 @@ public class MovieController {
         return ResponseEntity.ok(movieReviewService.get(id));
     }
 
+    @GetMapping("/review/{id:[0-9]+}/adjacent")
+    public ResponseEntity<Map<String, Long>> getAdjacentReview(@PathVariable Long id, MovieReviewSearchDto searchDto) {
+        log.info("getAdjacentReview: {}, {}", id, searchDto);
+        return ResponseEntity.ok(movieReviewService.getAdjacentIds(id, searchDto));
+    }
+
     @PutMapping("/review/{id:[0-9]+}")
     public ResponseEntity<Map<String, String>> modifyReview(@PathVariable Long id, @RequestBody MovieReviewDto movieReviewDto) {
         log.info("modifyReview: {}, {}", id, movieReviewDto);

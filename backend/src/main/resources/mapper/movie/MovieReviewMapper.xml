@@ -4,21 +4,31 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="kr.co.kalpa.pcms.domain.movie.service.MovieReviewMapper">
 
+    <sql id="searchConditions">
+        <if test="keyword != null and keyword != ''">
+            AND (title LIKE CONCAT('%', #{keyword}, '%')
+                OR content LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="startYmd != null and startYmd != ''">
+            AND ymd &gt;= #{startYmd}
+        </if>
+        <if test="endYmd != null and endYmd != ''">
+            AND ymd &lt;= #{endYmd}
+        </if>
+        <if test="minLvl != null">
+            AND lvl &gt;= #{minLvl}
+        </if>
+        <if test="nara != null and nara != ''">
+            AND nara LIKE CONCAT('%', #{nara}, '%')
+        </if>
+        <if test="year != null and year != ''">
+            AND year = #{year}
+        </if>
+    </sql>
+
     <sql id="search">
         <where>
-            <if test="keyword != null and keyword != ''">
-                AND (title LIKE CONCAT('%', #{keyword}, '%')
-                    OR content LIKE CONCAT('%', #{keyword}, '%'))
-            </if>
-            <if test="startYmd != null and startYmd != ''">
-                AND ymd &gt;= #{startYmd}
-            </if>
-            <if test="endYmd != null and endYmd != ''">
-                AND ymd &lt;= #{endYmd}
-            </if>
-            <if test="minLvl != null">
-                AND lvl &gt;= #{minLvl}
-            </if>
+            <include refid="searchConditions"/>
         </where>
     </sql>
 
@@ -76,6 +86,29 @@
         SELECT count(*)
         FROM cms.movie_review
         <include refid="search"/>
+    </select>
+
+    <!-- 같은 검색 조건 안에서, 목록 정렬(ymd DESC, id DESC) 기준 현재 행의 앞/뒤 id 조회 -->
+    <select id="selectPrevId" parameterType="map" resultType="long">
+        SELECT id
+        FROM cms.movie_review
+        <where>
+            <include refid="searchConditions"/>
+            AND (ymd &gt; #{currentYmd} OR (ymd = #{currentYmd} AND id &gt; #{currentId}))
+        </where>
+        ORDER BY ymd ASC, id ASC
+        LIMIT 1
+    </select>
+
+    <select id="selectNextId" parameterType="map" resultType="long">
+        SELECT id
+        FROM cms.movie_review
+        <where>
+            <include refid="searchConditions"/>
+            AND (ymd &lt; #{currentYmd} OR (ymd = #{currentYmd} AND id &lt; #{currentId}))
+        </where>
+        ORDER BY ymd DESC, id DESC
+        LIMIT 1
     </select>
 
 </mapper>

@@ -48,6 +48,13 @@ export interface MovieReviewSearchDto {
   startYmd?: string;
   endYmd?: string;
   minLvl?: number;
+  nara?: string;
+  year?: string;
+}
+
+export interface MovieReviewAdjacentDto {
+  prevId: number | null;
+  nextId: number | null;
 }
 
 export interface HddDto {

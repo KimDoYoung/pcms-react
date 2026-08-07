@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -89,7 +89,7 @@ export default function MovieReviewFormPage() {
     }
   }, [id, reset, showMessage])
 
-  async function onSubmit(data: FormValues) {
+  const onSubmit = useCallback(async (data: FormValues) => {
     setLoading(true)
     try {
       if (id) {
@@ -106,7 +106,18 @@ export default function MovieReviewFormPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id, navigate, showMessage])
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        if (!loading && isDirty) handleSubmit(onSubmit)()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [loading, isDirty, handleSubmit, onSubmit])
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">

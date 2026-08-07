@@ -5,6 +5,7 @@ import kr.co.kalpa.pcms.domain.movie.entity.MovieReview;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface MovieReviewMapper {
@@ -15,4 +16,6 @@ public interface MovieReviewMapper {
     void delete(Long id);
     List<MovieReview> selectList(MovieReviewSearchDto searchDto);
     int selectCount(MovieReviewSearchDto searchDto);
+    Long selectPrevId(Map<String, Object> params);
+    Long selectNextId(Map<String, Object> params);
 }

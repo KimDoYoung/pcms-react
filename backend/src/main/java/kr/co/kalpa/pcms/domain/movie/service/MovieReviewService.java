@@ -4,10 +4,13 @@ import kr.co.kalpa.pcms.common.dto.PageResponseDto;
 import kr.co.kalpa.pcms.domain.movie.dto.MovieReviewDto;
 import kr.co.kalpa.pcms.domain.movie.dto.MovieReviewSearchDto;
 
+import java.util.Map;
+
 public interface MovieReviewService {
     Long register(MovieReviewDto movieReviewDto);
     MovieReviewDto get(Long id);
     void modify(MovieReviewDto movieReviewDto);
     void remove(Long id);
     PageResponseDto<MovieReviewDto> getList(MovieReviewSearchDto searchDto);
+    Map<String, Long> getAdjacentIds(Long id, MovieReviewSearchDto searchDto);
 }

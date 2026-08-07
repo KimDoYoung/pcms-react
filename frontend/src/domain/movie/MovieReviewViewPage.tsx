@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTabParams } from '@/shared/layout/useTabParams'
 import { useMessage } from '@/shared/hooks/useMessage'
 import { apiClient } from '@/lib/apiClient'
@@ -7,18 +7,23 @@ import { formatDate } from '@/lib/utils'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import StarRating from '@/shared/components/StarRating'
-import type { MovieReviewDto } from '@/domain/movie/types/movie'
-import { Pencil, Trash2, List } from 'lucide-react'
+import type { MovieReviewAdjacentDto, MovieReviewDto } from '@/domain/movie/types/movie'
+import { Pencil, Trash2, List, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function MovieReviewViewPage() {
   const navigate = useNavigate()
   const { id } = useTabParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
   const { showMessage } = useMessage()
   const [data, setData] = useState<MovieReviewDto | null>(null)
   const [loading, setLoading] = useState(true)
+  const [adjacent, setAdjacent] = useState<MovieReviewAdjacentDto | null>(null)
+
+  const searchQuery = searchParams.toString()
 
   useEffect(() => {
     if (id) {
+      setLoading(true)
       async function fetchReview() {
         try {
           const res = await apiClient.get<MovieReviewDto>(`/movie/review/${id}`)
@@ -33,6 +38,26 @@ export default function MovieReviewViewPage() {
       fetchReview()
     }
   }, [id, showMessage])
+
+  useEffect(() => {
+    if (!id) return
+    async function fetchAdjacent() {
+      try {
+        const res = await apiClient.get<MovieReviewAdjacentDto>(`/movie/review/${id}/adjacent`, {
+          params: Object.fromEntries(searchParams),
+        })
+        setAdjacent(res)
+      } catch (e) {
+        console.error('Failed to fetch adjacent review', e)
+      }
+    }
+    fetchAdjacent()
+  }, [id, searchParams])
+
+  function goTo(targetId: number | null) {
+    if (targetId == null) return
+    navigate(`/movie/review/${targetId}/view${searchQuery ? `?${searchQuery}` : ''}`)
+  }
 
   const handleDelete = async () => {
     if (!window.confirm('정말 삭제하시겠습니까?')) return
@@ -56,6 +81,24 @@ export default function MovieReviewViewPage() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">🎬 영화 감상평 상세보기</h1>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="pill"
+              disabled={adjacent?.prevId == null}
+              onClick={() => goTo(adjacent?.prevId ?? null)}
+              title="이전 감상평"
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" /> 이전
+            </Button>
+            <Button
+              variant="outline"
+              size="pill"
+              disabled={adjacent?.nextId == null}
+              onClick={() => goTo(adjacent?.nextId ?? null)}
+              title="다음 감상평"
+            >
+              다음 <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
             <Button variant="action" size="pill" onClick={() => navigate(`/movie/review/${id}/edit`)}>
               <Pencil className="w-4 h-4 mr-1" /> 수정
             </Button>

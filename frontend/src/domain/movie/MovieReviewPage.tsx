@@ -3,6 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import type { ColDef, GridReadyEvent, IDatasource, IGetRowsParams, GridApi, ICellRendererParams } from 'ag-grid-community';
 import { useNavigate } from 'react-router-dom';
+import { Globe, X } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import type { MovieReviewDto, MovieReviewSearchDto, PagedResponse } from './types/movie';
 import { Button } from '@/shared/components/ui/button';
@@ -11,6 +12,8 @@ import { formatDate } from '@/lib/utils';
 import { useMessage } from '@/shared/hooks/useMessage';
 import Toolbar from '@/shared/layout/Toolbar';
 import StarRating from '@/shared/components/StarRating';
+import StarRatingInput from '@/shared/components/StarRatingInput';
+import { CountrySelectPanel } from '@/shared/components/CountrySelectPanel';
 import { COUNTRY_EMOJI_MAP } from '@/shared/data/countries';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -25,8 +28,12 @@ const MovieReviewPage = () => {
   const navigate = useNavigate();
   const { showMessage } = useMessage();
   const gridApiRef = useRef<GridApi | null>(null);
+  const [showCountryPanel, setShowCountryPanel] = useState(false);
   const [searchParams, setSearchParams] = useState<MovieReviewSearchDto>({
     keyword: '',
+    minLvl: undefined,
+    nara: '',
+    year: '',
   });
 
   const dataSource: IDatasource = useMemo(() => ({
@@ -54,8 +61,18 @@ const MovieReviewPage = () => {
   };
 
   const handleReset = () => {
-    setSearchParams({ keyword: '' });
+    setSearchParams({ keyword: '', minLvl: undefined, nara: '', year: '' });
   };
+
+  const buildViewQuery = useCallback(() => {
+    const qs = new URLSearchParams();
+    if (searchParams.keyword) qs.set('keyword', searchParams.keyword);
+    if (searchParams.minLvl) qs.set('minLvl', String(searchParams.minLvl));
+    if (searchParams.nara) qs.set('nara', searchParams.nara);
+    if (searchParams.year) qs.set('year', searchParams.year);
+    const s = qs.toString();
+    return s ? `?${s}` : '';
+  }, [searchParams]);
 
   const handleDelete = useCallback(async (id: number) => {
     if (!window.confirm('정말 삭제하시겠습니까?')) return;
@@ -79,7 +96,7 @@ const MovieReviewPage = () => {
       cellRenderer: (params: ICellRendererParams<MovieReviewDto>) => (
         <span
           className="text-blue-600 hover:underline cursor-pointer font-medium"
-          onClick={() => navigate(`/movie/review/${params.data?.id}/view`)}
+          onClick={() => navigate(`/movie/review/${params.data?.id}/view${buildViewQuery()}`)}
         >
           {params.value}
         </span>
@@ -134,7 +151,7 @@ const MovieReviewPage = () => {
         </div>
       )
     }
-  ], [navigate, handleDelete]);
+  ], [navigate, handleDelete, buildViewQuery]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -147,12 +164,67 @@ const MovieReviewPage = () => {
           </div>
 
           {/* 검색 영역 */}
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex gap-2 items-center">
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-wrap gap-2 items-center">
             <Input
               placeholder="제목, 내용 등 검색어 입력"
               value={searchParams.keyword}
               onChange={(e) => setSearchParams({ ...searchParams, keyword: e.target.value })}
               className="max-w-xs"
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-400">평점(이상)</span>
+              <StarRatingInput
+                value={searchParams.minLvl ?? 0}
+                onChange={(v) => setSearchParams({ ...searchParams, minLvl: v })}
+                size="sm"
+              />
+              {!!searchParams.minLvl && (
+                <button
+                  type="button"
+                  onClick={() => setSearchParams({ ...searchParams, minLvl: undefined })}
+                  className="text-gray-300 hover:text-gray-500"
+                  title="평점 조건 해제"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="relative flex gap-1">
+              <Input
+                placeholder="국가"
+                value={searchParams.nara}
+                onChange={(e) => setSearchParams({ ...searchParams, nara: e.target.value })}
+                className="w-24"
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setShowCountryPanel(!showCountryPanel)}
+                title="국가 선택"
+              >
+                <Globe className="w-4 h-4" />
+              </Button>
+              {showCountryPanel && (
+                <div className="absolute left-0 top-11 z-50">
+                  <CountrySelectPanel
+                    onSelect={(names) => {
+                      setSearchParams({ ...searchParams, nara: names.join(', ') });
+                      setShowCountryPanel(false);
+                    }}
+                    onClose={() => setShowCountryPanel(false)}
+                  />
+                </div>
+              )}
+            </div>
+            <Input
+              placeholder="제작년도(YYYY)"
+              value={searchParams.year}
+              onChange={(e) => setSearchParams({ ...searchParams, year: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+              maxLength={4}
+              className="w-32"
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
             <Button variant="action" size="pill" onClick={handleSearch}>찾기</Button>
