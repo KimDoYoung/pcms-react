@@ -356,3 +356,26 @@ COMMENT ON COLUMN cms.daily_logs.updated_at IS '로그 수정일시';
 -- 4. 인덱스 생성
 -- 달력 기능 특성상 특정 월(202606%)이나 기간 조회가 빈번하므로 ymd 필드에 인덱스는 필수입니다.
 CREATE INDEX idx_daily_logs_ymd ON cms.daily_logs (ymd);
+
+
+-- drop table cms.assets;
+CREATE TABLE cms.assets (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    atype      VARCHAR(20) NOT NULL,                    -- 자산 타입
+    name       TEXT NOT NULL,                           -- 자산 이름 / 이름표
+    value      TEXT NOT NULL,                           -- 실제 데이터 본문 (마크다운, 기호, 텍스트 등)
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_atype CHECK (atype IN ('EMOJI',  'SYMBOL'))
+);
+
+COMMENT ON TABLE cms.assets IS '에디터에서 삽입할 이모지/특수문자 자산';
+COMMENT ON COLUMN cms.assets.id IS '자산 고유 ID';
+COMMENT ON COLUMN cms.assets.atype IS '자산 타입 (EMOJI, SYMBOL)';
+COMMENT ON COLUMN cms.assets.name IS '자산 이름 / 이름표';
+COMMENT ON COLUMN cms.assets.value IS '실제 데이터 본문 (이모지, 기호 등)';
+COMMENT ON COLUMN cms.assets.created_at IS '생성일시';
+COMMENT ON COLUMN cms.assets.updated_at IS '수정일시';
+
+-- atype 필터 조회가 빈번하므로 인덱스 생성
+CREATE INDEX idx_assets_atype ON cms.assets (atype);

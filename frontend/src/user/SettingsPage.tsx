@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useMessage } from '@/shared/hooks/useMessage'
 import { useQuery } from '@tanstack/react-query'
 import { History as HistoryIcon, BadgeInfo, CalendarDays, ChevronDown, ChevronUp } from 'lucide-react'
+import AssetManagePanel from '@/domain/asset/AssetManagePanel'
 
 interface HistoryEntry {
   version: string
@@ -124,6 +125,11 @@ function SettingsPage() {
                   </div>
                 )}
               </div>
+            </section>
+
+            {/* 자산 관리 섹션 */}
+            <section>
+              <AssetManagePanel />
             </section>
           </div>
         </div>

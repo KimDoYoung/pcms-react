@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.domain.asset.service.AssetMapper">
+
+    <insert id="insertAsset" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO cms.assets (atype, name, value)
+        VALUES (#{atype}, #{name}, #{value})
+    </insert>
+
+    <update id="updateAsset">
+        UPDATE cms.assets
+        SET atype      = #{atype},
+            name       = #{name},
+            value      = #{value},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteAsset">
+        DELETE FROM cms.assets WHERE id = #{id}
+    </delete>
+
+    <select id="selectAssetList" resultType="kr.co.kalpa.pcms.domain.asset.entity.Asset">
+        SELECT id, atype, name, value, created_at as createdAt, updated_at as updatedAt
+        FROM cms.assets
+        <where>
+            <if test="atype != null and atype != ''">
+                AND atype = #{atype}
+            </if>
+        </where>
+        ORDER BY id
+    </select>
+
+</mapper>

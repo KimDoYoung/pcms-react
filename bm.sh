@@ -133,6 +133,26 @@ check_java() {
     fi
 }
 
+BACKEND_PORT=8585
+
+# 지정 포트를 점유 중인 프로세스가 있으면 종료
+kill_existing_backend() {
+    local pids
+    pids=$(lsof -ti tcp:"$BACKEND_PORT" -sTCP:LISTEN 2>/dev/null || true)
+    if [[ -n "$pids" ]]; then
+        warn "포트 ${BACKEND_PORT}이(가) 이미 사용 중입니다. 기존 프로세스를 종료합니다. (PID: ${pids})"
+        kill $pids 2>/dev/null || true
+        for _ in $(seq 1 20); do
+            lsof -ti tcp:"$BACKEND_PORT" -sTCP:LISTEN &>/dev/null || break
+            sleep 0.5
+        done
+        if lsof -ti tcp:"$BACKEND_PORT" -sTCP:LISTEN &>/dev/null; then
+            warn "정상 종료되지 않아 강제 종료합니다."
+            kill -9 $pids 2>/dev/null || true
+        fi
+    fi
+}
+
 # ── 명령어 함수 ──────────────────────────────────────────────────────────
 do_run() {
     header "Run - 개발 서버 실행 (mode: ${PCMS_MODE})"
@@ -142,6 +162,7 @@ do_run() {
         exit 1
     fi
 
+    kill_existing_backend
     chmod +x "$GRADLEW"
     info "서버 시작 중... (Ctrl+C 로 종료)"
     info "Health check: curl http://localhost:8585/pcms/health"
