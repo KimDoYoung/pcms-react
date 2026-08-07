@@ -92,6 +92,17 @@ export default function JangbiEditPage() {
     }
   }
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault()
+        handleSubmit()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [form, jangbi, deletedIds, newFiles])
+
   async function handleDelete() {
     if (!jangbi) return
     if (!confirm(`"${jangbi.item}"을(를) 삭제하시겠습니까?`)) return
