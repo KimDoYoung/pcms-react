@@ -150,6 +150,27 @@ export default function MovieReviewViewPage() {
             </div>
           )}
         </div>
+        {/* 하단 이전/다음 버튼 */}
+        <div className="flex justify-between items-center mt-4">
+          <Button
+            variant="outline"
+            size="pill"
+            disabled={adjacent?.prevId == null}
+            onClick={() => goTo(adjacent?.prevId ?? null)}
+            title="이전 감상평"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" /> 이전
+          </Button>
+          <Button
+            variant="outline"
+            size="pill"
+            disabled={adjacent?.nextId == null}
+            onClick={() => goTo(adjacent?.nextId ?? null)}
+            title="다음 감상평"
+          >
+            다음 <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
       </main>
     </div>
   )
