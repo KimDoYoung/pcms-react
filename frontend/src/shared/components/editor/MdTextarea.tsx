@@ -6,7 +6,8 @@
  * 사용법:
  *   const editorRef = useRef<MdTextareaHandle>(null)
  *   <MdTextarea ref={editorRef} value={content} onChange={setContent} onSave={handleSave}
- *     onOpenAssetPicker={(atype) => setAssetPopup({atype, position: center})} />
+ *     onOpenMedia={() => setMediaOpen(true)}
+ *     onOpenAssetPicker={(atype, pos) => setAssetPopup({atype, position: pos})} />
  *   editorRef.current?.applyAction('bold')
  *   editorRef.current?.insertText('![제목](url)')
  *
@@ -14,8 +15,15 @@
  *   - value: string - 현재 마크다운 내용
  *   - onChange: (value: string) => void - 내용 변경 콜백
  *   - onSave?: () => void - Ctrl+S 저장 콜백
- *   - onOpenAssetPicker?: (atype: AssetType) => void - Ctrl+1~4로 에셋 팝업 열기 콜백
- *   - textareaRef?: 외부에서 textarea DOM에 접근해야 할 때(스크롤 동기화 등) 전달하는 ref
+ *   - onOpenMedia?: () => void - Ctrl+Shift+V 비디오/오디오/유튜브 모달 열기
+ *   - onOpenAssetPicker?: (atype, position) => void - Ctrl+1~4 에셋 팝업 열기
+ *   - textareaRef?: 외부에서 textarea DOM 접근용 ref (스크롤 동기화 등)
+ *
+ * 단축키: Ctrl+B/I/Shift+S(취소선) / Ctrl+L(링크) / Ctrl+0/9/8(목록/인용) / Ctrl+,(표)
+ *         Ctrl+.(글자색) / Ctrl+/(배경색) / Ctrl+S(저장) / Ctrl+Space(&nbsp;)
+ *         Ctrl+Enter(<br/>) / Ctrl+Shift+V(미디어모달) / Ctrl+Shift+K(kbd태그)
+ *         Ctrl+1~4(에셋팝업) / Alt+Z(현재줄 중앙스크롤)
+ *         Tab(들여쓰기+2칸) / Shift+Tab(내어쓰기) / Enter/Shift+Enter(목록 자동이어쓰기)
  */
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { apiClient } from '@/lib/apiClient';
@@ -27,6 +35,7 @@ interface Props {
     value: string;
     onChange: (value: string) => void;
     onSave?: () => void;
+    onOpenMedia?: () => void;
     onOpenAssetPicker?: (atype: AssetType, position: { x: number; y: number }) => void;
     textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
@@ -45,7 +54,7 @@ interface MenuPosition {
 }
 
 const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
-    { value, onChange, onSave, onOpenAssetPicker, textareaRef: externalRef },
+    { value, onChange, onSave, onOpenMedia, onOpenAssetPicker, textareaRef: externalRef },
     ref,
 ) {
     const [form, setForm] = useState({ content: value });
@@ -198,100 +207,173 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
 
     const handleKeydown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         const textarea = e.currentTarget;
+        const text = form.content;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
 
-        // 글머리기호/번호목록/인용구 라인에서 Enter 시 다음 줄에 같은 기호를 자동으로 이어 붙인다.
-        if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey) {
-            const value = form.content;
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
+        // Tab / Shift+Tab: 들여쓰기 (aman 동일)
+        if (e.key === 'Tab') {
+            e.preventDefault();
             if (start === end) {
-                const lastNewline = value.substring(0, start).lastIndexOf('\n');
-                const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
-                const currentLineText = value.substring(lineStart, start);
-
-                const emptyMatch =
-                    currentLineText.match(/^(\s*)-\s*$/) ||
-                    currentLineText.match(/^(\s*)\d+\.\s*$/) ||
-                    currentLineText.match(/^(\s*)>\s*$/);
-                if (emptyMatch) {
-                    e.preventDefault();
-                    const indent = emptyMatch[1];
-                    const updated = value.substring(0, lineStart) + indent + value.substring(start);
-                    setForm({ content: updated });
-                    onChange(updated);
-                    setTimeout(() => {
-                        textarea.focus();
-                        textarea.setSelectionRange(lineStart + indent.length, lineStart + indent.length);
-                    }, 0);
-                    return;
+                const updated = text.substring(0, start) + '  ' + text.substring(start);
+                setForm({ content: updated });
+                onChange(updated);
+                setTimeout(() => { textarea.focus(); textarea.setSelectionRange(start + 2, start + 2); }, 0);
+            } else {
+                const lastNl = text.substring(0, start).lastIndexOf('\n');
+                const lineStart = lastNl === -1 ? 0 : lastNl + 1;
+                const textToIndent = text.substring(lineStart, end);
+                const lines = textToIndent.split('\n');
+                let newSelStart = start;
+                let newSelEnd = end;
+                let indented: string;
+                if (e.shiftKey) {
+                    let totalRemoved = 0;
+                    const updated2 = lines.map((line, idx) => {
+                        let removed = 0;
+                        let nl = line;
+                        if (line.startsWith('\t')) { nl = line.substring(1); removed = 1; }
+                        else if (line.startsWith('    ')) { nl = line.substring(4); removed = 4; }
+                        else if (line.startsWith('  ')) { nl = line.substring(2); removed = 2; }
+                        if (idx === 0) {
+                            const off = start - lineStart;
+                            if (off > 0) newSelStart = Math.max(lineStart, start - Math.min(removed, off));
+                        }
+                        totalRemoved += removed;
+                        return nl;
+                    });
+                    indented = updated2.join('\n');
+                    newSelEnd = end - totalRemoved;
+                } else {
+                    indented = lines.map((l) => '  ' + l).join('\n');
+                    newSelStart = start + 2;
+                    newSelEnd = end + lines.length * 2;
                 }
-
-                const bulletMatch = currentLineText.match(/^(\s*)-\s+(.+)$/);
-                const numberMatch = currentLineText.match(/^(\s*)(\d+)\.\s+(.+)$/);
-                const quoteMatch = currentLineText.match(/^(\s*)>\s+(.+)$/);
-                let insertion: string | null = null;
-                if (bulletMatch) insertion = `\n${bulletMatch[1]}- `;
-                else if (numberMatch) insertion = `\n${numberMatch[1]}${parseInt(numberMatch[2], 10) + 1}. `;
-                else if (quoteMatch) insertion = `\n${quoteMatch[1]}> `;
-
-                if (insertion) {
-                    e.preventDefault();
-                    const updated = value.substring(0, start) + insertion + value.substring(start);
-                    setForm({ content: updated });
-                    onChange(updated);
-                    const newPos = start + insertion.length;
-                    setTimeout(() => {
-                        textarea.focus();
-                        textarea.setSelectionRange(newPos, newPos);
-                    }, 0);
-                    return;
-                }
+                const updated2 = text.substring(0, lineStart) + indented + text.substring(end);
+                setForm({ content: updated2 });
+                onChange(updated2);
+                setTimeout(() => { textarea.focus(); textarea.setSelectionRange(newSelStart, newSelEnd); }, 0);
             }
+            return;
         }
 
         // Alt+Z: 현재 커서 줄을 화면 중앙으로 스크롤
-        if (e.altKey && e.key.toLowerCase() === 'z') {
+        if (e.altKey && !e.ctrlKey && e.key.toLowerCase() === 'z') {
             e.preventDefault();
-            const text = form.content;
-            const start = textarea.selectionStart;
             const lineCount = text.split('\n').length;
             const currentLineNumber = text.substring(0, start).split('\n').length;
-            const targetScrollTop = (currentLineNumber / lineCount) * textarea.scrollHeight - textarea.clientHeight / 2;
-            textarea.scrollTop = Math.max(0, Math.min(targetScrollTop, textarea.scrollHeight - textarea.clientHeight));
+            if (lineCount > 0) {
+                const targetScrollTop = (currentLineNumber / lineCount) * textarea.scrollHeight - textarea.clientHeight / 2;
+                textarea.scrollTop = Math.max(0, Math.min(targetScrollTop, textarea.scrollHeight - textarea.clientHeight));
+            }
+            return;
+        }
+
+        // Enter: Ctrl+Enter → <br/>, Shift+Enter → 줄 끝에 리스트 이어쓰기, 일반 Enter → 리스트 자동 이어쓰기
+        if (e.key === 'Enter') {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                updateContent(textarea, start, end, '<br/>', 5, 0);
+                return;
+            }
+
+            if (e.shiftKey) {
+                e.preventDefault();
+                const nextNl = text.indexOf('\n', start);
+                const lineEnd = nextNl === -1 ? text.length : nextNl;
+                const lastNl = text.substring(0, start).lastIndexOf('\n');
+                const lineStart2 = lastNl === -1 ? 0 : lastNl + 1;
+                const currentLine = text.substring(lineStart2, lineEnd);
+                let insertText = '\n';
+                const bm = currentLine.match(/^(\s*)-\s+(.+)$/);
+                const nm = currentLine.match(/^(\s*)(\d+)\.\s+(.+)$/);
+                const qm = currentLine.match(/^(\s*)>\s+(.+)$/);
+                if (bm) insertText = `\n${bm[1]}- `;
+                else if (nm) insertText = `\n${nm[1]}${parseInt(nm[2], 10) + 1}. `;
+                else if (qm) insertText = `\n${qm[1]}> `;
+                const updated = text.substring(0, lineEnd) + insertText + text.substring(lineEnd);
+                setForm({ content: updated });
+                onChange(updated);
+                const newPos = lineEnd + insertText.length;
+                setTimeout(() => { textarea.focus(); textarea.setSelectionRange(newPos, newPos); }, 0);
+                return;
+            }
+
+            // 일반 Enter: 리스트 빈 줄 종료 + 자동 이어쓰기
+            if (start === end) {
+                const lastNl = text.substring(0, start).lastIndexOf('\n');
+                const lineStart2 = lastNl === -1 ? 0 : lastNl + 1;
+                const currentLine = text.substring(lineStart2, start);
+                const emptyMatch =
+                    currentLine.match(/^(\s*)-\s*$/) ||
+                    currentLine.match(/^(\s*)\d+\.\s*$/) ||
+                    currentLine.match(/^(\s*)>\s*$/);
+                if (emptyMatch) {
+                    e.preventDefault();
+                    const indent = emptyMatch[1];
+                    const updated = text.substring(0, lineStart2) + indent + text.substring(start);
+                    setForm({ content: updated });
+                    onChange(updated);
+                    setTimeout(() => { textarea.focus(); textarea.setSelectionRange(lineStart2 + indent.length, lineStart2 + indent.length); }, 0);
+                    return;
+                }
+                const bm = currentLine.match(/^(\s*)-\s+(.+)$/);
+                const nm = currentLine.match(/^(\s*)(\d+)\.\s+(.+)$/);
+                const qm = currentLine.match(/^(\s*)>\s+(.+)$/);
+                let insertion: string | null = null;
+                if (bm) insertion = `\n${bm[1]}- `;
+                else if (nm) insertion = `\n${nm[1]}${parseInt(nm[2], 10) + 1}. `;
+                else if (qm) insertion = `\n${qm[1]}> `;
+                if (insertion) {
+                    e.preventDefault();
+                    const updated = text.substring(0, start) + insertion + text.substring(start);
+                    setForm({ content: updated });
+                    onChange(updated);
+                    const newPos = start + insertion.length;
+                    setTimeout(() => { textarea.focus(); textarea.setSelectionRange(newPos, newPos); }, 0);
+                    return;
+                }
+            }
             return;
         }
 
         if (e.ctrlKey) {
             const key = e.key.toLowerCase();
-            if (e.shiftKey && key === 'v') {
+
+            // Ctrl+Space: &nbsp;
+            if (e.key === ' ' || e.code === 'Space') {
                 e.preventDefault();
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const selected = form.content.substring(start, end);
-                const kbdText = `<kbd>${selected}</kbd>`;
-                updateContent(textarea, start, end, kbdText, 5, 6);
+                updateContent(textarea, start, end, '&nbsp;', 6, 0);
                 return;
             }
+            // Ctrl+Shift+V: 미디어 모달
+            if (e.shiftKey && key === 'v') {
+                e.preventDefault();
+                onOpenMedia?.();
+                return;
+            }
+            // Ctrl+Shift+K: kbd 태그 (선택 텍스트를 + 기준 분리해 각각 감싸기)
+            if (e.shiftKey && key === 'k') {
+                e.preventDefault();
+                if (start !== end) {
+                    const selected = text.substring(start, end);
+                    const keys = selected.split('+').map((k) => k.trim()).filter((k) => k.length > 0);
+                    if (keys.length > 0) {
+                        const newText = keys.map((k) => `<kbd>${k}</kbd>`).join(' + ');
+                        updateContent(textarea, start, end, newText, 0, 0);
+                    }
+                }
+                return;
+            }
+            // Ctrl+Shift+S: 취소선
             if (e.shiftKey && key === 's') {
                 e.preventDefault();
                 handleAction('strike');
                 return;
             }
-            if (key === '.') {
-                e.preventDefault();
-                handleAction('color-text');
-                return;
-            }
-            if (key === '/') {
-                e.preventDefault();
-                handleAction('color-bg');
-                return;
-            }
-            if (key === 's') {
-                e.preventDefault();
-                onSave?.();
-                return;
-            }
+            if (key === '.') { e.preventDefault(); handleAction('color-text'); return; }
+            if (key === '/') { e.preventDefault(); handleAction('color-bg'); return; }
+            if (key === 's') { e.preventDefault(); onSave?.(); return; }
             if (['b', 'i', 'l', '0', '9', '8', ','].includes(key)) {
                 e.preventDefault();
                 const actionMap: Record<string, string> = {
@@ -300,10 +382,11 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
                 handleAction(actionMap[key]);
                 return;
             }
+            // Ctrl+1~4: 에셋 팝업 (커서 위치 기반)
             const assetMap: Record<string, AssetType> = { '1': 'EMOJI', '2': 'SYMBOL', '3': 'PHRASE', '4': 'TEMPLATE' };
             if (!e.shiftKey && !e.altKey && assetMap[e.key]) {
                 e.preventDefault();
-                const [topInTextarea] = measureLineTops(textarea, [textarea.selectionStart]);
+                const [topInTextarea] = measureLineTops(textarea, [start]);
                 const rect = textarea.getBoundingClientRect();
                 const x = Math.max(8, Math.min(rect.left + 8, window.innerWidth - 400));
                 const y = Math.max(8, Math.min(rect.top + topInTextarea - textarea.scrollTop + 20, window.innerHeight - 280));

@@ -326,7 +326,7 @@ export default function MdEditorToolbar({
       />
 
       {/* 비디오/오디오/유튜브 삽입 */}
-      {btn(<Video className="w-4 h-4" />, onOpenMedia, '비디오·오디오·유튜브 삽입')}
+      {btn(<Video className="w-4 h-4" />, onOpenMedia, '비디오·오디오·유튜브 삽입 (Ctrl+Shift+V)')}
 
       <span className="w-px bg-gray-200 mx-1" />
 
@@ -412,11 +412,16 @@ export default function MdEditorToolbar({
                     ['글머리 목록', 'Ctrl+0'],
                     ['번호 목록', 'Ctrl+9'],
                     ['인용구', 'Ctrl+8'],
-                    ['표 삽입/CSV 변환', 'Ctrl+,'],
+                    ['표 삽입', 'Ctrl+,'],
                     ['링크 삽입', 'Ctrl+L'],
                     ['글자색 순환', 'Ctrl+.'],
                     ['배경색 순환', 'Ctrl+/'],
-                    ['kbd 태그 감싸기', 'Ctrl+Shift+V'],
+                    ['줄 바꿈(<br/>)', 'Ctrl+Enter'],
+                    ['비디오/오디오/유튜브 삽입', 'Ctrl+Shift+V'],
+                    ['kbd 태그 감싸기', 'Ctrl+Shift+K'],
+                    ['불여넣기(&nbsp;)', 'Ctrl+Space'],
+                    ['들여쓰기', 'Tab'],
+                    ['내어쓰기', 'Shift+Tab'],
                     ['이모지 팝업', 'Ctrl+1'],
                     ['특수문자 팝업', 'Ctrl+2'],
                     ['상용구 팝업', 'Ctrl+3'],

@@ -228,6 +228,7 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
           value={value}
           onChange={onChange}
           onSave={onSave}
+          onOpenMedia={() => setMediaOpen(true)}
           onOpenAssetPicker={(atype, position) => setAssetPopup({ atype, position })}
           textareaRef={textareaDomRef}
         />
