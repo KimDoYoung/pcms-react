@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
@@ -13,15 +13,15 @@ function LoginPage() {
   const [loginError, setLoginError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  function appendNum(n: string) {
+  const appendNum = useCallback((n: string) => {
     if (password.length >= 4) return
     setPassword((p) => p + n)
     setLoginError('')
-  }
+  }, [password])
   function backspace() { setPassword((p) => p.slice(0, -1)) }
   function clearPw() { setPassword(''); setLoginError('') }
 
-  async function handleLogin() {
+  const handleLogin = useCallback(async () => {
     if (password.length === 0) return
     setIsLoading(true)
     try {
@@ -37,7 +37,33 @@ function LoginPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [password, userId, setTokens, navigate])
+
+  // 숫자 4자리 입력 완료 시 자동 로그인
+  useEffect(() => {
+    if (password.length === 4) handleLogin()
+  }, [password, handleLogin])
+
+  // 키보드 숫자 입력 지원 (아이디 입력창 포커스 중에는 무시)
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text') return
+      if (isLoading) return
+      if (e.key >= '0' && e.key <= '9') {
+        e.preventDefault()
+        appendNum(e.key)
+      } else if (e.key === 'Backspace') {
+        e.preventDefault()
+        backspace()
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        clearPw()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isLoading, password, appendNum])
 
   const isReady = password.length > 0 && !isLoading
 

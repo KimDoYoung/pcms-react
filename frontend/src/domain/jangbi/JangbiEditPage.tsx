@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTabParams } from '@/shared/layout/useTabParams'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -59,7 +59,7 @@ export default function JangbiEditPage() {
     setDeletedIds((prev) => [...prev, fileId])
   }
 
-  async function handleSubmit() {
+  const handleSubmit = useCallback(async () => {
     if (!form.item.trim()) { showMessage('품목을 입력하세요.', 'error'); return }
     if (!jangbi) return
 
@@ -90,7 +90,7 @@ export default function JangbiEditPage() {
     } finally {
       setSaving(false)
     }
-  }
+  }, [form, jangbi, deletedIds, newFiles, id, navigate, queryClient, showMessage])
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -101,7 +101,7 @@ export default function JangbiEditPage() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [form, jangbi, deletedIds, newFiles])
+  }, [handleSubmit])
 
   async function handleDelete() {
     if (!jangbi) return
