@@ -3,8 +3,16 @@ import { useAuthStore } from '@/shared/store/authStore'
 
 // 개발: http://localhost:8585/pcms (로컬 백엔드 직접)
 // 배포: /pcms (Tomcat same-origin, context-path /pcms)
+const API_BASE_URL: string =
+  import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? '/pcms' : 'http://localhost:8585/pcms')
+
+/** axios baseURL과 동일한 API 베이스 URL. 다운로드 링크 등 axios를 거치지 않는 직접 URL 조립에 사용. */
+export function getApiBaseUrl(): string {
+  return API_BASE_URL
+}
+
 const instance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? '/pcms' : 'http://localhost:8585/pcms'),
+  baseURL: API_BASE_URL,
   headers: { Accept: 'application/json' },
 })
 

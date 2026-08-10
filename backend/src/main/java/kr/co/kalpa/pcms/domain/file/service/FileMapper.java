@@ -18,6 +18,7 @@ public interface FileMapper {
     );
     List<CmsFile> selectFilesByIds(@Param("fileIds") List<Long> fileIds);
     CmsFile selectFileById(@Param("fileId") Long fileId);
+    List<CmsFile> selectFilesByMimePrefix(@Param("mimePrefix") String mimePrefix);
     void deleteFileMatchByTarget(
             @Param("tableName") String tableName,
             @Param("targetId") Long targetId,

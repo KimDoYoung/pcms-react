@@ -9,6 +9,7 @@
 import { useState } from 'react'
 import { Download, Eye, File, FileArchive, FileAudio, FileCode, FileSpreadsheet, FileText, FileVideo, Paperclip } from 'lucide-react'
 import { formatFileSize } from '@/lib/utils'
+import { getApiBaseUrl } from '@/lib/apiClient'
 import { Dialog, DialogContent } from '@/shared/components/ui/dialog'
 
 export interface AttachmentItem {
@@ -25,12 +26,8 @@ interface Props {
 const IMAGE_EXTS = /\.(jpg|jpeg|png|gif|webp|svg)$/i
 const AVIEW_BASE = 'http://jskn.iptime.org/aview/view'
 
-function getApiBase(): string {
-  return import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? '/pcms' : 'http://localhost:8585/pcms')
-}
-
 function getDownloadUrl(fileId: number, orgFileName: string): string {
-  return `${getApiBase()}/files/${fileId}/download/${encodeURIComponent(orgFileName)}`
+  return `${getApiBaseUrl()}/files/${fileId}/download/${encodeURIComponent(orgFileName)}`
 }
 
 function getAviewUrl(fileId: number, orgFileName: string): string {

@@ -362,3 +362,82 @@
   vertical-align: middle;
 }
 
+/* 마크다운 비디오/오디오/유튜브 카드 (에디터 미리보기 + 뷰어 공용) */
+.markdown-body .media-card {
+  margin: 1rem 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  overflow: hidden;
+}
+.markdown-body .media-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+}
+.markdown-body .media-card-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.markdown-body .media-toggle-btn {
+  flex-shrink: 0;
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #374151;
+  background: #e5e7eb;
+  border: none;
+  cursor: pointer;
+}
+.markdown-body .media-toggle-btn:hover {
+  background: #d1d5db;
+}
+.markdown-body .media-card.is-open .media-toggle-btn {
+  background: #4f46e5;
+  color: #fff;
+}
+.markdown-body .media-card-body {
+  padding: 0 0.875rem 0.875rem;
+}
+.markdown-body .media-card-body[hidden] {
+  display: none;
+}
+.markdown-body .media-card-body video,
+.markdown-body .media-card-body audio {
+  width: 100%;
+  border-radius: 0.5rem;
+  display: block;
+}
+.markdown-body .media-card-body iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: none;
+  border-radius: 0.5rem;
+  display: block;
+}
+
+/* 마크다운 백틱 아이콘뱃지 (`색상:아이콘명:텍스트`) */
+.markdown-body .kbd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  line-height: 1.6;
+}
+.markdown-body .kbd-badge svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex-shrink: 0;
+}
+

@@ -10,14 +10,14 @@
  *   - headingLevels : 노출할 헤딩 레벨 목록 (기본 [1,2,3])
  *
  * 단축키: Ctrl+1(이모지) / Ctrl+2(특수문자) / Ctrl+.(글자색 순환) / Ctrl+/(배경색 순환)
- *         Ctrl+L(링크) / Ctrl+=,Ctrl+-(글자크기) / Ctrl+Shift+H(한자 변환)
+ *         Ctrl+L(링크) / Ctrl+=,Ctrl+-(글자크기) / Ctrl+0(글자크기 초기화) / Ctrl+Shift+H(한자 변환)
  */
 import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react'
 import { useEditor } from '@tiptap/react'
 import {
   Bold, Italic, Strikethrough, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Baseline, Highlighter, Link2,
-  Image as ImageIcon, Table2, Columns2, Columns, Rows2, Rows, Trash2,
+  Image as ImageIcon, Table2, Columns2, Columns, Rows2, Rows, Trash2, RotateCcw,
 } from 'lucide-react'
 import HanjaSearchModal from '@/shared/components/editor/HanjaSearchModal'
 import AssetPickerPopup from '@/shared/components/editor/AssetPickerPopup'
@@ -128,6 +128,11 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
     else editor.chain().focus().setFontSize(`${next}px`).run()
   }, [editor])
 
+  const resetFontSize = useCallback(() => {
+    if (!editor) return
+    editor.chain().focus().unsetFontSize().run()
+  }, [editor])
+
   useEffect(() => {
     if (!editor) return
 
@@ -145,10 +150,11 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
       else if (e.key.toLowerCase() === 'l') { e.preventDefault(); openLinkPopover() }
       else if (e.key === '=' || e.key === '+') { e.preventDefault(); changeFontSize(FONT_SIZE_STEP) }
       else if (e.key === '-') { e.preventDefault(); changeFontSize(-FONT_SIZE_STEP) }
+      else if (e.key === '0') { e.preventDefault(); resetFontSize() }
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [editor, handleHanjaClick, openAssetPickerAtCaret, cycleTextColor, cycleBgColor, openLinkPopover, changeFontSize])
+  }, [editor, handleHanjaClick, openAssetPickerAtCaret, cycleTextColor, cycleBgColor, openLinkPopover, changeFontSize, resetFontSize])
 
   if (!editor) return null
 
@@ -401,6 +407,14 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
         title="글자 확대 (Ctrl+=)"
       >
         가+
+      </button>
+      <button
+        type="button"
+        onClick={resetFontSize}
+        className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+        title="글자크기 초기화 (Ctrl+0)"
+      >
+        <RotateCcw className="w-3.5 h-3.5" />
       </button>
 
       <span className="w-px bg-gray-200 mx-1" />

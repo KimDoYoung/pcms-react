@@ -26,7 +26,9 @@ export default function Practice03Hanja() {
           <pre className="text-xs text-gray-600 whitespace-pre-wrap break-all">{content}</pre>
         </div>
         <h1 className="text-2xl font-bold mb-2">마크다운 실습</h1>
-        <MdTextarea value={content1} onChange={setContent1} />
+        <div className="flex flex-col h-96">
+          <MdTextarea value={content1} onChange={setContent1} />
+        </div>
       </main>
     </div>
   )

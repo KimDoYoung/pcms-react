@@ -24,6 +24,16 @@ public interface FileUploadService {
     Long saveAttachment(MultipartFile file);
 
     /**
+     * 비디오/오디오 미디어 파일을 저장한다. 허용 mime type이 아니면 예외를 던진다.
+     */
+    kr.co.kalpa.pcms.domain.file.entity.CmsFile uploadMedia(MultipartFile file);
+
+    /**
+     * mime type 접두사(video/, audio/)로 미디어 파일 목록을 조회한다.
+     */
+    List<kr.co.kalpa.pcms.domain.file.entity.CmsFile> getMediaFiles(String mimePrefix);
+
+    /**
      * file_match 테이블에 파일 연결 정보를 기록한다.
      */
     void linkFiles(String tableName, Long targetId, List<Long> fileIds, String fileType);

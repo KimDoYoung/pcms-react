@@ -8,7 +8,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import ButtonsOfEdit from '@/shared/components/ButtonsOfEdit'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
-import MdTextarea from '@/shared/components/editor/MdTextarea'
+import MdSplitEditor from '@/shared/components/editor/MdSplitEditor'
 import AttachmentUploader from '@/shared/components/AttachmentUploader'
 import { useAuthStore } from '@/shared/store/authStore'
 import { formatDate, formatYmd } from '@/lib/utils'
@@ -157,7 +157,7 @@ export default function PostRegisterPage() {
                 placeholder="내용을 입력하세요..."
               />
             ) : isMarkdown ? (
-              <MdTextarea
+              <MdSplitEditor
                 value={form.content}
                 onChange={(v) => set('content', v)}
                 onSave={() => handleSubmit(true)}

@@ -9,7 +9,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import ButtonsOfEdit from '@/shared/components/ButtonsOfEdit'
 import ContentEditor from '@/shared/components/editor/ContentEditor'
-import MdTextarea from '@/shared/components/editor/MdTextarea'
+import MdSplitEditor from '@/shared/components/editor/MdSplitEditor'
 import AttachmentUploader from '@/shared/components/AttachmentUploader'
 import { formatYmd } from '@/lib/utils'
 import type { AttachmentDto, BoardDto, PostDto } from '@/domain/board/types/board'
@@ -197,7 +197,7 @@ export default function PostEditPage() {
                 />
               )
             ) : isMarkdown ? (
-              <MdTextarea
+              <MdSplitEditor
                 value={form.content}
                 onChange={(v) => set('content', v)}
                 onSave={() => handleSubmit(true)}

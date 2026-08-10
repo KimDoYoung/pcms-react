@@ -139,6 +139,50 @@ public class FileUploadServiceImpl implements FileUploadService {
         }
     }
 
+    private static final List<String> ALLOWED_MEDIA_EXTENSIONS =
+            List.of("mp4", "webm", "ogg", "mp3", "wav", "m4a");
+
+    @Override
+    public CmsFile uploadMedia(MultipartFile file) {
+        String orgName = StringUtils.hasText(file.getOriginalFilename())
+                ? file.getOriginalFilename() : "media";
+        String ext = StringUtils.getFilenameExtension(orgName);
+        boolean allowedByExt = ext != null && ALLOWED_MEDIA_EXTENSIONS.contains(ext.toLowerCase());
+        String mimeType = file.getContentType();
+        boolean allowedByMime = mimeType != null
+                && (mimeType.startsWith("video/") || mimeType.startsWith("audio/"));
+        if (!allowedByExt && !allowedByMime) {
+            throw new IllegalArgumentException("지원하지 않는 미디어 형식입니다: " + orgName);
+        }
+
+        String physicalFileName = UUID.randomUUID().toString().replace("-", "") + (ext != null ? "." + ext : "");
+        String folderPath = dailyFolderPath();
+
+        try {
+            Path dir = Paths.get(fileProperties.getUpload().getAttachFilesDir(), folderPath);
+            Files.createDirectories(dir);
+            file.transferTo(dir.resolve(physicalFileName));
+
+            CmsFile cmsFile = CmsFile.builder()
+                    .savedFolder(folderPath)
+                    .orgFileName(orgName)
+                    .physicalFileName(physicalFileName)
+                    .fileSize(file.getSize())
+                    .mimeType(mimeType)
+                    .build();
+            fileMapper.insertFile(cmsFile);
+            log.debug("media saved: {}/{}", folderPath, physicalFileName);
+            return cmsFile;
+        } catch (IOException e) {
+            throw new UncheckedIOException("미디어 파일 저장 실패: " + orgName, e);
+        }
+    }
+
+    @Override
+    public List<CmsFile> getMediaFiles(String mimePrefix) {
+        return fileMapper.selectFilesByMimePrefix(mimePrefix);
+    }
+
     @Override
     public void linkFiles(String tableName, Long targetId, List<Long> fileIds, String fileType) {
         for (Long fileId : fileIds) {

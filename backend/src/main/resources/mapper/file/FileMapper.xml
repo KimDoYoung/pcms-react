@@ -50,6 +50,15 @@
         </foreach>
     </select>
 
+    <select id="selectFilesByMimePrefix" resultType="kr.co.kalpa.pcms.domain.file.entity.CmsFile">
+        SELECT file_id as fileId, saved_folder as savedFolder,
+               org_file_name as orgFileName, physical_file_name as physicalFileName,
+               file_size as fileSize, mime_type as mimeType, created_at as createdAt
+        FROM cms.files
+        WHERE mime_type LIKE #{mimePrefix} || '%'
+        ORDER BY created_at DESC
+    </select>
+
     <delete id="deleteFileMatchByTarget">
         DELETE FROM cms.file_match
         WHERE table_name = #{tableName}
