@@ -40,5 +40,6 @@ export const apiClient = instance as unknown as {
   get<T = unknown>(url: string, config?: object): Promise<T>
   post<T = unknown>(url: string, data?: unknown, config?: object): Promise<T>
   put<T = unknown>(url: string, data?: unknown, config?: object): Promise<T>
+  patch<T = unknown>(url: string, data?: unknown, config?: object): Promise<T>
   delete<T = unknown>(url: string, config?: object): Promise<T>
 }

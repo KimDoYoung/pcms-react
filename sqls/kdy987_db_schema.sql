@@ -366,12 +366,12 @@ CREATE TABLE cms.assets (
     value      TEXT NOT NULL,                           -- 실제 데이터 본문 (마크다운, 기호, 텍스트 등)
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_atype CHECK (atype IN ('EMOJI',  'SYMBOL'))
+    CONSTRAINT chk_atype CHECK (atype IN ('EMOJI', 'SYMBOL', 'PHRASE', 'TEMPLATE'))
 );
 
-COMMENT ON TABLE cms.assets IS '에디터에서 삽입할 이모지/특수문자 자산';
+COMMENT ON TABLE cms.assets IS '에디터에서 삽입할 이모지/특수문자/상용구/템플릿 자산';
 COMMENT ON COLUMN cms.assets.id IS '자산 고유 ID';
-COMMENT ON COLUMN cms.assets.atype IS '자산 타입 (EMOJI, SYMBOL)';
+COMMENT ON COLUMN cms.assets.atype IS '자산 타입 (EMOJI, SYMBOL, PHRASE, TEMPLATE)';
 COMMENT ON COLUMN cms.assets.name IS '자산 이름 / 이름표';
 COMMENT ON COLUMN cms.assets.value IS '실제 데이터 본문 (이모지, 기호 등)';
 COMMENT ON COLUMN cms.assets.created_at IS '생성일시';

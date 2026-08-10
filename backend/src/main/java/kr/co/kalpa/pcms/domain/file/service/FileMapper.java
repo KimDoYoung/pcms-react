@@ -26,4 +26,5 @@ public interface FileMapper {
     );
     void deleteFileMatchByFileIds(@Param("fileIds") List<Long> fileIds);
     void deleteFilesByIds(@Param("fileIds") List<Long> fileIds);
+    void updateOrgFileName(@Param("fileId") Long fileId, @Param("orgFileName") String orgFileName);
 }

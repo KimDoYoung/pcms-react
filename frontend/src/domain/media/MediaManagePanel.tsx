@@ -1,6 +1,6 @@
 /**
  * 목적: 마크다운 에디터에서 삽입할 수 있는 비디오/오디오 파일을 업로드/삭제/조회하고
- *       마크다운 삽입 태그(`![이름](url)`)를 복사하는 관리 패널.
+ *       마크다운 삽입 태그(`![이름](url)`)를 복사하거나 파일 이름을 변경하는 관리 패널.
  *
  * 사용법:
  *   <MediaManagePanel />
@@ -10,18 +10,33 @@
  */
 import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Upload, Trash2, Copy, Video, Music } from 'lucide-react'
+import { Upload, Trash2, Copy, Video, Music, Pencil } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { formatFileSize } from '@/lib/utils'
 import { type MediaFile, mediaDownloadUrl, mediaLabel } from '@/lib/mediaFile'
 import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
 import { useMessage } from '@/shared/hooks/useMessage'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 type Tab = 'video' | 'audio'
+
+function getExt(filename: string): string {
+  const idx = filename.lastIndexOf('.')
+  return idx > 0 ? filename.slice(idx) : ''
+}
 
 export default function MediaManagePanel() {
   const [tab, setTab] = useState<Tab>('video')
   const [uploading, setUploading] = useState(false)
+  const [renameItem, setRenameItem] = useState<MediaFile | null>(null)
+  const [newName, setNewName] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
   const { showMessage } = useMessage()
@@ -54,6 +69,31 @@ export default function MediaManagePanel() {
       showMessage('삭제되었습니다.', 'success')
     } catch {
       showMessage('삭제 중 오류가 발생했습니다.', 'error')
+    }
+  }
+
+  function openRename(item: MediaFile) {
+    setRenameItem(item)
+    const ext = getExt(item.orgFileName)
+    setNewName(item.orgFileName.slice(0, item.orgFileName.length - ext.length))
+  }
+
+  async function handleRename() {
+    if (!renameItem || !newName.trim()) return
+    const trimmed = newName.trim()
+    if (trimmed.includes('..') || trimmed.includes('/') || trimmed.includes('\\')) {
+      showMessage('파일명에 사용할 수 없는 문자가 포함되어 있습니다.', 'error')
+      return
+    }
+    const ext = getExt(renameItem.orgFileName)
+    const finalName = trimmed + ext
+    try {
+      await apiClient.patch(`/files/${renameItem.fileId}/rename`, { newName: finalName })
+      queryClient.invalidateQueries({ queryKey: ['media-files', tab] })
+      showMessage('이름이 변경되었습니다.', 'success')
+      setRenameItem(null)
+    } catch {
+      showMessage('이름 변경 중 오류가 발생했습니다.', 'error')
     }
   }
 
@@ -149,6 +189,14 @@ export default function MediaManagePanel() {
                       </button>
                       <button
                         type="button"
+                        onClick={() => openRename(item)}
+                        className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded transition-colors"
+                        title="이름 바꾸기"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleDelete(item)}
                         className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                         title="삭제"
@@ -163,6 +211,35 @@ export default function MediaManagePanel() {
           </table>
         </div>
       )}
+
+      <Dialog open={!!renameItem} onOpenChange={(open) => { if (!open) setRenameItem(null) }}>
+        <DialogContent className="max-w-sm" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle>이름 바꾸기</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <label className="text-xs text-gray-500 mb-1 block">새 파일명</label>
+            <div className="flex items-center gap-1">
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleRename() }}
+                placeholder="확장자 제외한 이름"
+                className="flex-1"
+              />
+              {renameItem && (
+                <span className="text-sm text-gray-500 font-mono shrink-0">
+                  {getExt(renameItem.orgFileName)}
+                </span>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameItem(null)}>취소</Button>
+            <Button onClick={handleRename}>확인</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

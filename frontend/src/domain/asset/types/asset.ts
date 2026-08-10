@@ -1,4 +1,4 @@
-export type AssetType = 'EMOJI' | 'SYMBOL'
+export type AssetType = 'EMOJI' | 'SYMBOL' | 'PHRASE' | 'TEMPLATE'
 
 export interface AssetDto {
   id: number

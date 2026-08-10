@@ -15,7 +15,7 @@ public class AssetDto {
     private Long id;
 
     @NotBlank(message = "타입을 입력해 주세요.")
-    @Pattern(regexp = "EMOJI|SYMBOL", message = "타입은 EMOJI 또는 SYMBOL만 가능합니다.")
+    @Pattern(regexp = "EMOJI|SYMBOL|PHRASE|TEMPLATE", message = "타입은 EMOJI, SYMBOL, PHRASE, TEMPLATE만 가능합니다.")
     private String atype;
 
     @NotBlank(message = "이름을 입력해 주세요.")

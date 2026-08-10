@@ -82,4 +82,8 @@
         </foreach>
     </delete>
 
+    <update id="updateOrgFileName">
+        UPDATE cms.files SET org_file_name = #{orgFileName} WHERE file_id = #{fileId}
+    </update>
+
 </mapper>

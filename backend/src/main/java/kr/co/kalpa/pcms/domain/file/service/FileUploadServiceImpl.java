@@ -231,6 +231,31 @@ public class FileUploadServiceImpl implements FileUploadService {
         }
     }
 
+    @Override
+    public String uploadEditorImageFromFile(java.io.File file, String mimeType) {
+        String ext = mimeToExt(mimeType != null ? mimeType : "");
+        String physicalFileName = UUID.randomUUID().toString().replace("-", "") + "." + ext;
+        String folderPath = dailyFolderPath();
+
+        try {
+            Path dir = Paths.get(fileProperties.getUpload().getEditorImagesDir(), folderPath);
+            Files.createDirectories(dir);
+            Files.copy(file.toPath(), dir.resolve(physicalFileName));
+
+            CmsFile cmsFile = CmsFile.builder()
+                    .savedFolder(folderPath)
+                    .orgFileName(file.getName())
+                    .physicalFileName(physicalFileName)
+                    .fileSize(file.length())
+                    .mimeType(mimeType)
+                    .build();
+            fileMapper.insertFile(cmsFile);
+            return buildImageUrl(folderPath, physicalFileName);
+        } catch (IOException e) {
+            throw new UncheckedIOException("에디터 이미지(파일) 업로드 실패: " + file.getName(), e);
+        }
+    }
+
     private String dailyFolderPath() {
         LocalDate now = LocalDate.now();
         return String.format("%04d/%02d/%02d", now.getYear(), now.getMonthValue(), now.getDayOfMonth());

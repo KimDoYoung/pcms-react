@@ -5,7 +5,8 @@
  *
  * 사용법:
  *   const editorRef = useRef<MdTextareaHandle>(null)
- *   <MdTextarea ref={editorRef} value={content} onChange={setContent} onSave={handleSave} onOpenMedia={() => setMediaOpen(true)} />
+ *   <MdTextarea ref={editorRef} value={content} onChange={setContent} onSave={handleSave}
+ *     onOpenAssetPicker={(atype) => setAssetPopup({atype, position: center})} />
  *   editorRef.current?.applyAction('bold')
  *   editorRef.current?.insertText('![제목](url)')
  *
@@ -13,18 +14,20 @@
  *   - value: string - 현재 마크다운 내용
  *   - onChange: (value: string) => void - 내용 변경 콜백
  *   - onSave?: () => void - Ctrl+S 저장 콜백
- *   - onOpenMedia?: () => void - Ctrl+Shift+V(비디오/오디오/유튜브 삽입 모달 열기) 콜백
+ *   - onOpenAssetPicker?: (atype: AssetType) => void - Ctrl+1~4로 에셋 팝업 열기 콜백
  *   - textareaRef?: 외부에서 textarea DOM에 접근해야 할 때(스크롤 동기화 등) 전달하는 ref
  */
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { apiClient } from '@/lib/apiClient';
 import { ROTATE_TEXT_COLORS, ROTATE_BG_COLORS, getNextColor } from '@/shared/components/editor/editorColors';
+import type { AssetType } from '@/domain/asset/types/asset';
+import { measureLineTops } from '@/lib/textareaLinePositions';
 
 interface Props {
     value: string;
     onChange: (value: string) => void;
     onSave?: () => void;
-    onOpenMedia?: () => void;
+    onOpenAssetPicker?: (atype: AssetType, position: { x: number; y: number }) => void;
     textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
@@ -42,7 +45,7 @@ interface MenuPosition {
 }
 
 const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
-    { value, onChange, onSave, onOpenMedia, textareaRef: externalRef },
+    { value, onChange, onSave, onOpenAssetPicker, textareaRef: externalRef },
     ref,
 ) {
     const [form, setForm] = useState({ content: value });
@@ -246,11 +249,27 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
             }
         }
 
+        // Alt+Z: 현재 커서 줄을 화면 중앙으로 스크롤
+        if (e.altKey && e.key.toLowerCase() === 'z') {
+            e.preventDefault();
+            const text = form.content;
+            const start = textarea.selectionStart;
+            const lineCount = text.split('\n').length;
+            const currentLineNumber = text.substring(0, start).split('\n').length;
+            const targetScrollTop = (currentLineNumber / lineCount) * textarea.scrollHeight - textarea.clientHeight / 2;
+            textarea.scrollTop = Math.max(0, Math.min(targetScrollTop, textarea.scrollHeight - textarea.clientHeight));
+            return;
+        }
+
         if (e.ctrlKey) {
             const key = e.key.toLowerCase();
             if (e.shiftKey && key === 'v') {
                 e.preventDefault();
-                onOpenMedia?.();
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const selected = form.content.substring(start, end);
+                const kbdText = `<kbd>${selected}</kbd>`;
+                updateContent(textarea, start, end, kbdText, 5, 6);
                 return;
             }
             if (e.shiftKey && key === 's') {
@@ -279,6 +298,17 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
                     b: 'bold', i: 'italic', l: 'link', '0': 'bullet', '9': 'number', '8': 'quote', ',': 'table',
                 };
                 handleAction(actionMap[key]);
+                return;
+            }
+            const assetMap: Record<string, AssetType> = { '1': 'EMOJI', '2': 'SYMBOL', '3': 'PHRASE', '4': 'TEMPLATE' };
+            if (!e.shiftKey && !e.altKey && assetMap[e.key]) {
+                e.preventDefault();
+                const [topInTextarea] = measureLineTops(textarea, [textarea.selectionStart]);
+                const rect = textarea.getBoundingClientRect();
+                const x = Math.max(8, Math.min(rect.left + 8, window.innerWidth - 400));
+                const y = Math.max(8, Math.min(rect.top + topInTextarea - textarea.scrollTop + 20, window.innerHeight - 280));
+                onOpenAssetPicker?.(assetMap[e.key], { x, y });
+                return;
             }
         }
     };

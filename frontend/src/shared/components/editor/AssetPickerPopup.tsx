@@ -1,17 +1,17 @@
 /**
- * 목적: 에디터에 이모지/특수문자를 삽입하기 위한 선택 팝업.
- *       cms.assets 테이블(atype=EMOJI|SYMBOL)에서 목록을 조회해 보여준다.
- *       한 자산(row)의 value에 콤마로 여러 개를 등록할 수 있다 (예: "😂,😁,😮") - 각각 별개 항목으로 분리해 노출.
- *       표시할 항목은 설정(SettingsPage) > 자산 관리에서 등록해야 한다.
+ * 목적: 에디터에 이모지/특수문자/상용구/템플릿을 삽입하기 위한 선택 팝업.
+ *       cms.assets 테이블(atype=EMOJI|SYMBOL|PHRASE|TEMPLATE)에서 목록을 조회해 보여준다.
+ *       EMOJI/SYMBOL: 콤마 구분 그리드 표시 (각 값 개별 삽입).
+ *       PHRASE/TEMPLATE: 이름 태그 목록 표시 (클릭 시 value 전체 삽입).
  *
  * 사용법:
  *   <AssetPickerPopup atype="EMOJI" position={{ x: 100, y: 200 }} onSelect={(v) => insert(v)} onClose={() => setOpen(false)} />
- *   position은 viewport 기준 고정 좌표(px). 툴바 버튼 아래든, 에디터 캐럿 위치든 호출부에서 계산해 전달한다.
+ *   position은 viewport 기준 고정 좌표(px).
  *
  * props:
- *   - atype: 'EMOJI' | 'SYMBOL' - 조회할 자산 타입
- *   - position: { x: number; y: number } - 팝업이 뜰 viewport 좌표 (좌상단 기준, 화면 밖으로 나가지 않도록 자동 보정됨)
- *   - onSelect: (value: string) => void - 항목 선택 시 콜백 (마우스 클릭 또는 Enter)
+ *   - atype: 'EMOJI' | 'SYMBOL' | 'PHRASE' | 'TEMPLATE' - 조회할 자산 타입
+ *   - position: { x: number; y: number } - 팝업이 뜰 viewport 좌표
+ *   - onSelect: (value: string) => void - 항목 선택 시 콜백
  *   - onClose: () => void - 팝업 닫기 요청 (Escape, 바깥 클릭)
  */
 import { useEffect, useRef, useState } from 'react'
@@ -32,15 +32,24 @@ export default function AssetPickerPopup({ atype, position, onSelect, onClose }:
   const [adjusted, setAdjusted] = useState(position)
   const COLS = 10
 
+  const isListMode = atype === 'PHRASE' || atype === 'TEMPLATE'
+
   const { data = [] } = useQuery<AssetDto[]>({
     queryKey: ['assets', atype],
     queryFn: () => apiClient.get<AssetDto[]>('/assets', { params: { atype } }),
   })
 
-  // value는 콤마로 여러 이모지/기호를 한 행에 등록할 수 있다 (예: "😂,😁,😮"). 개별 항목으로 분리해 노출.
-  const items = data.flatMap((a) =>
-    a.value.split(',').map((v) => v.trim()).filter(Boolean).map((v) => ({ label: a.name, value: v })),
-  )
+  // EMOJI/SYMBOL: 콤마 분할 그리드 아이템
+  const gridItems = isListMode
+    ? []
+    : data.flatMap((a) =>
+        a.value.split(',').map((v) => v.trim()).filter(Boolean).map((v) => ({ label: a.name, value: v })),
+      )
+
+  // PHRASE/TEMPLATE: 각 자산이 하나의 목록 아이템 (value 전체 삽입)
+  const listItems = isListMode ? data.map((a) => ({ label: a.name, value: a.value })) : []
+
+  const items = isListMode ? listItems : gridItems
 
   // 화면 밖으로 나가지 않도록 좌표 보정
   useEffect(() => {
@@ -73,63 +82,95 @@ export default function AssetPickerPopup({ atype, position, onSelect, onClose }:
         if (items[activeIndex]) onSelect(items[activeIndex].value)
         return
       }
-      if (e.key === 'ArrowRight') {
-        e.preventDefault()
-        e.stopPropagation()
-        setActiveIndex((i) => Math.min(i + 1, items.length - 1))
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault()
-        e.stopPropagation()
-        setActiveIndex((i) => Math.max(i - 1, 0))
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        e.stopPropagation()
-        setActiveIndex((i) => Math.min(i + COLS, items.length - 1))
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault()
-        e.stopPropagation()
-        setActiveIndex((i) => Math.max(i - COLS, 0))
+      if (!isListMode) {
+        if (e.key === 'ArrowRight') {
+          e.preventDefault(); e.stopPropagation()
+          setActiveIndex((i) => Math.min(i + 1, items.length - 1))
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault(); e.stopPropagation()
+          setActiveIndex((i) => Math.max(i - 1, 0))
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault(); e.stopPropagation()
+          setActiveIndex((i) => Math.min(i + COLS, items.length - 1))
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault(); e.stopPropagation()
+          setActiveIndex((i) => Math.max(i - COLS, 0))
+        }
+      } else {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault(); e.stopPropagation()
+          setActiveIndex((i) => Math.min(i + 1, items.length - 1))
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault(); e.stopPropagation()
+          setActiveIndex((i) => Math.max(i - 1, 0))
+        }
       }
     }
     document.addEventListener('mousedown', onMouseDown)
-    // capture 단계에서 선점: ProseMirror(에디터)가 Enter/화살표를 먼저 처리해
-    // 줄바꿈 등이 삽입되는 것을 막기 위함
     document.addEventListener('keydown', onKeyDown, true)
     return () => {
       document.removeEventListener('mousedown', onMouseDown)
       document.removeEventListener('keydown', onKeyDown, true)
     }
-  }, [items, activeIndex, onSelect, onClose])
+  }, [items, activeIndex, onSelect, onClose, isListMode])
+
+  const tagStyle = atype === 'PHRASE'
+    ? 'bg-purple-50 hover:bg-purple-100 border-purple-100 text-purple-700'
+    : 'bg-indigo-50 hover:bg-indigo-100 border-indigo-100 text-indigo-700'
 
   return (
     <div
       ref={containerRef}
       style={{ position: 'fixed', left: adjusted.x, top: adjusted.y, zIndex: 50 }}
-      className="w-96 max-h-64 overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 p-2"
+      className={`bg-white rounded-lg shadow-xl border border-gray-200 p-2 ${isListMode ? 'w-80 max-h-64' : 'w-96 max-h-64'} overflow-y-auto`}
     >
-      <div className="grid grid-cols-10 gap-1">
-        {items.map((item, idx) => (
-          <button
-            key={`${item.value}-${idx}`}
-            type="button"
-            title={item.label}
-            onMouseEnter={() => setActiveIndex(idx)}
-            onClick={() => onSelect(item.value)}
-            className={`flex items-center justify-center h-8 w-8 text-lg rounded transition-colors ${
-              idx === activeIndex ? 'bg-blue-100' : 'hover:bg-gray-100'
-            }`}
-          >
-            {item.value}
-          </button>
-        ))}
-        {items.length === 0 && (
-          <p className="col-span-10 text-center text-xs text-gray-400 py-4">
-            등록된 항목이 없습니다.
-            <br />
-            설정 &gt; 자산 관리에서 추가해 주세요.
-          </p>
-        )}
-      </div>
+      {isListMode ? (
+        // PHRASE / TEMPLATE: 이름 태그 목록
+        <div className="flex flex-wrap gap-1.5 p-0.5">
+          {items.map((item, idx) => (
+            <button
+              key={`${item.label}-${idx}`}
+              type="button"
+              title={item.value}
+              onMouseEnter={() => setActiveIndex(idx)}
+              onClick={() => onSelect(item.value)}
+              className={`px-2 py-0.5 border rounded text-xs font-semibold cursor-pointer transition-colors max-w-[130px] truncate ${tagStyle} ${idx === activeIndex ? 'ring-2 ring-offset-1 ring-purple-300' : ''}`}
+            >
+              {item.label}
+            </button>
+          ))}
+          {items.length === 0 && (
+            <p className="w-full text-center text-xs text-gray-400 py-4">
+              등록된 항목이 없습니다.<br />
+              자산 관리에서 추가해 주세요.
+            </p>
+          )}
+        </div>
+      ) : (
+        // EMOJI / SYMBOL: 그리드
+        <div className="grid grid-cols-10 gap-1">
+          {items.map((item, idx) => (
+            <button
+              key={`${item.value}-${idx}`}
+              type="button"
+              title={item.label}
+              onMouseEnter={() => setActiveIndex(idx)}
+              onClick={() => onSelect(item.value)}
+              className={`flex items-center justify-center h-8 w-8 text-lg rounded transition-colors ${
+                idx === activeIndex ? 'bg-blue-100' : 'hover:bg-gray-100'
+              }`}
+            >
+              {item.value}
+            </button>
+          ))}
+          {items.length === 0 && (
+            <p className="col-span-10 text-center text-xs text-gray-400 py-4">
+              등록된 항목이 없습니다.<br />
+              자산 관리에서 추가해 주세요.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

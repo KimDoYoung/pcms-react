@@ -14,10 +14,12 @@
 import { useEffect, useRef, useState } from 'react'
 import MdTextarea, { type MdTextareaHandle } from '@/shared/components/editor/MdTextarea'
 import MdEditorToolbar from '@/shared/components/editor/MdEditorToolbar'
+import AssetPickerPopup from '@/shared/components/editor/AssetPickerPopup'
 import MediaSelectorModal from '@/shared/components/editor/MediaSelectorModal'
 import { renderMarkdown } from '@/lib/markdownRenderer'
 import { measureLineTops } from '@/lib/textareaLinePositions'
 import { useMediaCardToggle } from '@/shared/hooks/useMediaCardToggle'
+import type { AssetType } from '@/domain/asset/types/asset'
 
 interface Props {
   value: string
@@ -25,11 +27,17 @@ interface Props {
   onSave?: () => void
 }
 
+interface AssetPopupState {
+  atype: AssetType
+  position: { x: number; y: number }
+}
+
 export default function MdSplitEditor({ value, onChange, onSave }: Props) {
   const [previewOpen, setPreviewOpen] = useState(true)
   const [previewWidthPercent, setPreviewWidthPercent] = useState(50)
   const [resizingPreview, setResizingPreview] = useState(false)
   const [mediaOpen, setMediaOpen] = useState(false)
+  const [assetPopup, setAssetPopup] = useState<AssetPopupState | null>(null)
 
   const editorRef = useRef<MdTextareaHandle>(null)
   const textareaDomRef = useRef<HTMLTextAreaElement>(null)
@@ -39,11 +47,33 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
   useMediaCardToggle(previewContainerRef)
 
   // F9: 미리보기 토글
+  // Ctrl+1,2,3,4: asset picker 오픈 (textarea 커서 근처)
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === 'F9') {
         e.preventDefault()
         setPreviewOpen((prev) => !prev)
+        return
+      }
+      if (e.ctrlKey && !e.shiftKey && !e.altKey) {
+        const key = e.key
+        const typeMap: Record<string, AssetType> = { '1': 'EMOJI', '2': 'SYMBOL', '3': 'PHRASE', '4': 'TEMPLATE' }
+        if (typeMap[key]) {
+          e.preventDefault()
+          const textarea = textareaDomRef.current
+          let position = { x: Math.max(8, window.innerWidth / 2 - 192), y: 120 }
+          if (textarea) {
+            const [topInTextarea] = measureLineTops(textarea, [textarea.selectionStart])
+            const rect = textarea.getBoundingClientRect()
+            const x = rect.left + 8
+            const y = rect.top + topInTextarea - textarea.scrollTop + 20
+            position = {
+              x: Math.max(8, Math.min(x, window.innerWidth - 400)),
+              y: Math.max(8, Math.min(y, window.innerHeight - 280)),
+            }
+          }
+          setAssetPopup({ atype: typeMap[key], position })
+        }
       }
     }
     window.addEventListener('keydown', onKeyDown)
@@ -72,8 +102,6 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
   }, [resizingPreview])
 
   // 에디터 <-> 미리보기 줄 단위 스크롤 동기화.
-  // 미리보기는 renderMarkdown이 각 블록에 심어둔 data-source-line(원문 줄번호)을 앵커로 쓰고,
-  // 에디터 쪽은 같은 줄번호의 실제 픽셀 위치를 measureLineTops(줄바꿈 반영)로 재서 앵커로 쓴다.
   useEffect(() => {
     const textarea = textareaDomRef.current
     const preview = previewContainerRef.current
@@ -116,26 +144,15 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
         const previewAnchors = collectPreviewAnchors()
         if (previewAnchors.length < 2) return
         const editorTops = measureEditorTops(previewAnchors.map((a) => a.line))
-
         const scrollTop = textarea.scrollTop
         const lastIdx = editorTops.length - 1
-
-        if (scrollTop <= editorTops[0]) {
-          preview.scrollTop = 0
-          return
-        }
-        if (scrollTop >= editorTops[lastIdx]) {
-          preview.scrollTop = preview.scrollHeight - preview.clientHeight
-          return
-        }
-
+        if (scrollTop <= editorTops[0]) { preview.scrollTop = 0; return }
+        if (scrollTop >= editorTops[lastIdx]) { preview.scrollTop = preview.scrollHeight - preview.clientHeight; return }
         let i = 0
         while (i < lastIdx && editorTops[i + 1] <= scrollTop) i++
         const span = editorTops[i + 1] - editorTops[i]
         const fraction = span > 0 ? (scrollTop - editorTops[i]) / span : 0
-        const previewA = previewAnchors[i].top
-        const previewB = previewAnchors[i + 1].top
-        preview.scrollTop = previewA + fraction * (previewB - previewA)
+        preview.scrollTop = previewAnchors[i].top + fraction * (previewAnchors[i + 1].top - previewAnchors[i].top)
       })
     }
 
@@ -147,19 +164,10 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
         const previewAnchors = collectPreviewAnchors()
         if (previewAnchors.length < 2) return
         const editorTops = measureEditorTops(previewAnchors.map((a) => a.line))
-
         const scrollTop = preview.scrollTop
         const lastIdx = previewAnchors.length - 1
-
-        if (scrollTop <= previewAnchors[0].top) {
-          textarea.scrollTop = 0
-          return
-        }
-        if (scrollTop >= previewAnchors[lastIdx].top) {
-          textarea.scrollTop = textarea.scrollHeight - textarea.clientHeight
-          return
-        }
-
+        if (scrollTop <= previewAnchors[0].top) { textarea.scrollTop = 0; return }
+        if (scrollTop >= previewAnchors[lastIdx].top) { textarea.scrollTop = textarea.scrollHeight - textarea.clientHeight; return }
         let i = 0
         while (i < lastIdx && previewAnchors[i + 1].top <= scrollTop) i++
         const span = previewAnchors[i + 1].top - previewAnchors[i].top
@@ -187,6 +195,16 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
     }
   }, [value, previewOpen])
 
+  function openAssetPicker(atype: AssetType, e: React.MouseEvent<HTMLButtonElement>) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setAssetPopup({ atype, position: { x: rect.left, y: rect.bottom + 4 } })
+  }
+
+  function handleAssetSelect(val: string) {
+    editorRef.current?.insertText(val)
+    setAssetPopup(null)
+  }
+
   return (
     <div
       ref={containerRef}
@@ -201,13 +219,16 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
           previewOpen={previewOpen}
           setPreviewOpen={setPreviewOpen}
           onOpenMedia={() => setMediaOpen(true)}
+          onOpenAssetPicker={openAssetPicker}
+          value={value}
+          onImportContent={onChange}
         />
         <MdTextarea
           ref={editorRef}
           value={value}
           onChange={onChange}
           onSave={onSave}
-          onOpenMedia={() => setMediaOpen(true)}
+          onOpenAssetPicker={(atype, position) => setAssetPopup({ atype, position })}
           textareaRef={textareaDomRef}
         />
       </div>
@@ -237,6 +258,15 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
             />
           </div>
         </div>
+      )}
+
+      {assetPopup && (
+        <AssetPickerPopup
+          atype={assetPopup.atype}
+          position={assetPopup.position}
+          onSelect={handleAssetSelect}
+          onClose={() => setAssetPopup(null)}
+        />
       )}
 
       <MediaSelectorModal

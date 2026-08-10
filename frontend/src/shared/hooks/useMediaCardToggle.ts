@@ -49,6 +49,10 @@ export function useMediaCardToggle(containerRef: RefObject<HTMLElement | null>):
       const body = card?.querySelector<HTMLElement>('.media-card-body')
       if (!card || !body) return
 
+      const type = card.dataset.mediaType ?? 'video'
+      const openLabel = type === 'youtube' ? '유튜브 숨기기' : type === 'audio' ? '오디오 숨기기' : '비디오 숨기기'
+      const closeLabel = type === 'youtube' ? '유튜브 보이기/숨기기' : type === 'audio' ? '오디오 보이기/숨기기' : '비디오 보이기/숨기기'
+
       const opening = body.hasAttribute('hidden')
       if (opening) {
         if (body.children.length === 0) {
@@ -56,10 +60,12 @@ export function useMediaCardToggle(containerRef: RefObject<HTMLElement | null>):
         }
         body.removeAttribute('hidden')
         card.classList.add('is-open')
+        btn.textContent = openLabel
       } else {
         body.setAttribute('hidden', '')
         card.classList.remove('is-open')
         body.innerHTML = ''
+        btn.textContent = closeLabel
       }
     }
 

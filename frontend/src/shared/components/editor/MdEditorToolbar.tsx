@@ -1,28 +1,41 @@
 /**
- * 목적: MdTextarea(마크다운 에디터) 전용 툴바. 서식 삽입, 이모지/기호, 이미지·비디오/오디오/유튜브 삽입,
- *       미리보기 토글, 단축키 도움말을 제공한다. HTML 에디터의 TipTapMenuBar와 톤을 맞췄다.
+ * 목적: MdTextarea(마크다운 에디터) 전용 툴바. 서식 삽입, 이모지/기호/상용구/템플릿, 이미지·비디오/오디오/유튜브 삽입,
+ *       마크다운 복사, ZIP 내보내기/가져오기, 미리보기 토글, 단축키 도움말을 제공한다.
  *
  * 사용법:
- *   <MdEditorToolbar editorRef={mdTextareaRef} previewOpen={previewOpen} setPreviewOpen={setPreviewOpen} onOpenMedia={() => setMediaOpen(true)} />
+ *   <MdEditorToolbar
+ *     editorRef={mdTextareaRef}
+ *     previewOpen={previewOpen}
+ *     setPreviewOpen={setPreviewOpen}
+ *     onOpenMedia={() => setMediaOpen(true)}
+ *     onOpenAssetPicker={(atype, e) => openPickerAt(atype, e)}
+ *     value={markdownValue}
+ *     onImportContent={(content) => setContent(content)}
+ *   />
  *   MdSplitEditor 안에서만 사용된다 (MdTextareaHandle에 강하게 결합).
  *
  * props:
  *   - editorRef: MdTextarea의 forwardRef 핸들(MdTextareaHandle) - 서식 액션/텍스트 삽입에 사용
  *   - previewOpen / setPreviewOpen: 미리보기 패널 토글 상태
  *   - onOpenMedia: 비디오/오디오/유튜브 삽입 모달을 여는 콜백(모달 자체는 MdSplitEditor가 소유)
+ *   - onOpenAssetPicker: (atype, e) → MdSplitEditor가 picker 팝업 위치/상태를 관리
+ *   - value: 현재 마크다운 내용 (복사/ZIP 내보내기에 사용)
+ *   - onImportContent: ZIP 가져오기 후 에디터 내용 교체 콜백
  *
  * 단축키: Ctrl+B(굵게) / Ctrl+I(기울임) / Ctrl+Shift+S(취소선) / Ctrl+L(링크)
  *         Ctrl+0(글머리) / Ctrl+9(번호) / Ctrl+8(인용) / Ctrl+,(표)
- *         Ctrl+.(글자색 순환) / Ctrl+/(배경색 순환) / Ctrl+Shift+V(미디어 삽입)
+ *         Ctrl+.(글자색 순환) / Ctrl+/(배경색 순환) / Ctrl+Shift+V(kbd 태그)
+ *         Ctrl+1(이모지) / Ctrl+2(특수문자) / Ctrl+3(상용구) / Ctrl+4(템플릿)
+ *         Alt+Z(현재 줄 중앙 스크롤)
  */
 import { useRef, useState, type RefObject } from 'react'
 import {
   Bold, Italic, Strikethrough, Heading, List, ListOrdered, Quote, Link2,
   Baseline, Highlighter, Image as ImageIcon, Video, Eye, EyeOff, HelpCircle, X,
+  FileText, Layout, Copy, Download, Upload,
 } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { ROTATE_TEXT_COLORS, ROTATE_BG_COLORS } from '@/shared/components/editor/editorColors'
-import AssetPickerPopup from '@/shared/components/editor/AssetPickerPopup'
 import type { AssetType } from '@/domain/asset/types/asset'
 import type { MdTextareaHandle } from '@/shared/components/editor/MdTextarea'
 import {
@@ -36,33 +49,26 @@ interface Props {
   previewOpen: boolean
   setPreviewOpen: (open: boolean) => void
   onOpenMedia: () => void
-}
-
-interface AssetPopupState {
-  atype: AssetType
-  position: { x: number; y: number }
+  onOpenAssetPicker: (atype: AssetType, e: React.MouseEvent<HTMLButtonElement>) => void
+  value: string
+  onImportContent: (content: string) => void
 }
 
 const HEADING_LEVELS = [1, 2, 3] as const
 
-export default function MdEditorToolbar({ editorRef, previewOpen, setPreviewOpen, onOpenMedia }: Props) {
+export default function MdEditorToolbar({
+  editorRef, previewOpen, setPreviewOpen, onOpenMedia,
+  onOpenAssetPicker, value, onImportContent,
+}: Props) {
   const [showHeadings, setShowHeadings] = useState(false)
   const [showColors, setShowColors] = useState(false)
   const [showBgColors, setShowBgColors] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
-  const [assetPopup, setAssetPopup] = useState<AssetPopupState | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const zipInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
-
-  function openAssetPickerAt(atype: AssetType, e: React.MouseEvent<HTMLButtonElement>) {
-    const rect = e.currentTarget.getBoundingClientRect()
-    setAssetPopup({ atype, position: { x: rect.left, y: rect.bottom + 4 } })
-  }
-
-  function handleAssetSelect(value: string) {
-    editorRef.current?.insertText(value)
-    setAssetPopup(null)
-  }
+  const [exporting, setExporting] = useState(false)
+  const [importing, setImporting] = useState(false)
 
   async function handleImageFile(file: File) {
     setUploading(true)
@@ -80,18 +86,69 @@ export default function MdEditorToolbar({ editorRef, previewOpen, setPreviewOpen
     }
   }
 
+  async function handleCopyMarkdown() {
+    try {
+      await navigator.clipboard.writeText(value)
+    } catch {
+      // fallback: ignore
+    }
+  }
+
+  async function handleZipExport() {
+    setExporting(true)
+    try {
+      const res = await apiClient.post(
+        '/files/markdown-export',
+        { content: value },
+        { responseType: 'blob' },
+      )
+      const blob = res as unknown as Blob
+      const now = new Date()
+      const pad = (n: number) => n.toString().padStart(2, '0')
+      const stamp = `${now.getFullYear()}_${pad(now.getMonth() + 1)}_${pad(now.getDate())}_${pad(now.getHours())}_${pad(now.getMinutes())}_${pad(now.getSeconds())}`
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `markdown-export_${stamp}.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('ZIP 내보내기 중 오류가 발생했습니다.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function handleZipImport(file: File) {
+    setImporting(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await apiClient.post<{ content: string }>('/files/markdown-import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      onImportContent(res.content)
+    } catch {
+      alert('ZIP 가져오기 중 오류가 발생했습니다.')
+    } finally {
+      setImporting(false)
+    }
+  }
+
   const btn = (
     content: React.ReactNode,
     onClick: () => void,
     title: string,
     key?: string,
+    disabled?: boolean,
   ) => (
     <button
       key={key}
       type="button"
       title={title}
       onClick={onClick}
-      className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+      disabled={disabled}
+      className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
     >
       {content}
     </button>
@@ -210,31 +267,39 @@ export default function MdEditorToolbar({ editorRef, previewOpen, setPreviewOpen
 
       <span className="w-px bg-gray-200 mx-1" />
 
-      {/* 이모지 / 특수문자 (기존 AssetPickerPopup 재사용) */}
+      {/* 이모지 / 특수문자 / 상용구 / 템플릿 */}
       <button
         type="button"
-        onClick={(e) => openAssetPickerAt('EMOJI', e)}
+        onClick={(e) => onOpenAssetPicker('EMOJI', e)}
         className="flex items-center justify-center p-1.5 text-base rounded text-gray-600 hover:bg-gray-100 transition-colors"
-        title="이모지 삽입"
+        title="이모지 삽입 (Ctrl+1)"
       >
         😀
       </button>
       <button
         type="button"
-        onClick={(e) => openAssetPickerAt('SYMBOL', e)}
+        onClick={(e) => onOpenAssetPicker('SYMBOL', e)}
         className="flex items-center justify-center p-1.5 text-base rounded text-gray-600 hover:bg-gray-100 transition-colors"
-        title="특수문자 삽입"
+        title="특수문자 삽입 (Ctrl+2)"
       >
         ※
       </button>
-      {assetPopup && (
-        <AssetPickerPopup
-          atype={assetPopup.atype}
-          position={assetPopup.position}
-          onSelect={handleAssetSelect}
-          onClose={() => setAssetPopup(null)}
-        />
-      )}
+      <button
+        type="button"
+        onClick={(e) => onOpenAssetPicker('PHRASE', e)}
+        className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+        title="상용구 삽입 (Ctrl+3)"
+      >
+        <FileText className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={(e) => onOpenAssetPicker('TEMPLATE', e)}
+        className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+        title="템플릿 삽입 (Ctrl+4)"
+      >
+        <Layout className="w-4 h-4" />
+      </button>
 
       <span className="w-px bg-gray-200 mx-1" />
 
@@ -261,7 +326,37 @@ export default function MdEditorToolbar({ editorRef, previewOpen, setPreviewOpen
       />
 
       {/* 비디오/오디오/유튜브 삽입 */}
-      {btn(<Video className="w-4 h-4" />, onOpenMedia, '비디오·오디오·유튜브 삽입 (Ctrl+Shift+V)')}
+      {btn(<Video className="w-4 h-4" />, onOpenMedia, '비디오·오디오·유튜브 삽입')}
+
+      <span className="w-px bg-gray-200 mx-1" />
+
+      {/* 마크다운 복사 */}
+      {btn(<Copy className="w-4 h-4" />, handleCopyMarkdown, '마크다운 복사')}
+
+      {/* ZIP 내보내기 */}
+      {btn(<Download className="w-4 h-4" />, handleZipExport, 'ZIP 내보내기', undefined, exporting)}
+
+      {/* ZIP 가져오기 */}
+      <button
+        type="button"
+        onClick={() => zipInputRef.current?.click()}
+        disabled={importing}
+        className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+        title="ZIP 가져오기"
+      >
+        <Upload className="w-4 h-4" />
+      </button>
+      <input
+        ref={zipInputRef}
+        type="file"
+        accept=".zip"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) handleZipImport(file)
+          e.target.value = ''
+        }}
+      />
 
       <span className="flex-1" />
 
@@ -283,7 +378,6 @@ export default function MdEditorToolbar({ editorRef, previewOpen, setPreviewOpen
         title="미리보기 토글 (F9)"
       >
         {previewOpen ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-        미리보기
       </button>
 
       {helpOpen && (
@@ -322,7 +416,12 @@ export default function MdEditorToolbar({ editorRef, previewOpen, setPreviewOpen
                     ['링크 삽입', 'Ctrl+L'],
                     ['글자색 순환', 'Ctrl+.'],
                     ['배경색 순환', 'Ctrl+/'],
-                    ['비디오/오디오/유튜브 삽입', 'Ctrl+Shift+V'],
+                    ['kbd 태그 감싸기', 'Ctrl+Shift+V'],
+                    ['이모지 팝업', 'Ctrl+1'],
+                    ['특수문자 팝업', 'Ctrl+2'],
+                    ['상용구 팝업', 'Ctrl+3'],
+                    ['템플릿 팝업', 'Ctrl+4'],
+                    ['현재 줄 중앙 스크롤', 'Alt+Z'],
                     ['미리보기 토글', 'F9'],
                   ].map(([name, key]) => (
                     <tr key={name}>

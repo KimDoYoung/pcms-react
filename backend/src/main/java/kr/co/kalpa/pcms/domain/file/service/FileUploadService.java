@@ -19,6 +19,11 @@ public interface FileUploadService {
     String uploadEditorImage(MultipartFile file);
 
     /**
+     * 로컬 File 객체(ZIP 해제된 이미지 등)를 에디터 이미지로 업로드하고 URL을 반환한다.
+     */
+    String uploadEditorImageFromFile(java.io.File file, String mimeType);
+
+    /**
      * 첨부파일을 디스크에 저장하고 files 테이블에 기록한다. fileId를 반환한다.
      */
     Long saveAttachment(MultipartFile file);
