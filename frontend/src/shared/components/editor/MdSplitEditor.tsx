@@ -190,8 +190,7 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
   return (
     <div
       ref={containerRef}
-      className="flex-1 flex border border-gray-200 rounded-lg overflow-hidden bg-gray-100 items-stretch relative"
-      style={{ minHeight: '480px' }}
+      className="flex border border-gray-200 rounded-lg overflow-hidden bg-gray-100 items-stretch relative h-[65vh] min-h-[420px]"
     >
       <div
         className="bg-white flex flex-col border-r border-gray-200 shrink-0"

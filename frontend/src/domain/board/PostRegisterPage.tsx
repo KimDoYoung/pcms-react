@@ -80,7 +80,7 @@ export default function PostRegisterPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
-      <main className="container mx-auto px-6 py-6">
+      <main className="px-[30px] py-6">
 
         {/* 헤더 */}
         <div className="flex items-center gap-3 mb-6">

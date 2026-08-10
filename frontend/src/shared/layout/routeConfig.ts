@@ -27,6 +27,8 @@ import MovieReviewViewPage from '@/domain/movie/MovieReviewViewPage'
 import HddPage from '@/domain/movie/HddPage'
 import UserInfoPage from '@/user/UserInfoPage'
 import SettingsPage from '@/user/SettingsPage'
+import AssetManagePage from '@/domain/asset/AssetManagePage'
+import MediaManagePage from '@/domain/media/MediaManagePage'
 import Practice01Flex from '@/practice/Practice01Flex'
 import Practice02Hooks from '@/practice/Practice02Hooks'
 import Practice03Hanja from '@/practice/Practice03Hanja'
@@ -74,6 +76,10 @@ export const APP_ROUTES: AppRoute[] = [
   { path: '/practice/hooks', label: '🪝 React Hooks 연습', Component: Practice02Hooks, menuGroup: '📝 실습', tabGroup: 'practice-2' },
   { path: '/practice/hanja', label: '漢 한자 변환 연습', Component: Practice03Hanja, menuGroup: '📝 실습', tabGroup: 'practice-3' },
   { path: '/practice/component-test1', label: '🗓️ DatePicker 연습', Component: ComponentTest1, menuGroup: '📝 실습', tabGroup: 'practice-4' },
+
+  // 자산
+  { path: '/assets', label: '🗂️ 자산관리', Component: AssetManagePage, menuGroup: '🗂️ 자산', tabGroup: 'asset-manage' },
+  { path: '/videos', label: '🎬 비디오관리', Component: MediaManagePage, menuGroup: '🗂️ 자산', tabGroup: 'media-manage' },
 
   // 사용자
   { path: '/user-info', label: '👤 사용자정보', Component: UserInfoPage, tabGroup: 'user' },
