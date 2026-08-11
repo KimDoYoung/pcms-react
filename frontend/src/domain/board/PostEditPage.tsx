@@ -148,7 +148,7 @@ export default function PostEditPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
 
           {/* 기본 정보 */}
-          <div className="px-6 py-5 flex flex-col md:flex-row gap-4">
+          <div className="px-6 py-3 flex flex-col md:flex-row gap-4">
 
             {/* 제목 */}
             <div className="flex flex-col gap-1.5 flex-1">
@@ -183,7 +183,7 @@ export default function PostEditPage() {
           </div>
 
           {/* 내용 */}
-          <div className="px-6 py-5 flex flex-col gap-2">
+          <div className="px-6 py-2 flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700">
               내용
               {board && <span className="ml-2 text-xs text-gray-400">({board.contentType})</span>}
