@@ -240,18 +240,18 @@ ${MEDIA_TOGGLE_SCRIPT}
       title={title}
       onClick={onClick}
       disabled={disabled}
-      className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+      className="flex items-center justify-center p-1 rounded text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
     >
       {content}
     </button>
   )
 
   return (
-    <div className="flex flex-wrap items-center gap-1 px-3 py-2 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+    <div className="flex flex-wrap items-center gap-0.5 px-2.5 py-1 border-b border-gray-200 bg-gray-50 rounded-t-lg">
       {btn(<Bold className="w-4 h-4" />, () => editorRef.current?.applyAction('bold'), '굵게 (Ctrl+B)')}
       {btn(<Italic className="w-4 h-4" />, () => editorRef.current?.applyAction('italic'), '기울임 (Ctrl+I)')}
       {btn(<Strikethrough className="w-4 h-4" />, () => editorRef.current?.applyAction('strike'), '취소선 (Ctrl+Shift+S)')}
-      <span className="w-px bg-gray-200 mx-1" />
+      <span className="w-px self-stretch bg-gray-200 mx-0.5" />
 
       {/* 제목 헤더 */}
       <Popover open={showHeadings} onOpenChange={setShowHeadings}>
@@ -259,7 +259,7 @@ ${MEDIA_TOGGLE_SCRIPT}
           <button
             type="button"
             title="제목 헤더 삽입"
-            className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+            className="flex items-center justify-center p-1 rounded text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <Heading className="w-4 h-4" />
           </button>
@@ -279,19 +279,19 @@ ${MEDIA_TOGGLE_SCRIPT}
           </div>
         </PopoverContent>
       </Popover>
-
+      <span className="w-px self-stretch bg-gray-300 mx-0.5" />
       {btn(<List className="w-4 h-4" />, () => editorRef.current?.applyAction('bullet'), '글머리 목록 (Ctrl+0)')}
       {btn(<ListOrdered className="w-4 h-4" />, () => editorRef.current?.applyAction('number'), '번호 목록 (Ctrl+9)')}
       {btn(<Quote className="w-4 h-4" />, () => editorRef.current?.applyAction('quote'), '인용구 (Ctrl+8)')}
       {btn(<Link2 className="w-4 h-4" />, () => editorRef.current?.applyAction('link'), '링크 삽입 (Ctrl+L)')}
-
+      <span className="w-px self-stretch bg-gray-300 mx-0.5" />
       {/* 글자 색상 */}
       <Popover open={showColors} onOpenChange={setShowColors}>
         <PopoverTrigger asChild>
           <button
             type="button"
             title="글자 색상 (Ctrl+.)"
-            className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+            className="flex items-center justify-center p-1 rounded text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <Baseline className="w-4 h-4" />
           </button>
@@ -327,7 +327,7 @@ ${MEDIA_TOGGLE_SCRIPT}
           <button
             type="button"
             title="배경 색상 (Ctrl+/)"
-            className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+            className="flex items-center justify-center p-1 rounded text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <Highlighter className="w-4 h-4" />
           </button>
@@ -357,13 +357,13 @@ ${MEDIA_TOGGLE_SCRIPT}
         </PopoverContent>
       </Popover>
 
-      <span className="w-px bg-gray-200 mx-1" />
+      <span className="w-px self-stretch bg-gray-200 mx-0.5" />
 
       {/* 이모지 / 특수문자 / 상용구 / 템플릿 */}
       <button
         type="button"
         onClick={(e) => onOpenAssetPicker('EMOJI', e)}
-        className="flex items-center justify-center p-1.5 text-base rounded text-gray-600 hover:bg-gray-100 transition-colors"
+        className="flex items-center justify-center p-1 text-base rounded text-gray-600 hover:bg-gray-100 transition-colors"
         title="이모지 삽입 (Ctrl+1)"
       >
         😀
@@ -371,7 +371,7 @@ ${MEDIA_TOGGLE_SCRIPT}
       <button
         type="button"
         onClick={(e) => onOpenAssetPicker('SYMBOL', e)}
-        className="flex items-center justify-center p-1.5 text-base rounded text-gray-600 hover:bg-gray-100 transition-colors"
+        className="flex items-center justify-center p-1 text-base rounded text-gray-600 hover:bg-gray-100 transition-colors"
         title="특수문자 삽입 (Ctrl+2)"
       >
         ※
@@ -379,7 +379,7 @@ ${MEDIA_TOGGLE_SCRIPT}
       <button
         type="button"
         onClick={(e) => onOpenAssetPicker('PHRASE', e)}
-        className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+        className="flex items-center justify-center p-1 rounded text-gray-600 hover:bg-gray-100 transition-colors"
         title="상용구 삽입 (Ctrl+3)"
       >
         <FileText className="w-4 h-4" />
@@ -387,20 +387,20 @@ ${MEDIA_TOGGLE_SCRIPT}
       <button
         type="button"
         onClick={(e) => onOpenAssetPicker('TEMPLATE', e)}
-        className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+        className="flex items-center justify-center p-1 rounded text-gray-600 hover:bg-gray-100 transition-colors"
         title="템플릿 삽입 (Ctrl+4)"
       >
         <Layout className="w-4 h-4" />
       </button>
 
-      <span className="w-px bg-gray-200 mx-1" />
+      <span className="w-px self-stretch bg-gray-200 mx-0.5" />
 
       {/* 이미지 업로드 */}
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
-        className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+        className="flex items-center justify-center p-1 rounded text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
         title="이미지 삽입 (붙여넣기 Ctrl+V도 지원)"
       >
         <ImageIcon className="w-4 h-4" />
@@ -420,7 +420,7 @@ ${MEDIA_TOGGLE_SCRIPT}
       {/* 비디오/오디오/유튜브 삽입 */}
       {btn(<Video className="w-4 h-4" />, onOpenMedia, '비디오·오디오·유튜브 삽입 (Ctrl+Shift+V)')}
 
-      <span className="w-px bg-gray-200 mx-1" />
+      <span className="w-px self-stretch bg-gray-200 mx-0.5" />
 
       {/* 마크다운 복사 */}
       {btn(<Copy className="w-4 h-4" />, handleCopyMarkdown, '마크다운 복사')}
@@ -433,7 +433,7 @@ ${MEDIA_TOGGLE_SCRIPT}
         type="button"
         onClick={() => zipInputRef.current?.click()}
         disabled={importing}
-        className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+        className="flex items-center justify-center p-1 rounded text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
         title="ZIP 가져오기"
       >
         <Upload className="w-4 h-4" />
@@ -458,7 +458,7 @@ ${MEDIA_TOGGLE_SCRIPT}
       <button
         type="button"
         onClick={() => setHelpOpen(true)}
-        className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center justify-center"
+        className="p-1 hover:bg-gray-100 rounded text-gray-600 flex items-center justify-center"
         title="단축키 도움말"
       >
         <HelpCircle className="w-4 h-4" />
