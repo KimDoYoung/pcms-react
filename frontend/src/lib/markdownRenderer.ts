@@ -79,7 +79,7 @@ md.renderer.rules.image = (tokens, idx, options, env, self) => {
     `<div class="media-card" data-media-type="${type}" data-media-src="${esc(src)}"${ytId ? ` data-yt-id="${esc(ytId)}"` : ''}>` +
     `<div class="media-card-header">` +
     `<span class="media-card-title">${esc(label)}</span>` +
-    `<button type="button" class="media-toggle-btn">${type === 'youtube' ? '유튜브 보이기/숨기기' : type === 'audio' ? '오디오 보이기/숨기기' : '비디오 보이기/숨기기'}</button>` +
+    `<button type="button" class="media-toggle-btn">${type === 'youtube' ? '유튜브 보이기' : type === 'audio' ? '오디오 보이기' : '비디오 보이기'}</button>` +
     `</div>` +
     `<div class="media-card-body" hidden></div>` +
     `</div>`
