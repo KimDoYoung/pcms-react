@@ -71,16 +71,18 @@ export const APP_ROUTES: AppRoute[] = [
   { path: '/movie/review/register', label: '🎬 영화감상평 등록', Component: MovieReviewFormPage, tabGroup: 'movie-review' },
   { path: '/movie/hdd', label: '🎞️ 하드디스크', Component: HddPage, menuGroup: '📽️ 영화', tabGroup: 'movie-hdd' },
 
+  
+  // 자산
+  { path: '/assets', label: '🗂️ 자산관리', Component: AssetManagePage, menuGroup: '🗂️ 자산', tabGroup: 'asset-manage' },
+  { path: '/videos', label: '🎬 비디오관리', Component: MediaManagePage, menuGroup: '🗂️ 자산', tabGroup: 'media-manage' },
+
   // 실습
   { path: '/practice/tailwindcss', label: '✏️ Tailwind CSS 연습', Component: Practice01Flex, menuGroup: '📝 실습', tabGroup: 'practice-1' },
   { path: '/practice/hooks', label: '🪝 React Hooks 연습', Component: Practice02Hooks, menuGroup: '📝 실습', tabGroup: 'practice-2' },
   { path: '/practice/hanja', label: '漢 한자 변환 연습', Component: Practice03Hanja, menuGroup: '📝 실습', tabGroup: 'practice-3' },
   { path: '/practice/component-test1', label: '🗓️ DatePicker 연습', Component: ComponentTest1, menuGroup: '📝 실습', tabGroup: 'practice-4' },
 
-  // 자산
-  { path: '/assets', label: '🗂️ 자산관리', Component: AssetManagePage, menuGroup: '🗂️ 자산', tabGroup: 'asset-manage' },
-  { path: '/videos', label: '🎬 비디오관리', Component: MediaManagePage, menuGroup: '🗂️ 자산', tabGroup: 'media-manage' },
-
+  
   // 사용자
   { path: '/user-info', label: '👤 사용자정보', Component: UserInfoPage, tabGroup: 'user' },
   { path: '/settings', label: '⚙️ 설정', Component: SettingsPage, tabGroup: 'settings' },

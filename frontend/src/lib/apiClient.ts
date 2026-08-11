@@ -11,6 +11,11 @@ export function getApiBaseUrl(): string {
   return API_BASE_URL
 }
 
+/** 항상 http(s)://host로 시작하는 절대경로 API 베이스 URL. PROD 빌드의 상대경로('/pcms')를 origin과 합쳐 반환한다. */
+export function getApiFullBaseUrl(): string {
+  return API_BASE_URL.startsWith('/') ? window.location.origin + API_BASE_URL : API_BASE_URL
+}
+
 const instance = axios.create({
   baseURL: API_BASE_URL,
   headers: { Accept: 'application/json' },

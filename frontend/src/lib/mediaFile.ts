@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from '@/lib/apiClient'
+import { getApiFullBaseUrl } from '@/lib/apiClient'
 
 export interface MediaFile {
   fileId: number
@@ -8,7 +8,7 @@ export interface MediaFile {
 }
 
 export function mediaDownloadUrl(item: MediaFile): string {
-  return `${getApiBaseUrl()}/files/${item.fileId}/download/${encodeURIComponent(item.orgFileName)}`
+  return `${getApiFullBaseUrl()}/files/${item.fileId}/download/${encodeURIComponent(item.orgFileName)}`
 }
 
 export function mediaLabel(item: MediaFile): string {

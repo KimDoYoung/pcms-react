@@ -15,7 +15,7 @@ import { useEffect, useRef, useState } from 'react'
 import MdTextarea, { type MdTextareaHandle } from '@/shared/components/editor/MdTextarea'
 import MdEditorToolbar from '@/shared/components/editor/MdEditorToolbar'
 import AssetPickerPopup from '@/shared/components/editor/AssetPickerPopup'
-import MediaSelectorModal from '@/shared/components/editor/MediaSelectorModal'
+import MediaSelectorModal, { type MediaSelectPayload } from '@/shared/components/editor/MediaSelectorModal'
 import { renderMarkdown } from '@/lib/markdownRenderer'
 import { measureLineTops } from '@/lib/textareaLinePositions'
 import { useMediaCardToggle } from '@/shared/hooks/useMediaCardToggle'
@@ -273,7 +273,9 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
       <MediaSelectorModal
         open={mediaOpen}
         onClose={() => setMediaOpen(false)}
-        onSelect={(markdown) => {
+        onSelect={(payload: MediaSelectPayload) => {
+          const url = payload.type === 'youtube' ? `https://www.youtube.com/watch?v=${payload.ytId}` : payload.url
+          const markdown = `![${payload.label}](${url})\n`
           editorRef.current?.insertText(markdown, markdown.length, 0)
           setMediaOpen(false)
         }}

@@ -1,6 +1,7 @@
 /**
  * 목적: MdTextarea(마크다운 에디터) 전용 툴바. 서식 삽입, 이모지/기호/상용구/템플릿, 이미지·비디오/오디오/유튜브 삽입,
- *       마크다운 복사, ZIP 내보내기/가져오기, 미리보기 토글, 단축키 도움말을 제공한다.
+ *       마크다운 복사, ZIP 내보내기/가져오기, HTML 내보내기(pcms_yyyyMMdd_HHmmss.html, 스타일 인라인된 독립 파일),
+ *       미리보기 토글, 단축키 도움말을 제공한다.
  *
  * 사용법:
  *   <MdEditorToolbar
@@ -29,20 +30,68 @@
  *         Alt+Z(현재 줄 중앙 스크롤)
  */
 import { useRef, useState, type RefObject } from 'react'
+import { format } from 'date-fns'
 import {
   Bold, Italic, Strikethrough, Heading, List, ListOrdered, Quote, Link2,
   Baseline, Highlighter, Image as ImageIcon, Video, Eye, EyeOff, HelpCircle, X,
-  FileText, Layout, Copy, Download, Upload,
+  FileText, Layout, Copy, Download, Upload, FileCode,
 } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { ROTATE_TEXT_COLORS, ROTATE_BG_COLORS } from '@/shared/components/editor/editorColors'
 import type { AssetType } from '@/domain/asset/types/asset'
 import type { MdTextareaHandle } from '@/shared/components/editor/MdTextarea'
+import { renderMarkdown } from '@/lib/markdownRenderer'
+import markdownCss from '@/styles/markdown.css?raw'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+
+// 내보낸 정적 HTML 안에서 .media-card 토글 버튼(비디오/오디오/유튜브 펼치기)을 동작시키는 스크립트.
+// useMediaCardToggle.ts의 클릭 위임 로직을 순수 JS로 옮긴 것 — 앱 안에서는 그 훅이 대신 동작하므로
+// 이 문자열은 내보내기 결과물(React 번들이 없는 독립 HTML)에서만 쓰인다.
+const MEDIA_TOGGLE_SCRIPT = `
+document.addEventListener('click', function (e) {
+  var btn = e.target.closest('.media-toggle-btn');
+  if (!btn) return;
+  var card = btn.closest('.media-card');
+  var body = card && card.querySelector('.media-card-body');
+  if (!card || !body) return;
+
+  var type = card.dataset.mediaType || 'video';
+  var openLabel = type === 'youtube' ? '유튜브 숨기기' : type === 'audio' ? '오디오 숨기기' : '비디오 숨기기';
+  var closeLabel = type === 'youtube' ? '유튜브 보이기' : type === 'audio' ? '오디오 보이기' : '비디오 보이기';
+
+  if (body.hasAttribute('hidden')) {
+    if (body.children.length === 0) {
+      var el;
+      if (type === 'youtube' && card.dataset.ytId) {
+        el = document.createElement('iframe');
+        el.src = 'https://www.youtube.com/embed/' + card.dataset.ytId;
+        el.allowFullscreen = true;
+      } else if (type === 'audio') {
+        el = document.createElement('audio');
+        el.src = card.dataset.mediaSrc || '';
+        el.controls = true;
+      } else {
+        el = document.createElement('video');
+        el.src = card.dataset.mediaSrc || '';
+        el.controls = true;
+      }
+      body.appendChild(el);
+    }
+    body.removeAttribute('hidden');
+    card.classList.add('is-open');
+    btn.textContent = openLabel;
+  } else {
+    body.setAttribute('hidden', '');
+    card.classList.remove('is-open');
+    body.innerHTML = '';
+    btn.textContent = closeLabel;
+  }
+});
+`.trim()
 
 interface Props {
   editorRef: RefObject<MdTextareaHandle | null>
@@ -117,6 +166,49 @@ export default function MdEditorToolbar({
     } finally {
       setExporting(false)
     }
+  }
+
+  function handleHtmlExport() {
+    const bodyHtml = renderMarkdown(value)
+    const html = `<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PCMS 문서</title>
+<style>
+${markdownCss}
+body {
+  margin: 0;
+  background: #f1f5f9;
+}
+.container {
+  width: 75%;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="markdown-body">
+${bodyHtml}
+</div>
+</div>
+<script>
+${MEDIA_TOGGLE_SCRIPT}
+</script>
+</body>
+</html>
+`
+    const stamp = format(new Date(), 'yyyyMMdd_HHmmss')
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `pcms_${stamp}.html`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   async function handleZipImport(file: File) {
@@ -357,6 +449,8 @@ export default function MdEditorToolbar({
           e.target.value = ''
         }}
       />
+      {/* HTML 내보내기 */}
+      {btn(<FileCode className="w-4 h-4" />, handleHtmlExport, 'HTML로 내보내기')}
 
       <span className="flex-1" />
 
@@ -412,7 +506,7 @@ export default function MdEditorToolbar({
                     ['글머리 목록', 'Ctrl+0'],
                     ['번호 목록', 'Ctrl+9'],
                     ['인용구', 'Ctrl+8'],
-                    ['표 삽입', 'Ctrl+,'],
+                    ['표 삽입 / 표 ↔ CSV 전환', 'Ctrl+,'],
                     ['링크 삽입', 'Ctrl+L'],
                     ['글자색 순환', 'Ctrl+.'],
                     ['배경색 순환', 'Ctrl+/'],

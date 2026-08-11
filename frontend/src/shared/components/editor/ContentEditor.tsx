@@ -19,6 +19,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import ResizableInlineImage from '@/shared/components/editor/ResizableInlineImage'
+import MediaEmbedExtension from '@/shared/components/editor/MediaEmbedExtension'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { Highlight } from '@tiptap/extension-highlight'
@@ -65,6 +66,7 @@ const ContentEditor = forwardRef<ContentEditorHandle, Props>(function ContentEdi
       }),
       Placeholder.configure({ placeholder }),
       ResizableInlineImage.configure({ allowBase64: true }),
+      MediaEmbedExtension,
       TextStyle,
       Color,
       FontSize,

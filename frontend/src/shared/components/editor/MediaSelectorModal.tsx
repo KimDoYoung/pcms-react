@@ -1,16 +1,18 @@
 /**
- * 목적: 마크다운 에디터에 비디오/오디오/유튜브를 삽입하기 위한 선택 모달.
- *       업로드된 비디오/오디오 목록에서 고르거나 새로 업로드하거나, 유튜브 링크를 붙여넣을 수 있다.
- *       선택 결과는 `![라벨](url)` 형태의 마크다운 이미지 문법으로 삽입되며,
- *       미리보기/뷰어(lib/markdownRenderer)가 확장자·유튜브 여부를 감지해 토글형 미디어 카드로 렌더링한다.
+ * 목적: 비디오/오디오/유튜브를 삽입하기 위한 선택 모달. 마크다운 에디터(MdSplitEditor)와
+ *       HTML 에디터(TipTapMenuBar) 양쪽에서 공용으로 쓴다. 업로드된 비디오/오디오 목록에서
+ *       고르거나 새로 업로드하거나, 유튜브 링크를 붙여넣을 수 있다.
+ *       선택 결과는 구조화된 데이터(MediaSelectPayload)로 전달되며, 실제 삽입 포맷(마크다운
+ *       문자열 vs TipTap 노드)은 호출부가 알아서 만든다.
  *
  * 사용법:
- *   <MediaSelectorModal open={mediaOpen} onClose={() => setMediaOpen(false)} onSelect={(md) => editorRef.current?.insertText(md)} />
+ *   <MediaSelectorModal open={mediaOpen} onClose={() => setMediaOpen(false)}
+ *     onSelect={(payload) => { ... 포맷 변환은 호출부 책임 ... }} />
  *
  * props:
  *   - open: boolean - 모달 표시 여부
  *   - onClose: () => void - 닫기 콜백
- *   - onSelect: (markdown: string) => void - 삽입할 마크다운 문자열과 함께 호출 (모달은 호출부에서 닫아야 함)
+ *   - onSelect: (payload: MediaSelectPayload) => void - 선택 결과와 함께 호출 (모달은 호출부에서 닫아야 함)
  */
 import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -23,10 +25,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/compo
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 
+export interface MediaSelectPayload {
+  type: 'video' | 'audio' | 'youtube'
+  url: string
+  label: string
+  ytId?: string
+}
+
 interface Props {
   open: boolean
   onClose: () => void
-  onSelect: (markdown: string) => void
+  onSelect: (payload: MediaSelectPayload) => void
 }
 
 type Tab = 'video' | 'audio' | 'youtube'
@@ -72,11 +81,11 @@ export default function MediaSelectorModal({ open, onClose, onSelect }: Props) {
     if (tab === 'youtube') {
       if (!ytId) return
       const title = ytTitle.trim() || '유튜브 동영상'
-      onSelect(`![${title}](https://www.youtube.com/watch?v=${ytId})\n`)
+      onSelect({ type: 'youtube', url: `https://www.youtube.com/watch?v=${ytId}`, label: title, ytId })
       return
     }
     if (!selected) return
-    onSelect(`![${mediaLabel(selected)}](${mediaDownloadUrl(selected)})\n`)
+    onSelect({ type: tab, url: mediaDownloadUrl(selected), label: mediaLabel(selected) })
   }
 
   const canInsert = tab === 'youtube' ? !!ytId : !!selected

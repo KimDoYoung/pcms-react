@@ -19,7 +19,7 @@
  *   - onOpenAssetPicker?: (atype, position) => void - Ctrl+1~4 에셋 팝업 열기
  *   - textareaRef?: 외부에서 textarea DOM 접근용 ref (스크롤 동기화 등)
  *
- * 단축키: Ctrl+B/I/Shift+S(취소선) / Ctrl+L(링크) / Ctrl+0/9/8(목록/인용) / Ctrl+,(표)
+ * 단축키: Ctrl+B/I/Shift+S(취소선) / Ctrl+L(링크) / Ctrl+0/9/8(목록/인용) / Ctrl+,(표 삽입/표↔CSV 전환)
  *         Ctrl+.(글자색) / Ctrl+/(배경색) / Ctrl+S(저장) / Ctrl+Space(&nbsp;)
  *         Ctrl+Enter(<br/>) / Ctrl+Shift+V(미디어모달) / Ctrl+Shift+K(kbd태그)
  *         Ctrl+1~4(에셋팝업) / Alt+Z(현재줄 중앙스크롤)
@@ -82,14 +82,31 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
         cursorOffsetStart = 2,
         cursorOffsetEnd = 2,
     ) => {
-        const updated = form.content.substring(0, start) + newText + form.content.substring(end);
-        setForm({ content: updated });
-        onChange(updated);
+        const scrollTop = textarea.scrollTop;
+
+        // execCommand로 삽입해야 브라우저 네이티브 undo(Ctrl+Z) 스택이 유지된다.
+        // (React state로 textarea.value를 직접 덮어쓰면 undo 히스토리가 끊긴다.)
+        textarea.focus();
+        textarea.setSelectionRange(start, end);
+
+        let successful = false;
+        try {
+            successful = document.execCommand('insertText', false, newText);
+        } catch {
+            successful = false;
+        }
+
+        if (!successful) {
+            const updated = form.content.substring(0, start) + newText + form.content.substring(end);
+            setForm({ content: updated });
+            onChange(updated);
+        }
 
         // 포커스 유지 및 커서 위치 조정 (약간의 지연 필요)
         setTimeout(() => {
             textarea.focus();
             textarea.setSelectionRange(start + cursorOffsetStart, start + newText.length - cursorOffsetEnd);
+            textarea.scrollTop = scrollTop;
         }, 0);
     };
 
@@ -176,8 +193,99 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
                 applyColor(textarea, 'bg');
                 break;
             case 'table': {
-                const table = `\n| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Row 1    | Row 2    | Row 3    |\n`;
-                updateContent(textarea, start, end, table, table.length, 0);
+                if (!selectedText || !selectedText.trim()) {
+                    // 선택 영역이 없으면 기본 템플릿 삽입
+                    const table = `\n| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Row 1    | Row 2    | Row 3    |\n`;
+                    updateContent(textarea, start, end, table, table.length, 0);
+                    break;
+                }
+
+                // 선택 영역이 있으면 마크다운 표 <-> CSV/TSV 양방향 전환
+                const lines = selectedText.split('\n').map((l) => l.trim()).filter(Boolean);
+                if (lines.length === 0) {
+                    alert('선택된 영역에 텍스트가 없습니다.');
+                    break;
+                }
+
+                const isSeparatorRow = (line: string): boolean => /^[|:\s-]+$/.test(line) && line.includes('-');
+                let hasSeparator = false;
+                let pipeLineCount = 0;
+                for (const line of lines) {
+                    if (isSeparatorRow(line)) hasSeparator = true;
+                    if (line.includes('|')) pipeLineCount++;
+                }
+                const isMarkdownTable = hasSeparator && pipeLineCount >= 2;
+
+                if (isMarkdownTable) {
+                    // 마크다운 표 -> CSV 변환
+                    const escapeCSVField = (val: string): string => {
+                        const cleaned = val.trim();
+                        return cleaned.includes(',') || cleaned.includes('"') || cleaned.includes('\n')
+                            ? `"${cleaned.replace(/"/g, '""')}"`
+                            : cleaned;
+                    };
+                    const csvLines: string[] = [];
+                    for (const line of lines) {
+                        if (isSeparatorRow(line) || !line.includes('|')) continue;
+                        let content = line;
+                        if (content.startsWith('|')) content = content.substring(1);
+                        if (content.endsWith('|')) content = content.substring(0, content.length - 1);
+                        const cells = content.split('|').map((c) => c.trim());
+                        csvLines.push(cells.map(escapeCSVField).join(','));
+                    }
+                    const csvResult = csvLines.join('\n');
+                    updateContent(textarea, start, end, csvResult, csvResult.length, 0);
+                } else {
+                    // CSV/TSV -> 마크다운 표 변환
+                    const firstLine = lines[0];
+                    const commaCount = (firstLine.match(/,/g) || []).length;
+                    const tabCount = (firstLine.match(/\t/g) || []).length;
+                    if (commaCount === 0 && tabCount === 0) {
+                        alert('선택한 텍스트가 마크다운 표 또는 CSV 형식이 아닙니다.\n(쉼표나 탭으로 구분된 최소 2열 이상의 데이터여야 표 변환이 가능합니다.)');
+                        break;
+                    }
+                    const delimiter = tabCount > commaCount ? '\t' : ',';
+
+                    const rows: string[][] = [];
+                    for (const line of lines) {
+                        const row: string[] = [];
+                        let current = '';
+                        let inQuotes = false;
+                        for (let i = 0; i < line.length; i++) {
+                            const char = line[i];
+                            if (char === '"') {
+                                inQuotes = !inQuotes;
+                            } else if (char === delimiter && !inQuotes) {
+                                row.push(current.trim());
+                                current = '';
+                            } else {
+                                current += char;
+                            }
+                        }
+                        row.push(current.trim());
+                        rows.push(row);
+                    }
+
+                    const colCounts = rows.map((r) => r.length);
+                    const minCols = Math.min(...colCounts);
+                    if (minCols <= 1) {
+                        alert('선택한 텍스트가 마크다운 표 또는 CSV 형식이 아닙니다.\n(최소 2열 이상의 데이터여야 표 변환이 가능합니다.)');
+                        break;
+                    }
+                    const maxCols = Math.max(...colCounts);
+
+                    const headerRow = rows[0];
+                    while (headerRow.length < maxCols) headerRow.push('');
+                    const headerLine = `| ${headerRow.map((cell) => cell || ' ').join(' | ')} |`;
+                    const separatorLine = `| ${Array(maxCols).fill('---').join(' | ')} |`;
+                    const dataLines = rows.slice(1).map((row) => {
+                        while (row.length < maxCols) row.push('');
+                        return `| ${row.map((cell) => cell || ' ').join(' | ')} |`;
+                    });
+
+                    const tableMarkdown = `\n${headerLine}\n${separatorLine}\n${dataLines.join('\n')}\n`;
+                    updateContent(textarea, start, end, tableMarkdown, tableMarkdown.length, 0);
+                }
                 break;
             }
         }
@@ -258,14 +366,12 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
         }
 
         // Alt+Z: 현재 커서 줄을 화면 중앙으로 스크롤
-        if (e.altKey && !e.ctrlKey && e.key.toLowerCase() === 'z') {
+        if (e.altKey && !e.ctrlKey && e.code === 'KeyZ') {
             e.preventDefault();
-            const lineCount = text.split('\n').length;
-            const currentLineNumber = text.substring(0, start).split('\n').length;
-            if (lineCount > 0) {
-                const targetScrollTop = (currentLineNumber / lineCount) * textarea.scrollHeight - textarea.clientHeight / 2;
-                textarea.scrollTop = Math.max(0, Math.min(targetScrollTop, textarea.scrollHeight - textarea.clientHeight));
-            }
+            const [topPx] = measureLineTops(textarea, [start]);
+            const lineHeight = parseFloat(window.getComputedStyle(textarea).lineHeight) || 20;
+            const targetScrollTop = topPx - textarea.clientHeight / 2 + lineHeight / 2;
+            textarea.scrollTop = Math.max(0, Math.min(targetScrollTop, textarea.scrollHeight - textarea.clientHeight));
             return;
         }
 
@@ -452,7 +558,7 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
                 onKeyDown={handleKeydown}
                 onPaste={handlePaste}
                 onContextMenu={handleContextMenu}
-                className="flex-1 w-full border border-gray-200 rounded-lg px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono custom-scroll"
+                className="flex-1 w-full border border-gray-200 rounded-lg px-4 pt-3 pb-[50vh] text-sm resize-none focus:outline-none focus:border-blue-500 font-mono custom-scroll"
             />
 
             {/* 커스텀 컨텍스트 메뉴 */}

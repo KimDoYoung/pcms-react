@@ -11,16 +11,18 @@
  *
  * 단축키: Ctrl+1(이모지) / Ctrl+2(특수문자) / Ctrl+.(글자색 순환) / Ctrl+/(배경색 순환)
  *         Ctrl+L(링크) / Ctrl+=,Ctrl+-(글자크기) / Ctrl+0(글자크기 초기화) / Ctrl+Shift+H(한자 변환)
+ *         Ctrl+Shift+V(비디오·오디오·유튜브 삽입)
  */
 import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react'
 import { useEditor } from '@tiptap/react'
 import {
   Bold, Italic, Strikethrough, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Baseline, Highlighter, Link2,
-  Image as ImageIcon, Table2, Columns2, Columns, Rows2, Rows, Trash2, RotateCcw,
+  Image as ImageIcon, Video, Table2, Columns2, Columns, Rows2, Rows, Trash2, RotateCcw,
 } from 'lucide-react'
 import HanjaSearchModal from '@/shared/components/editor/HanjaSearchModal'
 import AssetPickerPopup from '@/shared/components/editor/AssetPickerPopup'
+import MediaSelectorModal, { type MediaSelectPayload } from '@/shared/components/editor/MediaSelectorModal'
 import { ROTATE_TEXT_COLORS, ROTATE_BG_COLORS, getNextColor } from '@/shared/components/editor/editorColors'
 import type { AssetType } from '@/domain/asset/types/asset'
 import {
@@ -78,6 +80,7 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [hanjaOpen, setHanjaOpen] = useState(false)
   const [selectedWord, setSelectedWord] = useState('')
+  const [mediaOpen, setMediaOpen] = useState(false)
   const selectionRef = useRef<{ from: number; to: number } | null>(null)
 
   const handleHanjaClick = useCallback(() => {
@@ -140,6 +143,11 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
       if (e.ctrlKey && e.shiftKey && e.key === 'H') {
         e.preventDefault()
         handleHanjaClick()
+        return
+      }
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'v') {
+        e.preventDefault()
+        setMediaOpen(true)
         return
       }
       if (!e.ctrlKey || e.shiftKey) return
@@ -437,6 +445,27 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
           const file = e.target.files?.[0]
           if (file) insertImageFile(file)
           e.target.value = ''
+        }}
+      />
+
+      {/* 비디오/오디오/유튜브 삽입 */}
+      <button
+        type="button"
+        onClick={() => setMediaOpen(true)}
+        className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+        title="비디오·오디오·유튜브 삽입 (Ctrl+Shift+V)"
+      >
+        <Video className="w-4 h-4" />
+      </button>
+      <MediaSelectorModal
+        open={mediaOpen}
+        onClose={() => setMediaOpen(false)}
+        onSelect={(payload: MediaSelectPayload) => {
+          editor.chain().focus().insertContent({
+            type: 'mediaEmbed',
+            attrs: { mediaType: payload.type, src: payload.url, ytId: payload.ytId, label: payload.label },
+          }).run()
+          setMediaOpen(false)
         }}
       />
 
