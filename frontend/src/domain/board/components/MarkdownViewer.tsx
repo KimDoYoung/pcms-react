@@ -8,6 +8,7 @@
 import { useMemo, useRef } from 'react'
 import { renderMarkdown } from '@/lib/markdownRenderer'
 import { useMediaCardToggle } from '@/shared/hooks/useMediaCardToggle'
+import { useCodeBlockCopy } from '@/shared/hooks/useCodeBlockCopy'
 
 interface Props {
   content: string
@@ -17,6 +18,7 @@ export default function MarkdownViewer({ content }: Props) {
   const html = useMemo(() => renderMarkdown(content || ''), [content])
   const containerRef = useRef<HTMLDivElement>(null)
   useMediaCardToggle(containerRef)
+  useCodeBlockCopy(containerRef)
 
   return (
     <div

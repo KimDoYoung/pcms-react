@@ -57,6 +57,7 @@ export interface PostDto {
   content: string | null
   viewCount?: number
   baseYmd: string
+  isPublic?: boolean
   createdAt?: string | null
   attachments: AttachmentDto[]
 }

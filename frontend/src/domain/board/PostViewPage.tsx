@@ -9,6 +9,8 @@ import type { BoardDto, PostDto } from '@/domain/board/types/board'
 import { formatDate } from '@/lib/utils'
 import MarkdownViewer from '@/domain/board/components/MarkdownViewer'
 import { useMessage } from '@/shared/hooks/useMessage'
+import { Button } from '@/shared/components/ui/button'
+import { Link2 } from 'lucide-react'
 
 export default function PostViewPage() {
   const { id } = useTabParams<{ id: string }>()
@@ -41,6 +43,19 @@ export default function PostViewPage() {
     queryFn: () => apiClient.get<BoardDto>(`/boards/${boardId}`),
     enabled: !!boardId,
   })
+
+  async function handleCopyPostUrl() {
+    if (!post) return
+    const contentType = board?.contentType ?? 'html'
+    const origin = window.location.origin + (import.meta.env.PROD ? '/pcms' : '')
+    const url = `${origin}/posts/${contentType}/${post.id}`
+    try {
+      await navigator.clipboard.writeText(url)
+      showMessage('게시글 URL이 복사되었습니다.', 'success')
+    } catch {
+      showMessage('URL 복사에 실패했습니다.', 'error')
+    }
+  }
 
   async function handleDelete() {
     if (!post || !boardId) return
@@ -82,9 +97,23 @@ export default function PostViewPage() {
             <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full">
               👁️ {post.viewCount}
             </span>
+            <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+              post.isPublic ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'
+            }`}>
+              {post.isPublic ? '🌐 공개' : '🔒 비공개'}
+            </span>
 
             <div className="flex-1" />
 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyPostUrl}
+              disabled={!post.isPublic}
+              title={post.isPublic ? undefined : '수정에서 공개로 설정해야 링크가 열람 가능합니다.'}
+            >
+              <Link2 className="w-3.5 h-3.5 mr-1" /> 링크 복사
+            </Button>
             <ButtonsOfView
               onEdit={() => navigate(`/posts/${post.id}/edit`, { state: { boardId } })}
               onDelete={handleDelete}

@@ -28,6 +28,8 @@ public class PostDto {
     @NotBlank(message = "날짜를 입력해 주세요.")
     private String baseYmd;
 
+    private Boolean isPublic;
+
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private Integer attachmentCount;

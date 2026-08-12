@@ -73,6 +73,9 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/boards"),
                     new AntPathRequestMatcher("/posts"),
                     new AntPathRequestMatcher("/posts/**"),
+                    // post url 공유(카톡 등) 조회용 공개 read-only 접근
+                    new AntPathRequestMatcher("/boards/*", "GET"),
+                    new AntPathRequestMatcher("/boards/*/posts/*", "GET"),
                     new AntPathRequestMatcher("/apnode"),
                     new AntPathRequestMatcher("/apnode/**"),
                     new AntPathRequestMatcher("/files/*/download"),

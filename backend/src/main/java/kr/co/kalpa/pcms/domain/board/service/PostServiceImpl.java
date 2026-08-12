@@ -9,6 +9,7 @@ import kr.co.kalpa.pcms.common.dto.PageResponseDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,7 @@ public class PostServiceImpl implements PostService {
                 .author(postDto.getAuthor() != null ? postDto.getAuthor() : resolveCurrentUserName())
                 .content(imageResult.content())
                 .baseYmd(postDto.getBaseYmd())
+                .isPublic(Boolean.TRUE.equals(postDto.getIsPublic()))
                 .build();
         postMapper.insertPost(post);
         Long postId = post.getId();
@@ -62,9 +64,15 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostDto get(Long id) {
-        postMapper.incrementViewCount(id);
         Post post = postMapper.selectPostById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found: " + id));
+
+        if (!Boolean.TRUE.equals(post.getIsPublic()) && !isAuthenticatedUser()) {
+            // 비공개 게시글은 로그인 사용자만 조회 가능. 존재 여부를 숨기기 위해 동일한 예외 사용.
+            throw new RuntimeException("Post not found: " + id);
+        }
+
+        postMapper.incrementViewCount(id);
         return PostDto.builder()
                 .id(post.getId())
                 .boardId(post.getBoardId())
@@ -73,10 +81,18 @@ public class PostServiceImpl implements PostService {
                 .content(post.getContent())
                 .viewCount(post.getViewCount())
                 .baseYmd(post.getBaseYmd())
+                .isPublic(post.getIsPublic())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .attachments(fileUploadService.getAttachments(TABLE_NAME, id))
                 .build();
+    }
+
+    private boolean isAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null
+                && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken);
     }
 
     @Override
@@ -94,6 +110,7 @@ public class PostServiceImpl implements PostService {
                 .author(postDto.getAuthor())
                 .content(imageResult.content())
                 .baseYmd(postDto.getBaseYmd())
+                .isPublic(Boolean.TRUE.equals(postDto.getIsPublic()))
                 .build();
         postMapper.updatePost(post);
 
@@ -147,6 +164,7 @@ public class PostServiceImpl implements PostService {
                 .content(post.getContent())
                 .viewCount(post.getViewCount())
                 .baseYmd(post.getBaseYmd())
+                .isPublic(post.getIsPublic())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .attachmentCount(post.getAttachmentCount())

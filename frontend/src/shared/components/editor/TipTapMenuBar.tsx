@@ -10,7 +10,7 @@
  *   - headingLevels : 노출할 헤딩 레벨 목록 (기본 [1,2,3])
  *
  * 단축키: Ctrl+1(이모지) / Ctrl+2(특수문자) / Ctrl+.(글자색 순환) / Ctrl+/(배경색 순환)
- *         Ctrl+L(링크) / Ctrl+=,Ctrl+-(글자크기) / Ctrl+0(글자크기 초기화) / Ctrl+Shift+H(한자 변환)
+ *         Ctrl+L(링크) / Ctrl+=,Ctrl+-(글자크기) / Ctrl+0(글자크기·글자색·배경색 초기화) / Ctrl+Shift+H(한자 변환)
  *         Ctrl+Shift+V(비디오·오디오·유튜브 삽입)
  */
 import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react'
@@ -133,7 +133,7 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
 
   const resetFontSize = useCallback(() => {
     if (!editor) return
-    editor.chain().focus().unsetFontSize().run()
+    editor.chain().focus().unsetFontSize().unsetColor().unsetHighlight().run()
   }, [editor])
 
   useEffect(() => {
@@ -153,15 +153,15 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
       if (!e.ctrlKey || e.shiftKey) return
       if (e.key === '1') { e.preventDefault(); openAssetPickerAtCaret('EMOJI') }
       else if (e.key === '2') { e.preventDefault(); openAssetPickerAtCaret('SYMBOL') }
-      else if (e.key === '.') { e.preventDefault(); cycleTextColor() }
+      else if (e.key === '.') { e.preventDefault(); e.stopPropagation(); cycleTextColor() }
       else if (e.key === '/') { e.preventDefault(); cycleBgColor() }
       else if (e.key.toLowerCase() === 'l') { e.preventDefault(); openLinkPopover() }
       else if (e.key === '=' || e.key === '+') { e.preventDefault(); changeFontSize(FONT_SIZE_STEP) }
       else if (e.key === '-') { e.preventDefault(); changeFontSize(-FONT_SIZE_STEP) }
       else if (e.key === '0') { e.preventDefault(); resetFontSize() }
     }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
+    document.addEventListener('keydown', onKeyDown, { capture: true })
+    return () => document.removeEventListener('keydown', onKeyDown, { capture: true })
   }, [editor, handleHanjaClick, openAssetPickerAtCaret, cycleTextColor, cycleBgColor, openLinkPopover, changeFontSize, resetFontSize])
 
   if (!editor) return null
@@ -420,7 +420,7 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
         type="button"
         onClick={resetFontSize}
         className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
-        title="글자크기 초기화 (Ctrl+0)"
+        title="글자크기·글자색·배경색 초기화 (Ctrl+0)"
       >
         <RotateCcw className="w-3.5 h-3.5" />
       </button>

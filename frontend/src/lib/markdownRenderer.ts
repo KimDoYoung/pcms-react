@@ -57,7 +57,14 @@ BLOCK_OPEN_RULES.forEach((name) => {
   md.renderer.rules[name] = withSourceLine(original)
 })
 const originalFence = md.renderer.rules.fence as RenderRule
-md.renderer.rules.fence = withSourceLine(originalFence)
+const fenceWithSourceLine = withSourceLine(originalFence)
+export const CODE_COPY_ICON_SVG = renderToStaticMarkup(createElement(icons.Copy, { className: 'code-copy-icon' }))
+md.renderer.rules.fence = (tokens, idx, options, env, self) => (
+  `<div class="code-block">` +
+  `<button type="button" class="code-copy-btn" title="코드 복사">${CODE_COPY_ICON_SVG}</button>` +
+  fenceWithSourceLine(tokens, idx, options, env, self) +
+  `</div>`
+)
 
 // --- 이미지 문법을 비디오/오디오/유튜브 카드로 확장 ---
 const defaultImageRule = md.renderer.rules.image as RenderRule

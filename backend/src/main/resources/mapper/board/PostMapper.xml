@@ -6,7 +6,7 @@
 
     <sql id="columns">
         id, board_id as boardId, title, author, content,
-        view_count as viewCount, base_ymd as baseYmd,
+        view_count as viewCount, base_ymd as baseYmd, is_public as isPublic,
         created_at as createdAt, updated_at as updatedAt
     </sql>
 
@@ -26,8 +26,8 @@
     </sql>
 
     <insert id="insertPost" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO cms.posts (board_id, title, author, content, base_ymd)
-        VALUES (#{boardId}, #{title}, #{author}, #{content}, #{baseYmd})
+        INSERT INTO cms.posts (board_id, title, author, content, base_ymd, is_public)
+        VALUES (#{boardId}, #{title}, #{author}, #{content}, #{baseYmd}, #{isPublic})
     </insert>
 
     <select id="selectPostById" resultType="kr.co.kalpa.pcms.domain.board.entity.Post">
@@ -42,6 +42,7 @@
             author     = #{author},
             content    = #{content},
             base_ymd   = #{baseYmd},
+            is_public  = #{isPublic},
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>

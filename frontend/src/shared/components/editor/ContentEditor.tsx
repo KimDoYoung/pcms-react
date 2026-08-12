@@ -88,6 +88,11 @@ const ContentEditor = forwardRef<ContentEditorHandle, Props>(function ContentEdi
           onShiftTab?.()
           return true
         }
+        // Ctrl+.(글자색 순환) 이 브라우저/OS 기본 이모지 패널과 충돌하므로
+        // ProseMirror 단계에서 최대한 먼저 preventDefault 처리
+        if (event.ctrlKey && !event.shiftKey && !event.altKey && event.key === '.') {
+          event.preventDefault()
+        }
         return false
       },
       handlePaste(_view, event) {

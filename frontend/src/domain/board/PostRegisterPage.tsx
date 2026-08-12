@@ -24,6 +24,7 @@ export default function PostRegisterPage() {
   const { showMessage } = useMessage()
 
   const [form, setForm] = useState({ title: '', author: userNm ?? '', baseYmd: today, content: '' })
+  const [isPublic, setIsPublic] = useState(false)
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [saving, setSaving] = useState(false)
   const contentAreaRef = useRef<HTMLDivElement>(null)
@@ -59,6 +60,7 @@ export default function PostRegisterPage() {
         author: form.author || null,
         baseYmd: formatYmd(form.baseYmd),
         content: form.content || null,
+        isPublic,
       }
       const formData = new FormData()
       formData.append('post', new Blob([JSON.stringify(payload)], { type: 'application/json' }))
@@ -93,7 +95,16 @@ export default function PostRegisterPage() {
           <h1 className="text-xl font-bold text-gray-800">
             ✏️ {board?.boardNameKor} - 새 글 쓰기
           </h1>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
+            <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className="w-4 h-4 accent-indigo-600"
+              />
+              공개 (URL로 누구나 조회 가능)
+            </label>
             <Button onClick={() => handleSubmit(false)} disabled={saving || !form.title.trim()}>
               {saving ? '저장 중...' : '저장'}
             </Button>

@@ -19,6 +19,7 @@ public class Post {
     private String content;
     private Integer viewCount;
     private String baseYmd;
+    private Boolean isPublic;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private Integer attachmentCount;

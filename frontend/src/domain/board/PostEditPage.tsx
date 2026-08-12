@@ -27,6 +27,7 @@ export default function PostEditPage() {
   const boardIdHint = stateboardId ?? (paramBoardId ? Number(paramBoardId) : null)
 
   const [form, setForm] = useState({ title: '', author: '', baseYmd: '', content: '' })
+  const [isPublic, setIsPublic] = useState(false)
   const [attachments, setAttachments] = useState<AttachmentDto[]>([])
   const [deletedIds, setDeletedIds] = useState<number[]>([])
   const [newFiles, setNewFiles] = useState<File[]>([])
@@ -57,6 +58,7 @@ export default function PostEditPage() {
       content: post.content ?? '',
     })
     setAttachments(post.attachments ?? [])
+    setIsPublic(post.isPublic ?? false)
     setFormReady(true)
   }, [post])
 
@@ -85,6 +87,7 @@ export default function PostEditPage() {
         author: form.author || null,
         baseYmd: formatYmd(form.baseYmd),
         content: form.content || null,
+        isPublic,
         deletedAttachmentIds: deletedIds,
       }
       const formData = new FormData()
@@ -138,7 +141,19 @@ export default function PostEditPage() {
           <h1 className="text-xl font-bold text-gray-800">
             ✏️ {board?.boardNameKor} - 글 수정
           </h1>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
+            <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className="w-4 h-4 accent-indigo-600"
+              />
+              공개 (URL로 누구나 조회 가능)
+            </label>
+            <Button variant="outline" onClick={() => navigate(`/posts/${id}`, { state: { boardId } })}>
+              <ArrowLeft className="w-4 h-4 mr-1" /> 목록으로
+            </Button>
             <Button onClick={() => handleSubmit(false)} disabled={saving || !form.title.trim()}>
               {saving ? '저장 중...' : '저장'}
             </Button>

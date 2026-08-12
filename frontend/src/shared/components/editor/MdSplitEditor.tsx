@@ -19,6 +19,7 @@ import MediaSelectorModal, { type MediaSelectPayload } from '@/shared/components
 import { renderMarkdown } from '@/lib/markdownRenderer'
 import { measureLineTops } from '@/lib/textareaLinePositions'
 import { useMediaCardToggle } from '@/shared/hooks/useMediaCardToggle'
+import { useCodeBlockCopy } from '@/shared/hooks/useCodeBlockCopy'
 import type { AssetType } from '@/domain/asset/types/asset'
 
 interface Props {
@@ -45,6 +46,7 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
   const previewContainerRef = useRef<HTMLDivElement>(null)
 
   useMediaCardToggle(previewContainerRef)
+  useCodeBlockCopy(previewContainerRef)
 
   // F9: 미리보기 토글
   // Ctrl+1,2,3,4: asset picker 오픈 (textarea 커서 근처)

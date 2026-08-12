@@ -93,6 +93,32 @@ document.addEventListener('click', function (e) {
 });
 `.trim()
 
+// 내보낸 정적 HTML 안에서 코드블록 우측 상단의 복사 버튼을 동작시키는 스크립트.
+// useCodeBlockCopy.ts의 클릭 위임 로직을 순수 JS로 옮긴 것 — 앱 안에서는 그 훅이 대신 동작하므로
+// 이 문자열은 내보내기 결과물(React 번들이 없는 독립 HTML)에서만 쓰인다.
+const CODE_COPY_SCRIPT = `
+document.addEventListener('click', function (e) {
+  var btn = e.target.closest('.code-copy-btn');
+  if (!btn || btn.dataset.copying) return;
+  var code = btn.closest('.code-block');
+  code = code && code.querySelector('pre code');
+  var text = code ? code.textContent : '';
+  if (!text) return;
+
+  navigator.clipboard.writeText(text).then(function () {
+    btn.dataset.copying = '1';
+    var original = btn.innerHTML;
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="code-copy-icon"><polyline points="20 6 9 17 4 12"/></svg>';
+    btn.classList.add('is-copied');
+    setTimeout(function () {
+      btn.innerHTML = original;
+      btn.classList.remove('is-copied');
+      delete btn.dataset.copying;
+    }, 1500);
+  });
+});
+`.trim()
+
 interface Props {
   editorRef: RefObject<MdTextareaHandle | null>
   previewOpen: boolean
@@ -197,6 +223,7 @@ ${bodyHtml}
 </div>
 <script>
 ${MEDIA_TOGGLE_SCRIPT}
+${CODE_COPY_SCRIPT}
 </script>
 </body>
 </html>
