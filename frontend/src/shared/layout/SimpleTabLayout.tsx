@@ -33,7 +33,7 @@ export function SimpleTabLayout() {
             const { Component } = found
             return (
               <TabRouteParamsContext.Provider key={tab.id} value={found.params}>
-                <div style={{ display: activeTabId === tab.id ? 'block' : 'none' }}>
+                <div className="h-full" style={{ display: activeTabId === tab.id ? 'block' : 'none' }}>
                   <Component />
                 </div>
               </TabRouteParamsContext.Provider>

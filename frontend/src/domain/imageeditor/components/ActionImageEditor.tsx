@@ -566,9 +566,9 @@ const ActionImageEditor: React.FC = () => {
       }
     } else {
       // 이미지가 없는 기본 상태의 크기로 복원 (안내문 렌더링용)
-      if (canvas.width !== 800 || canvas.height !== 500) {
-        canvas.width = 800
-        canvas.height = 500
+      if (canvas.width !== 900 || canvas.height !== 600) {
+        canvas.width = 900
+        canvas.height = 600
       }
     }
 
@@ -1566,8 +1566,8 @@ const ActionImageEditor: React.FC = () => {
 
     // 캔버스의 중앙 좌표 계산
     const canvas = canvasRef.current
-    const canvasW = canvas ? canvas.width : 800
-    const canvasH = canvas ? canvas.height : 500
+    const canvasW = canvas ? canvas.width : 900
+    const canvasH = canvas ? canvas.height : 600
 
     const posX = Math.round((canvasW - targetW) / 2)
     const posY = Math.round((canvasH - targetH) / 2)
@@ -3841,8 +3841,8 @@ const ActionImageEditor: React.FC = () => {
                   width: bgImage ? `${(bgImage.width + canvasExpandLeft + canvasExpandRight) * zoom}px` : 'auto',
                   height: bgImage ? `${(bgImage.height + canvasExpandTop + (hasCaption ? captionHeight : 0) + canvasExpandBottom) * zoom}px` : 'auto',
                 }}
-                width={bgImage ? bgImage.width + canvasExpandLeft + canvasExpandRight : 800}
-                height={bgImage ? bgImage.height + canvasExpandTop + (hasCaption ? captionHeight : 0) + canvasExpandBottom : 500}
+                width={bgImage ? bgImage.width + canvasExpandLeft + canvasExpandRight : 900}
+                height={bgImage ? bgImage.height + canvasExpandTop + (hasCaption ? captionHeight : 0) + canvasExpandBottom : 600}
               />
 
 
