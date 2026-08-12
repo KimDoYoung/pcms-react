@@ -86,7 +86,7 @@ interface HddDirNodeProps {
 
 function HddDirNode({ volumnName, node, selected, onSelect }: HddDirNodeProps) {
   const [expanded, setExpanded] = useState(false)
-  const isSelected = selected?.pid === node.id && selected.volumnName === volumnName
+  const isSelected = selected != null && selected.pid === node.id && selected.volumnName === volumnName
 
   const { data: children } = useQuery<HddDto[]>({
     queryKey: ['hdd-children', volumnName, node.id],
@@ -132,7 +132,7 @@ interface HddVolumeNodeProps {
 
 function HddVolumeNode({ volumnName, selected, onSelect }: HddVolumeNodeProps) {
   const [expanded, setExpanded] = useState(false)
-  const isSelected = selected?.volumnName === volumnName && selected.pid === null
+  const isSelected = selected != null && selected.volumnName === volumnName && selected.pid === null
 
   const { data: children } = useQuery<HddDto[]>({
     queryKey: ['hdd-children', volumnName, null],
