@@ -69,4 +69,33 @@
         WHERE id = #{id}
     </update>
 
+    <select id="selectVolumeNames" resultType="string">
+        SELECT volumn_name
+        FROM cms.hdd
+        WHERE volumn_name IS NOT NULL
+        GROUP BY volumn_name
+        ORDER BY volumn_name
+    </select>
+
+    <select id="selectChildren" resultType="kr.co.kalpa.pcms.domain.movie.entity.Hdd">
+        SELECT id, volumn_name as volumnName, gubun, path, file_name as fileName,
+               name, pdir, extension, size, sha1_cd as sha1Cd,
+               srch_key as srchKey, last_modified_ymd as lastModifiedYmd,
+               pid, right_pid as rightPid
+        FROM cms.hdd
+        <where>
+            AND volumn_name = #{volumnName}
+            <choose>
+                <when test="pid != null">
+                    AND pid = #{pid}
+                </when>
+                <otherwise>
+                    AND gubun = 'D'
+                    AND pid IS NULL
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY name ASC
+    </select>
+
 </mapper>

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -109,6 +110,20 @@ public class MovieController {
     public ResponseEntity<PageResponseDto<HddDto>> getHddList(HddSearchDto searchDto) {
         log.info("getHddList: {}", searchDto);
         return ResponseEntity.ok(hddService.getList(searchDto));
+    }
+
+    @GetMapping("/hdd/volumes")
+    public ResponseEntity<List<String>> getHddVolumeNames() {
+        log.info("getHddVolumeNames");
+        return ResponseEntity.ok(hddService.getVolumeNames());
+    }
+
+    @GetMapping("/hdd/children")
+    public ResponseEntity<List<HddDto>> getHddChildren(
+            @RequestParam String volumnName,
+            @RequestParam(required = false) Integer pid) {
+        log.info("getHddChildren: volumnName={}, pid={}", volumnName, pid);
+        return ResponseEntity.ok(hddService.getChildren(volumnName, pid));
     }
 
     @GetMapping("/hdd/{id:[0-9]+}")

@@ -53,6 +53,20 @@ public class HddServiceImpl implements HddService {
         return toDto(hdd);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getVolumeNames() {
+        return hddMapper.selectVolumeNames();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HddDto> getChildren(String volumnName, Integer pid) {
+        return hddMapper.selectChildren(volumnName, pid).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     private HddDto toDto(Hdd hdd) {
         return HddDto.builder()
                 .id(hdd.getId())
