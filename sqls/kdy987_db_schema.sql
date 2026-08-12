@@ -380,3 +380,26 @@ COMMENT ON COLUMN cms.assets.updated_at IS '수정일시';
 
 -- atype 필터 조회가 빈번하므로 인덱스 생성
 CREATE INDEX idx_assets_atype ON cms.assets (atype);
+
+
+-- drop table cms.image_work;
+CREATE TABLE cms.image_work (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    created_by  VARCHAR(50) NOT NULL,                   -- 작업 소유 사용자 (users.user_id)
+    title       VARCHAR(200) NOT NULL,                  -- 작업 제목
+    json_data   TEXT NOT NULL,                          -- 캔버스 아이템/스타일/이미지 등 편집 상태 JSON 직렬화 값
+    created_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_image_work_user FOREIGN KEY (created_by) REFERENCES cms.users(user_id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE cms.image_work IS '이미지 에디터 임시 보관(작업본) 목록 — 사용자별 스코프';
+COMMENT ON COLUMN cms.image_work.id IS '작업본 고유 ID';
+COMMENT ON COLUMN cms.image_work.created_by IS '작업 소유 사용자 (users.user_id)';
+COMMENT ON COLUMN cms.image_work.title IS '작업 제목';
+COMMENT ON COLUMN cms.image_work.json_data IS '캔버스 아이템/스타일/이미지 등 편집 상태 JSON 직렬화 값';
+COMMENT ON COLUMN cms.image_work.created_at IS '생성일시';
+COMMENT ON COLUMN cms.image_work.updated_at IS '수정일시';
+
+-- 사용자별 목록 조회(updated_at desc)가 빈번하므로 복합 인덱스 생성
+CREATE INDEX idx_image_work_created_by_updated_at ON cms.image_work (created_by, updated_at DESC);

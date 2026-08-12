@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.domain.usersettings.service.UserSettingsMapper">
+
+    <insert id="upsertUserSetting">
+        INSERT INTO cms.user_settings (user_id, setting_key, setting_value)
+        VALUES (#{userId}, #{settingKey}, #{settingValue})
+        ON CONFLICT (user_id, setting_key)
+        DO UPDATE SET setting_value = EXCLUDED.setting_value, updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectUserSetting" resultType="kr.co.kalpa.pcms.domain.usersettings.entity.UserSetting">
+        SELECT setting_id as settingId, user_id as userId, setting_key as settingKey,
+               setting_value as settingValue, created_at as createdAt, updated_at as updatedAt
+        FROM cms.user_settings
+        WHERE user_id = #{userId} AND setting_key = #{settingKey}
+    </select>
+
+    <delete id="deleteUserSetting">
+        DELETE FROM cms.user_settings WHERE user_id = #{userId} AND setting_key = #{settingKey}
+    </delete>
+
+</mapper>

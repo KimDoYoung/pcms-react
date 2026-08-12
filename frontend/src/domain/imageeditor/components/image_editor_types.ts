@@ -1,0 +1,43 @@
+export interface CanvasItem {
+  id: string
+  type: 'circle-number' | 'box' | 'text' | 'arrow' | 'orthogonal-arrow' | 'bracket-arrow' | 'symbol' | 'image' | 'block-arrow-stamp' | 'callout'
+  x: number
+  y: number
+  width?: number
+  height?: number
+  text?: string
+  imageSrc?: string
+  style: {
+    borderColor?: string
+    borderWidth?: number
+    backgroundColor?: string
+    textColor?: string
+    fontSize?: number
+    lineStyle?: 'solid' | 'dashed'
+    opacity?: number
+    borderRadius?: number
+    midX?: number
+    midY?: number
+    hasBorder?: boolean
+    hasCaption?: boolean
+    fontStyle?: 'normal' | 'italic'
+    textDecoration?: 'none' | 'underline' | 'line-through'
+    stampDirection?: string
+    stampShape?: 'arrow' | 'hand' | 'cursor'
+    stampScale?: number
+    headSize?: number
+    rotation?: number
+    calloutShape?: 'speech-rect' | 'speech-oval' | 'line'
+    calloutTailX?: number
+    calloutTailY?: number
+    shape?: 'circle' | 'rect'
+  }
+}
+
+export interface ImageWork {
+  id: number
+  title: string
+  jsonData: string
+  createdAt: string
+  updatedAt: string
+}

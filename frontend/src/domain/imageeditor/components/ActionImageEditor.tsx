@@ -1,0 +1,4024 @@
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { Undo, Redo, Type, Square, CircleDot, Check, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp, MessageSquare, ChevronRight, Magnet } from 'lucide-react'
+import { apiClient } from '@/lib/apiClient'
+import { drawStamp, STAMP_ANGLES } from './arrowStamp'
+import { drawCallout, getCalloutTailPoint } from './calloutStamp'
+import TextItemInput from './TextItemInput'
+import { getDistanceToSegment, getTextBounds, drawArrow, drawOrthogonalArrow, drawSelectionHandles, createRoundedRectPath } from './canvasDrawHelpers'
+import { copyTextToClipboard, loadImageFromFile } from './fileHelpers'
+import { getItemEdgeBounds, shiftItemX, shiftItemY, offsetItemForCrop, isItemWithinCropBounds } from './itemGeometry'
+
+// wYYMMDD 형태의 기본 타이틀을 생성하는 헬퍼 함수
+function getDefaultEditorTitle(): string {
+  const d = new Date()
+  const yy = String(d.getFullYear()).slice(-2)
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `w${yy}${mm}${dd}`
+}
+
+import type { CanvasItem, ImageWork } from './image_editor_types'
+import FloatingPropertyPanel from './FloatingPropertyPanel'
+import WorkHistory from './WorkHistory'
+import ImageEditorFooter from './ImageEditorFooter'
+
+// 아이템의 중심점 계산 (width/height 미보유 타입은 x,y 자체가 중심점으로 취급됨)
+function getItemCenter(item: CanvasItem): { cx: number; cy: number } {
+  return {
+    cx: item.x + (item.width || 0) / 2,
+    cy: item.y + (item.height || 0) / 2
+  }
+}
+import { SYSTEM_ITEM_DEFAULTS } from './image_items_defaults'
+import type { StyleConfig, WorkStyleConfig } from './image_items_defaults'
+import { useMessage } from '@/shared/hooks/useMessage'
+
+
+const ActionImageEditor: React.FC = () => {
+  const { showMessage } = useMessage()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isVisible = () => containerRef.current !== null && containerRef.current.offsetParent !== null
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // 에디터 상태
+  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'block-arrow-stamp' | 'callout'>('pointer')
+  const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
+  const [bgImageSrc, setBgImageSrc] = useState<string>('')
+  const [canvasExpandBottom, setCanvasExpandBottom] = useState<number>(0)
+  const [canvasExpandRight, setCanvasExpandRight] = useState<number>(0)
+  const [canvasExpandTop, setCanvasExpandTop] = useState<number>(0)
+  const [canvasExpandLeft, setCanvasExpandLeft] = useState<number>(0)
+  // 바탕 확장 툴바에서 선택된 방향 (라디오 선택 + 공용 +100/-100 버튼용)
+  const [expandDirection, setExpandDirection] = useState<'top' | 'bottom' | 'left' | 'right'>('bottom')
+  const [zoom, setZoom] = useState<number>(1.0)
+  const [baseBgImage, setBaseBgImage] = useState<HTMLImageElement | null>(null)
+  const [baseBgImageSrc, setBaseBgImageSrc] = useState<string>('')
+  const [imageScale, setImageScale] = useState<number>(1.0)
+  const [items, setItems] = useState<CanvasItem[]>([])
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+  // 서브 이미지용 프리로드 캐시
+  const subImageCache = useRef<Map<string, HTMLImageElement>>(new Map())
+  const [cacheTrigger, setCacheTrigger] = useState<number>(0)
+  const [circleCounter, setCircleCounter] = useState<number>(1)
+  // 1. 원숫자 (circle-number) 관련 속성
+  const [circleNumberBgColor, setCircleNumberBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.circleNumberBgColor)
+  const [circleNumberTextColor, setCircleNumberTextColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.circleNumberTextColor)
+  const [circleNumberBorderColor, setCircleNumberBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor)
+  const [circleNumberBorderWidth, setCircleNumberBorderWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth)
+  const [circleNumberFontSize, setCircleNumberFontSize] = useState<number>(SYSTEM_ITEM_DEFAULTS.circleNumberFontSize)
+  const [circleNumberShape, setCircleNumberShape] = useState<'circle' | 'rect'>(SYSTEM_ITEM_DEFAULTS.circleNumberShape)
+
+  // 2. 강조 상자 (box) 관련 속성
+  const [boxBorderColor, setBoxBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.boxBorderColor)
+  const [boxLineWidth, setBoxLineWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.boxLineWidth)
+  const [boxLineStyle, setBoxLineStyle] = useState<'solid' | 'dashed'>(SYSTEM_ITEM_DEFAULTS.boxLineStyle)
+  const [boxBgColor, setBoxBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.boxBgColor)
+  const [boxOpacity, setBoxOpacity] = useState<number>(SYSTEM_ITEM_DEFAULTS.boxOpacity)
+  const [boxBorderRadius, setBoxBorderRadius] = useState<number>(SYSTEM_ITEM_DEFAULTS.boxBorderRadius)
+  const [boxShape, setBoxShape] = useState<'circle' | 'rect'>(SYSTEM_ITEM_DEFAULTS.boxShape)
+
+  // 3. 화살표 (arrow) 관련 속성
+  const [arrowColor, setArrowColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.arrowColor)
+  const [arrowLineWidth, setArrowLineWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.arrowLineWidth)
+  const [arrowLineStyle, setArrowLineStyle] = useState<'solid' | 'dashed'>(SYSTEM_ITEM_DEFAULTS.arrowLineStyle)
+
+  // 4. 일반 텍스트 (text) 관련 속성
+  const [textTextColor, setTextTextColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.textTextColor)
+  const [textFontSize, setTextFontSize] = useState<number>(SYSTEM_ITEM_DEFAULTS.textFontSize)
+  const [textBgColor, setTextBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.textBgColor)
+  const [textFontStyle, setTextFontStyle] = useState<'normal' | 'italic'>(SYSTEM_ITEM_DEFAULTS.textFontStyle)
+  const [textTextDecoration, setTextTextDecoration] = useState<'none' | 'underline' | 'line-through'>(SYSTEM_ITEM_DEFAULTS.textTextDecoration)
+  const [textRotation, setTextRotation] = useState<number>(SYSTEM_ITEM_DEFAULTS.textRotation)
+
+  // 5. 이모지 심볼 (symbol) 관련 속성
+  const [symbolEmoji, setSymbolEmoji] = useState<string>(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
+  const [symbolScale, setSymbolScale] = useState<number>(SYSTEM_ITEM_DEFAULTS.symbolScale)
+
+  // 5-1. 화살머리 크기 (1, 2, 3단계)
+  const [arrowHeadSize, setArrowHeadSize] = useState<number>(SYSTEM_ITEM_DEFAULTS.arrowHeadSize)
+
+  // 5-2. 화살표 스탬프 관련 속성
+  const [stampScale, setStampScale] = useState<number>(SYSTEM_ITEM_DEFAULTS.stampScale)
+  const [stampDirection, setStampDirection] = useState<string>(SYSTEM_ITEM_DEFAULTS.stampDirection)
+  const [stampShape, setStampShape] = useState<'arrow' | 'hand' | 'cursor'>(SYSTEM_ITEM_DEFAULTS.stampShape)
+
+  // 6. 이미지 아이템 (image) 관련 속성
+  const [imageSrcBorderColor, setImageSrcBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor)
+  const [imageSrcBorderWidth, setImageSrcBorderWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth)
+  const [imageSrcBorderStyle, setImageSrcBorderStyle] = useState<'solid' | 'dashed'>(SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle)
+  const [imageSrcHasBorder, setImageSrcHasBorder] = useState<boolean>(SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder)
+  const [imageSrcCaptionText, setImageSrcCaptionText] = useState<string>(SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText)
+  const [imageSrcHasCaption, setImageSrcHasCaption] = useState<boolean>(SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption)
+
+  // 7. 말풍선/설명선 (callout) 관련 속성
+  const [calloutShape, setCalloutShape] = useState<'speech-rect' | 'speech-oval' | 'line'>(SYSTEM_ITEM_DEFAULTS.calloutShape)
+  const [calloutBgColor, setCalloutBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.calloutBgColor)
+  const [calloutBorderColor, setCalloutBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.calloutBorderColor)
+  const [calloutBorderWidth, setCalloutBorderWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.calloutBorderWidth)
+  const [calloutLineStyle, setCalloutLineStyle] = useState<'solid' | 'dashed'>(SYSTEM_ITEM_DEFAULTS.calloutLineStyle)
+  const [calloutOpacity, setCalloutOpacity] = useState<number>(SYSTEM_ITEM_DEFAULTS.calloutOpacity)
+  const [calloutBorderRadius, setCalloutBorderRadius] = useState<number>(SYSTEM_ITEM_DEFAULTS.calloutBorderRadius)
+  const [calloutTextColor, setCalloutTextColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.calloutTextColor)
+  const [calloutFontSize, setCalloutFontSize] = useState<number>(SYSTEM_ITEM_DEFAULTS.calloutFontSize)
+
+  // 속성 패널 리셋 트리거 상태
+  const [resetPanelTrigger, setResetPanelTrigger] = useState<number>(0)
+  
+  // 드로잉/인터랙션 임시 상태
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null)
+  const [dragCurrent, setDragCurrent] = useState<{ x: number; y: number } | null>(null)
+  const [textInput, setTextInput] = useState<{ x: number; y: number; visible: boolean; id?: string }>({ x: 0, y: 0, visible: false })
+  const [textInputValue, setTextInputValue] = useState('')
+  const [draggedItemOffset, setDraggedItemOffset] = useState<{ x: number; y: number } | null>(null)
+  const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | 'arrow-start' | 'arrow-end' | 'orthogonal-mid' | 'text-rotate' | 'callout-tail' | null>(null)
+  // 드래그 이동 시작 시점의 items 스냅샷 (undo 기록용)
+  const dragMoveStartItemsRef = useRef<CanvasItem[] | null>(null)
+
+  // 스마트 정렬 가이드 (드래그 중 다른 아이템 중심점 스냅)
+  const [smartAlignEnabled, setSmartAlignEnabled] = useState<boolean>(true)
+  const [alignGuides, setAlignGuides] = useState<{ x?: number; y?: number }>({})
+  const SNAP_THRESHOLD = 6
+
+  // 마지막 저장 시점 상태 (isDirty 체크용)
+  const [lastSavedState, setLastSavedState] = useState<{
+    title: string
+    bgImageSrc: string
+    items: CanvasItem[]
+    canvasExpandBottom: number
+    canvasExpandRight: number
+    canvasExpandTop: number
+    canvasExpandLeft: number
+    hasBorder: boolean
+    borderColor: string
+    borderWidth: number
+    borderStyle: 'basic' | 'rounded'
+    hasCaption: boolean
+    captionText: string
+    captionAlign: 'left' | 'center'
+    imageScale: number // 추가
+    
+    // 신규 분리 속성들
+    circleNumberBgColor: string
+    circleNumberTextColor: string
+    circleNumberBorderColor: string
+    circleNumberBorderWidth: number
+    circleNumberFontSize: number
+    circleNumberShape: 'circle' | 'rect'
+    boxBorderColor: string
+    boxLineWidth: number
+    boxLineStyle: 'solid' | 'dashed'
+    boxBgColor: string
+    boxOpacity: number
+    boxBorderRadius: number
+    boxShape: 'circle' | 'rect'
+    arrowColor: string
+    arrowLineWidth: number
+    arrowLineStyle: 'solid' | 'dashed'
+    textTextColor: string
+    textFontSize: number
+    textBgColor: string
+    textFontStyle: 'normal' | 'italic'
+    textTextDecoration: 'none' | 'underline' | 'line-through'
+    textRotation: number
+    symbolEmoji: string
+    symbolScale: number
+    imageSrcBorderColor: string
+    imageSrcBorderWidth: number
+    imageSrcBorderStyle: 'solid' | 'dashed'
+    imageSrcHasBorder: boolean
+    imageSrcCaptionText: string
+    imageSrcHasCaption: boolean
+    calloutShape: 'speech-rect' | 'speech-oval' | 'line'
+    calloutBgColor: string
+    calloutBorderColor: string
+    calloutBorderWidth: number
+    calloutLineStyle: 'solid' | 'dashed'
+    calloutOpacity: number
+    calloutBorderRadius: number
+    calloutTextColor: string
+    calloutFontSize: number
+  }>({
+    title: '',
+    bgImageSrc: '',
+    items: [],
+    canvasExpandBottom: 0,
+    canvasExpandRight: 0,
+    canvasExpandTop: 0,
+    canvasExpandLeft: 0,
+    hasBorder: false,
+    borderColor: '#cbd5e1',
+    borderWidth: 2,
+    borderStyle: 'basic',
+    hasCaption: false,
+    captionText: '',
+    captionAlign: 'center',
+    imageScale: 1.0, // 추가
+
+    circleNumberBgColor: SYSTEM_ITEM_DEFAULTS.circleNumberBgColor,
+    circleNumberTextColor: SYSTEM_ITEM_DEFAULTS.circleNumberTextColor,
+    circleNumberBorderColor: SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor,
+    circleNumberBorderWidth: SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth,
+    circleNumberFontSize: SYSTEM_ITEM_DEFAULTS.circleNumberFontSize,
+    circleNumberShape: SYSTEM_ITEM_DEFAULTS.circleNumberShape,
+    boxBorderColor: SYSTEM_ITEM_DEFAULTS.boxBorderColor,
+    boxLineWidth: SYSTEM_ITEM_DEFAULTS.boxLineWidth,
+    boxLineStyle: SYSTEM_ITEM_DEFAULTS.boxLineStyle,
+    boxBgColor: SYSTEM_ITEM_DEFAULTS.boxBgColor,
+    boxOpacity: SYSTEM_ITEM_DEFAULTS.boxOpacity,
+    boxBorderRadius: SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
+    boxShape: SYSTEM_ITEM_DEFAULTS.boxShape,
+    arrowColor: SYSTEM_ITEM_DEFAULTS.arrowColor,
+    arrowLineWidth: SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
+    arrowLineStyle: SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
+    textTextColor: SYSTEM_ITEM_DEFAULTS.textTextColor,
+    textFontSize: SYSTEM_ITEM_DEFAULTS.textFontSize,
+    textBgColor: SYSTEM_ITEM_DEFAULTS.textBgColor,
+    textFontStyle: SYSTEM_ITEM_DEFAULTS.textFontStyle,
+    textTextDecoration: SYSTEM_ITEM_DEFAULTS.textTextDecoration,
+    textRotation: SYSTEM_ITEM_DEFAULTS.textRotation,
+    symbolEmoji: SYSTEM_ITEM_DEFAULTS.symbolEmoji,
+    symbolScale: SYSTEM_ITEM_DEFAULTS.symbolScale,
+    imageSrcBorderColor: SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor,
+    imageSrcBorderWidth: SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth,
+    imageSrcBorderStyle: SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle,
+    imageSrcHasBorder: SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder,
+    imageSrcCaptionText: SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText,
+    imageSrcHasCaption: SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption,
+    calloutShape: SYSTEM_ITEM_DEFAULTS.calloutShape,
+    calloutBgColor: SYSTEM_ITEM_DEFAULTS.calloutBgColor,
+    calloutBorderColor: SYSTEM_ITEM_DEFAULTS.calloutBorderColor,
+    calloutBorderWidth: SYSTEM_ITEM_DEFAULTS.calloutBorderWidth,
+    calloutLineStyle: SYSTEM_ITEM_DEFAULTS.calloutLineStyle,
+    calloutOpacity: SYSTEM_ITEM_DEFAULTS.calloutOpacity,
+    calloutBorderRadius: SYSTEM_ITEM_DEFAULTS.calloutBorderRadius,
+    calloutTextColor: SYSTEM_ITEM_DEFAULTS.calloutTextColor,
+    calloutFontSize: SYSTEM_ITEM_DEFAULTS.calloutFontSize
+  })
+  
+  // 컨트롤 그룹 보이기/숨기기 상태
+  const [showImageScaleControls, setShowImageScaleControls] = useState<boolean>(false)
+  const [showCanvasExpandControls, setShowCanvasExpandControls] = useState<boolean>(false)
+  const [showZoomControls, setShowZoomControls] = useState<boolean>(false)
+
+  // 헤더 3초 알림 메시지 상태
+  const [saveMessage, setSaveMessage] = useState<{ text: string; type: 'success' | 'error' | '' }>({ text: '', type: '' })
+  
+  // 생성된 물리 정적 이미지 URL 상태
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('')
+  
+  // 현재 로드되어 편집 중인 임시작업의 레코드 ID
+  const [activeHistoryId, setActiveHistoryId] = useState<number | null>(null)
+
+  // 테두리(박스라인) 및 캡션 설정 상태
+  const [hasBorder, setHasBorder] = useState<boolean>(SYSTEM_ITEM_DEFAULTS.hasBorder)
+  const [borderColor, setBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.borderColor)
+  const [borderWidth, setBorderWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.borderWidth)
+  const [borderStyle, setBorderStyle] = useState<'basic' | 'rounded'>(SYSTEM_ITEM_DEFAULTS.borderStyle)
+  
+  const [hasCaption, setHasCaption] = useState<boolean>(false)
+  const [captionText, setCaptionText] = useState<string>('')
+  const [captionAlign, setCaptionAlign] = useState<'left' | 'center'>(SYSTEM_ITEM_DEFAULTS.captionAlign)
+  const captionHeight = 42 // 고정 높이 42px
+  
+  // 임시 보관함 이력 상태
+  const [historyList, setHistoryList] = useState<ImageWork[]>([])
+  const [totalHistoryCount, setTotalHistoryCount] = useState<number>(0)
+  const [editorTitle, setEditorTitle] = useState(getDefaultEditorTitle())
+  const [savingWork, setSavingWork] = useState(false)
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [insertingImage, setInsertingImage] = useState(false)
+
+
+
+  // Undo / Redo 작업 스택
+  const [undoStack, setUndoStack] = useState<{
+    items: CanvasItem[]
+    bgImageSrc: string
+    canvasExpandBottom?: number
+    canvasExpandRight?: number
+    canvasExpandTop?: number
+    canvasExpandLeft?: number
+    imageScale?: number // 추가
+  }[]>([])
+  const [redoStack, setRedoStack] = useState<{
+    items: CanvasItem[]
+    bgImageSrc: string
+    canvasExpandBottom?: number
+    canvasExpandRight?: number
+    canvasExpandTop?: number
+    canvasExpandLeft?: number
+    imageScale?: number // 추가
+  }[]>([])
+
+
+
+  // activeHistoryId 상태가 변경되면 localStorage에 자동 보관
+  useEffect(() => {
+    if (activeHistoryId !== null) {
+      localStorage.setItem('pcms_active_image_work_id', activeHistoryId.toString())
+    } else {
+      localStorage.removeItem('pcms_active_image_work_id')
+    }
+  }, [activeHistoryId])
+
+  // 추가 이미지 프리로드 및 캐시 갱신 리스너
+  useEffect(() => {
+    items.forEach((item) => {
+      if (item.type === 'image' && item.imageSrc) {
+        if (!subImageCache.current.has(item.imageSrc)) {
+          const img = new Image()
+          img.onload = () => {
+            subImageCache.current.set(item.imageSrc!, img)
+            setCacheTrigger((prev) => prev + 1)
+          }
+          img.src = item.imageSrc
+          subImageCache.current.set(item.imageSrc, img) // 임시 중복 로딩 차단용
+        }
+      }
+    })
+  }, [items])
+
+  // 탭 최초 오픈(마운트) 시 1회: 이력 목록 갱신, 사용자 기본 스타일/마지막 작업본 복원
+  // (pcms 탭 시스템은 탭을 한번 열면 언마운트하지 않고 display:none으로만 숨기므로
+  //  aman의 [isOpen] 재트리거 방식 대신 mount 1회 실행으로 단순화)
+  useEffect(() => {
+    setSaveMessage({ text: '', type: '' })
+
+    // 사용자 지정 기본 스타일 로드 시도
+    fetchUserSettings()
+
+    const savedIdStr = localStorage.getItem('pcms_active_image_work_id')
+    const savedId = savedIdStr ? parseInt(savedIdStr, 10) : null
+
+    fetchHistory().then((data) => {
+      if (savedId && activeHistoryId !== savedId) {
+        const savedWork = data.find(w => w.id === savedId)
+        if (savedWork) {
+          // display: none 해제 및 탭 전환 애니메이션 레이아웃 계산을 위한 약간의 지연 처리
+          setTimeout(() => {
+            handleLoadWork(savedWork)
+          }, 100)
+        }
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 변경사항 여부 계산 (isDirty)
+  const isDirty = bgImage !== null && (
+    editorTitle.trim() !== lastSavedState.title.trim() ||
+    bgImageSrc !== lastSavedState.bgImageSrc ||
+    imageScale !== lastSavedState.imageScale || // 추가
+    JSON.stringify(items) !== JSON.stringify(lastSavedState.items) ||
+    canvasExpandBottom !== lastSavedState.canvasExpandBottom ||
+    canvasExpandRight !== lastSavedState.canvasExpandRight ||
+    canvasExpandTop !== lastSavedState.canvasExpandTop ||
+    canvasExpandLeft !== lastSavedState.canvasExpandLeft ||
+    hasBorder !== lastSavedState.hasBorder ||
+    borderColor !== lastSavedState.borderColor ||
+    borderWidth !== lastSavedState.borderWidth ||
+    borderStyle !== lastSavedState.borderStyle ||
+    hasCaption !== lastSavedState.hasCaption ||
+    captionText !== lastSavedState.captionText ||
+    captionAlign !== lastSavedState.captionAlign ||
+    circleNumberBgColor !== lastSavedState.circleNumberBgColor ||
+    circleNumberTextColor !== lastSavedState.circleNumberTextColor ||
+    circleNumberBorderColor !== lastSavedState.circleNumberBorderColor ||
+    circleNumberBorderWidth !== lastSavedState.circleNumberBorderWidth ||
+    circleNumberFontSize !== lastSavedState.circleNumberFontSize ||
+    circleNumberShape !== lastSavedState.circleNumberShape ||
+    boxBorderColor !== lastSavedState.boxBorderColor ||
+    boxLineWidth !== lastSavedState.boxLineWidth ||
+    boxLineStyle !== lastSavedState.boxLineStyle ||
+    boxBgColor !== lastSavedState.boxBgColor ||
+    boxOpacity !== lastSavedState.boxOpacity ||
+    boxBorderRadius !== lastSavedState.boxBorderRadius ||
+    boxShape !== lastSavedState.boxShape ||
+    arrowColor !== lastSavedState.arrowColor ||
+    arrowLineWidth !== lastSavedState.arrowLineWidth ||
+    arrowLineStyle !== lastSavedState.arrowLineStyle ||
+    textTextColor !== lastSavedState.textTextColor ||
+    textFontSize !== lastSavedState.textFontSize ||
+    textBgColor !== lastSavedState.textBgColor ||
+    textFontStyle !== lastSavedState.textFontStyle ||
+    textTextDecoration !== lastSavedState.textTextDecoration ||
+    textRotation !== lastSavedState.textRotation ||
+    symbolEmoji !== lastSavedState.symbolEmoji ||
+    symbolScale !== lastSavedState.symbolScale ||
+    imageSrcBorderColor !== lastSavedState.imageSrcBorderColor ||
+    imageSrcBorderWidth !== lastSavedState.imageSrcBorderWidth ||
+    imageSrcBorderStyle !== lastSavedState.imageSrcBorderStyle ||
+    imageSrcHasBorder !== lastSavedState.imageSrcHasBorder ||
+    imageSrcCaptionText !== lastSavedState.imageSrcCaptionText ||
+    imageSrcHasCaption !== lastSavedState.imageSrcHasCaption ||
+    calloutShape !== lastSavedState.calloutShape ||
+    calloutBgColor !== lastSavedState.calloutBgColor ||
+    calloutBorderColor !== lastSavedState.calloutBorderColor ||
+    calloutBorderWidth !== lastSavedState.calloutBorderWidth ||
+    calloutLineStyle !== lastSavedState.calloutLineStyle ||
+    calloutOpacity !== lastSavedState.calloutOpacity ||
+    calloutBorderRadius !== lastSavedState.calloutBorderRadius ||
+    calloutTextColor !== lastSavedState.calloutTextColor ||
+    calloutFontSize !== lastSavedState.calloutFontSize
+  )
+
+  // items 나 bgImageSrc, 설정이 달라지면 이미 생성한 url은 무효가 되므로 비워줍니다.
+  useEffect(() => {
+    setGeneratedImageUrl('')
+  }, [
+    items, bgImageSrc, imageScale, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign, // imageScale 추가
+    circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
+    boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius, boxShape,
+    arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, textBgColor, textFontStyle, textTextDecoration, textRotation, symbolEmoji, symbolScale,
+    imageSrcBorderColor, imageSrcBorderWidth, imageSrcBorderStyle, imageSrcHasBorder, imageSrcCaptionText, imageSrcHasCaption,
+    calloutShape, calloutBgColor, calloutBorderColor, calloutBorderWidth, calloutLineStyle, calloutOpacity, calloutBorderRadius, calloutTextColor, calloutFontSize
+  ])
+
+  // 3초간 헤더에 메시지 표시 헬퍼
+  const showSaveMessage = useCallback((text: string, type: 'success' | 'error') => {
+    setSaveMessage({ text, type })
+    setTimeout(() => {
+      setSaveMessage((prev) => prev.text === text ? { text: '', type: '' } : prev)
+    }, 3000)
+  }, [])
+
+  // 임시 보관 목록 가져오기
+  const fetchHistory = useCallback(async (): Promise<ImageWork[]> => {
+    setLoadingHistory(true)
+    try {
+      const res = await apiClient.get<{ totalCount: number, list: ImageWork[] }>('/admin/image-work')
+      setHistoryList(res.list || [])
+      setTotalHistoryCount(res.totalCount || 0)
+      return res.list || []
+    } catch (err) {
+      console.error('이미지 작업 목록 로드 실패:', err)
+      return []
+    } finally {
+      setLoadingHistory(false)
+    }
+  }, [])
+
+  // 캔버스 변경 히스토리 푸시 (Undo용)
+  const pushToUndo = useCallback((newItems: CanvasItem[], baseItems: CanvasItem[] = items) => {
+    setUndoStack((prev) => [...prev, {
+      items: baseItems,
+      bgImageSrc: bgImageSrc,
+      canvasExpandBottom: canvasExpandBottom,
+      canvasExpandRight: canvasExpandRight,
+      canvasExpandTop: canvasExpandTop,
+      canvasExpandLeft: canvasExpandLeft,
+      imageScale: imageScale // 추가
+    }])
+    setRedoStack([]) // 새로운 액션이 생기면 redo 스택 초기화
+    setItems(newItems)
+  }, [items, bgImageSrc, canvasExpandBottom, canvasExpandRight, canvasExpandTop, canvasExpandLeft, imageScale])
+
+  // Undo 실행
+  const handleUndo = useCallback(() => {
+    if (undoStack.length === 0) return
+    const prev = undoStack[undoStack.length - 1]
+    setUndoStack((old) => old.slice(0, -1))
+    setRedoStack((old) => [...old, { 
+      items: items, 
+      bgImageSrc: bgImageSrc,
+      canvasExpandBottom: canvasExpandBottom,
+      canvasExpandRight: canvasExpandRight,
+      canvasExpandTop: canvasExpandTop,
+      canvasExpandLeft: canvasExpandLeft,
+      imageScale: imageScale // 추가
+    }])
+    setItems(prev.items)
+    setCanvasExpandBottom(prev.canvasExpandBottom ?? 0)
+    setCanvasExpandRight(prev.canvasExpandRight ?? 0)
+    setCanvasExpandTop(prev.canvasExpandTop ?? 0)
+    setCanvasExpandLeft(prev.canvasExpandLeft ?? 0)
+    setImageScale(prev.imageScale ?? 1.0) // 추가
+    
+    if (prev.bgImageSrc !== bgImageSrc) {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = canvasRef.current
+        if (canvas) {
+          canvas.width = img.width + (prev.canvasExpandLeft ?? 0) + (prev.canvasExpandRight ?? 0)
+          canvas.height = img.height + (prev.canvasExpandTop ?? 0) + (hasCaption ? captionHeight : 0) + (prev.canvasExpandBottom ?? 0)
+        }
+        setBgImage(img)
+        setBgImageSrc(prev.bgImageSrc)
+      }
+      img.src = prev.bgImageSrc
+    }
+    
+    setSelectedItemId(null)
+  }, [undoStack, items, bgImageSrc, canvasExpandBottom, canvasExpandRight, canvasExpandTop, canvasExpandLeft, imageScale, hasCaption])
+
+  // Redo 실행
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return
+    const next = redoStack[redoStack.length - 1]
+    setRedoStack((old) => old.slice(0, -1))
+    setUndoStack((old) => [...old, { 
+      items: items, 
+      bgImageSrc: bgImageSrc,
+      canvasExpandBottom: canvasExpandBottom,
+      canvasExpandRight: canvasExpandRight,
+      canvasExpandTop: canvasExpandTop,
+      canvasExpandLeft: canvasExpandLeft,
+      imageScale: imageScale // 추가
+    }])
+    setItems(next.items)
+    setCanvasExpandBottom(next.canvasExpandBottom ?? 0)
+    setCanvasExpandRight(next.canvasExpandRight ?? 0)
+    setCanvasExpandTop(next.canvasExpandTop ?? 0)
+    setCanvasExpandLeft(next.canvasExpandLeft ?? 0)
+    setImageScale(next.imageScale ?? 1.0) // 추가
+    
+    if (next.bgImageSrc !== bgImageSrc) {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = canvasRef.current
+        if (canvas) {
+          canvas.width = img.width + (next.canvasExpandLeft ?? 0) + (next.canvasExpandRight ?? 0)
+          canvas.height = img.height + (next.canvasExpandTop ?? 0) + (hasCaption ? captionHeight : 0) + (next.canvasExpandBottom ?? 0)
+        }
+        setBgImage(img)
+        setBgImageSrc(next.bgImageSrc)
+      }
+      img.src = next.bgImageSrc
+    }
+    
+    setSelectedItemId(null)
+  }, [redoStack, items, bgImageSrc, canvasExpandBottom, canvasExpandRight, canvasExpandTop, canvasExpandLeft, imageScale, hasCaption])
+
+  // 캔버스 그리기 함수
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    // bgImage가 존재하는 경우, 캔버스의 실제 해상도가 이미지 크기와 일치하도록 보정
+    if (bgImage) {
+      const targetWidth = bgImage.width + canvasExpandLeft + canvasExpandRight
+      const targetHeight = bgImage.height + canvasExpandTop + (hasCaption ? captionHeight : 0) + canvasExpandBottom
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth
+        canvas.height = targetHeight
+      }
+    } else {
+      // 이미지가 없는 기본 상태의 크기로 복원 (안내문 렌더링용)
+      if (canvas.width !== 800 || canvas.height !== 500) {
+        canvas.width = 800
+        canvas.height = 500
+      }
+    }
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // 1. 클리어
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    // 2. 배경 이미지 및 캡션 영역 그리기
+    if (bgImage) {
+      ctx.save()
+      
+      // 전체 바탕을 흰색으로 먼저 채움 (확장 여백용)
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // 만약 둥근 모서리 테두리가 적용되어 있다면 클리핑 처리
+      if (hasBorder && borderStyle === 'rounded') {
+        createRoundedRectPath(ctx, 0, 0, canvas.width, canvas.height, 8)
+        ctx.clip()
+      }
+
+      // 이미지 그리기
+      ctx.drawImage(bgImage, canvasExpandLeft, canvasExpandTop)
+
+      // 캡션 그리기
+      if (hasCaption) {
+        const captionY = bgImage.height + canvasExpandTop + canvasExpandBottom
+        // 캡션 배경색 (옅은 회색)
+        ctx.fillStyle = '#f8fafc'
+        ctx.fillRect(0, captionY, canvas.width, captionHeight)
+
+        // 이미지와 캡션 사이 구분선
+        ctx.strokeStyle = '#e2e8f0'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(0, captionY)
+        ctx.lineTo(canvas.width, captionY)
+        ctx.stroke()
+
+        // 캡션 텍스트 그리기
+        ctx.fillStyle = '#475569'
+        ctx.font = 'bold 13px sans-serif'
+        ctx.textAlign = captionAlign === 'left' ? 'left' : 'center'
+        ctx.textBaseline = 'middle'
+        const textX = captionAlign === 'left' ? 16 : canvas.width / 2
+        ctx.fillText(captionText || '여기에 이미지 설명 캡션을 입력하십시오.', textX, captionY + (captionHeight / 2))
+      }
+
+      ctx.restore()
+    } else {
+      // 배경 이미지가 없을 때 기본 안내문 렌더링
+      ctx.fillStyle = '#f8fafc'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.fillStyle = '#94a3b8'
+      ctx.font = '16px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('Ctrl + V 키를 누르거나 이미지를 업로드하세요.', canvas.width / 2, canvas.height / 2)
+      return
+    }
+
+    // 3. 아이템들 그리기 (원숫자, 사각형, 텍스트)
+    items.forEach((item) => {
+      const isSelected = item.id === selectedItemId
+      ctx.save()
+
+      if (item.type === 'block-arrow-stamp') {
+        drawStamp(ctx, item)
+        if (isSelected) {
+          ctx.save()
+          ctx.strokeStyle = '#3b82f6'
+          ctx.lineWidth = 1.5
+          ctx.setLineDash([4, 4])
+          ctx.strokeRect(item.x, item.y, item.width || 0, item.height || 0)
+          ctx.restore()
+        }
+      }
+      else if (item.type === 'callout') {
+        drawCallout(ctx, item)
+        if (isSelected) {
+          // 박스는 box와 동일한 모서리 리사이즈 핸들 재사용
+          drawSelectionHandles(ctx, item)
+          // 꼬리 끝점 드래그 핸들 (arrow 끝점 앵커와 동일한 스타일)
+          const tail = getCalloutTailPoint(item)
+          ctx.save()
+          ctx.beginPath()
+          ctx.arc(tail.x, tail.y, 6, 0, 2 * Math.PI)
+          ctx.fillStyle = '#3b82f6'
+          ctx.strokeStyle = '#ffffff'
+          ctx.lineWidth = 1.5
+          ctx.fill()
+          ctx.stroke()
+          ctx.restore()
+        }
+      }
+      else if (item.type === 'circle-number') {
+        const fontSize = item.style.fontSize || circleNumberFontSize
+        const radius = fontSize * 1.05
+        const shape = item.style.shape || 'circle'
+        const bgColor = item.style.backgroundColor || circleNumberBgColor
+        const bColor = item.style.borderColor || circleNumberBorderColor
+        const bWidth = item.style.borderWidth || circleNumberBorderWidth
+
+        ctx.save()
+        ctx.shadowColor = 'rgba(0,0,0,0.15)'
+        ctx.shadowBlur = 4
+        ctx.shadowOffsetY = 2
+        ctx.fillStyle = bgColor
+
+        if (shape === 'rect') {
+          const side = radius * 2
+          const rx = item.x - radius
+          const ry = item.y - radius
+          ctx.beginPath()
+          ctx.roundRect(rx, ry, side, side, 6)
+          ctx.fill()
+          ctx.shadowColor = 'transparent'
+          ctx.lineWidth = bWidth
+          ctx.strokeStyle = bColor
+          ctx.beginPath()
+          ctx.roundRect(rx, ry, side, side, 6)
+          ctx.stroke()
+        } else {
+          ctx.beginPath()
+          ctx.arc(item.x, item.y, radius, 0, 2 * Math.PI)
+          ctx.fill()
+          ctx.shadowColor = 'transparent'
+          ctx.lineWidth = bWidth
+          ctx.strokeStyle = bColor
+          ctx.beginPath()
+          ctx.arc(item.x, item.y, radius, 0, 2 * Math.PI)
+          ctx.stroke()
+        }
+
+        ctx.fillStyle = item.style.textColor || circleNumberTextColor
+        ctx.font = `bold ${fontSize}px sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(item.text || '1', item.x, item.y)
+
+        if (isSelected) {
+          ctx.setLineDash([4, 4])
+          ctx.strokeStyle = '#3b82f6'
+          ctx.lineWidth = 1.5
+          if (shape === 'rect') {
+            const side = radius * 2
+            ctx.beginPath()
+            ctx.roundRect(item.x - radius - 4, item.y - radius - 4, side + 8, side + 8, 8)
+            ctx.stroke()
+          } else {
+            ctx.beginPath()
+            ctx.arc(item.x, item.y, radius + 4, 0, 2 * Math.PI)
+            ctx.stroke()
+          }
+        }
+        ctx.restore()
+      } 
+      else if (item.type === 'box') {
+        // 강조 박스: 사각형(둥글기 borderRadius 반영) / 원
+        const shape = item.style.shape || 'rect'
+        const w = item.width || 0
+        const h = item.height || 0
+        const radius = Math.min(item.style.borderRadius || 0, Math.min(Math.abs(w), Math.abs(h)) / 2)
+
+        // 도형별 경로 구성 (배경 채우기/테두리 그리기에서 동일 경로 재사용)
+        const buildBoxPath = () => {
+          if (shape === 'circle') {
+            ctx.beginPath()
+            ctx.ellipse(item.x + w / 2, item.y + h / 2, Math.abs(w) / 2, Math.abs(h) / 2, 0, 0, 2 * Math.PI)
+          } else if (radius > 0) {
+            ctx.beginPath()
+            if (typeof ctx.roundRect === 'function') {
+              ctx.roundRect(item.x, item.y, w, h, radius)
+            } else {
+              const x = item.x, y = item.y
+              ctx.moveTo(x + radius, y)
+              ctx.arcTo(x + w, y, x + w, y + h, radius)
+              ctx.arcTo(x + w, y + h, x, y + h, radius)
+              ctx.arcTo(x, y + h, x, y, radius)
+              ctx.arcTo(x, y, x + w, y, radius)
+            }
+          } else {
+            ctx.beginPath()
+            ctx.rect(item.x, item.y, w, h)
+          }
+        }
+
+        ctx.save()
+        // 1순위: 배경색 칠하기 (배경색이 투명이 아닐 때만)
+        if (item.style.backgroundColor && item.style.backgroundColor !== 'transparent' && item.style.backgroundColor !== '') {
+          ctx.save()
+          ctx.globalAlpha = item.style.opacity !== undefined ? item.style.opacity : 0.3
+          ctx.fillStyle = item.style.backgroundColor
+          buildBoxPath()
+          ctx.fill()
+          ctx.restore()
+        }
+
+        // 2순위: 테두리선 그리기
+        ctx.strokeStyle = item.style.borderColor || boxBorderColor
+        ctx.lineWidth = item.style.borderWidth || boxLineWidth
+        if (item.style.lineStyle === 'dashed') {
+          ctx.setLineDash([4, 4])
+        } else {
+          ctx.setLineDash([])
+        }
+        buildBoxPath()
+        ctx.stroke()
+        ctx.restore()
+
+        // 선택 영역 하이라이트 및 4꼭지점 조절 핸들
+        if (isSelected) {
+          drawSelectionHandles(ctx, item)
+        }
+      }
+      else if (item.type === 'image') {
+        // 추가 서브 이미지 그리기
+        const hasSubBorder = item.style.hasBorder ?? false
+        const hasSubCaption = item.style.hasCaption ?? false
+        const subCaptionHeight = 24
+        const drawW = item.width || 100
+        const drawH = item.height || 100
+        const imageRenderH = hasSubCaption ? Math.max(10, drawH - subCaptionHeight) : drawH
+
+        if (item.imageSrc) {
+          const cachedImg = subImageCache.current.get(item.imageSrc)
+          if (cachedImg && cachedImg.complete && cachedImg.naturalWidth > 0) {
+            ctx.drawImage(cachedImg, item.x, item.y, drawW, imageRenderH)
+          } else {
+            // 로드 대기 중 가이드 박스 표시
+            ctx.strokeStyle = '#cbd5e1'
+            ctx.lineWidth = 1
+            ctx.setLineDash([4, 4])
+            ctx.strokeRect(item.x, item.y, drawW, imageRenderH)
+          }
+        }
+
+        // 설명 캡션 그리기
+        if (hasSubCaption) {
+          const captionY = item.y + imageRenderH
+          ctx.save()
+          ctx.fillStyle = '#f8fafc'
+          ctx.fillRect(item.x, captionY, drawW, subCaptionHeight)
+
+          // 이미지와 캡션 구분선
+          ctx.strokeStyle = '#e2e8f0'
+          ctx.lineWidth = 1
+          ctx.setLineDash([])
+          ctx.beginPath()
+          ctx.moveTo(item.x, captionY)
+          ctx.lineTo(item.x + drawW, captionY)
+          ctx.stroke()
+
+          // 캡션 텍스트
+          ctx.fillStyle = '#475569'
+          ctx.font = 'bold 11px sans-serif'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(item.text || '설명 입력', item.x + drawW / 2, captionY + subCaptionHeight / 2)
+          ctx.restore()
+        }
+
+        // 개별 이미지 외곽 테두리선 그리기
+        if (hasSubBorder) {
+          ctx.save()
+          ctx.strokeStyle = item.style.borderColor || imageSrcBorderColor
+          ctx.lineWidth = item.style.borderWidth || imageSrcBorderWidth
+          if (item.style.lineStyle === 'dashed') {
+            ctx.setLineDash([4, 4])
+          } else {
+            ctx.setLineDash([])
+          }
+          ctx.strokeRect(item.x, item.y, drawW, drawH)
+          ctx.restore()
+        }
+
+        // 선택 영역 하이라이트 및 4꼭지점 조절 핸들 (box와 완전히 동일)
+        if (isSelected) {
+          drawSelectionHandles(ctx, item)
+        }
+      }
+      else if (item.type === 'arrow') {
+        const toX = item.x + (item.width || 0)
+        const toY = item.y + (item.height || 0)
+        drawArrow(
+          ctx,
+          item.x,
+          item.y,
+          toX,
+          toY,
+          item.style.borderColor || arrowColor,
+          item.style.borderWidth || arrowLineWidth,
+          item.style.lineStyle || arrowLineStyle,
+          isSelected,
+          item.style.headSize || arrowHeadSize
+        )
+      }
+      else if (item.type === 'orthogonal-arrow') {
+        const toX = item.x + (item.width || 0)
+        const toY = item.y + (item.height || 0)
+        const midX = item.style.midX !== undefined ? item.style.midX : toX
+        const midY = item.style.midY !== undefined ? item.style.midY : (item.y + toY) / 2
+        drawOrthogonalArrow(
+          ctx,
+          item.x,
+          item.y,
+          toX,
+          toY,
+          midX,
+          midY,
+          item.style.borderColor || arrowColor,
+          item.style.borderWidth || arrowLineWidth,
+          item.style.lineStyle || arrowLineStyle,
+          isSelected,
+          item.style.headSize || arrowHeadSize
+        )
+      }
+      else if (item.type === 'symbol') {
+        // 이모지 심볼 그리기 (중앙 정렬)
+        const emojiSize = item.style.fontSize || 48
+        ctx.font = `bold ${emojiSize}px sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        
+        ctx.shadowColor = 'rgba(0,0,0,0.1)'
+        ctx.shadowBlur = 4
+        ctx.shadowOffsetY = 2
+        
+        ctx.fillText(item.text || '💡', item.x, item.y)
+
+        // 선택 영역 하이라이트 (중앙 원형 점선)
+        if (isSelected) {
+          ctx.shadowColor = 'transparent'
+          ctx.beginPath()
+          ctx.arc(item.x, item.y, (emojiSize / 2) + 4, 0, 2 * Math.PI)
+          ctx.strokeStyle = '#3b82f6'
+          ctx.lineWidth = 1.5
+          ctx.setLineDash([4, 4])
+          ctx.stroke()
+        }
+      }
+      else if (item.type === 'text') {
+        // 텍스트 박스
+        const fontStyle = item.style.fontStyle || 'normal'
+        const textDecoration = item.style.textDecoration || 'none'
+        const rotation = item.style.rotation || 0
+        const fSize = item.style.fontSize || textFontSize
+
+        ctx.save()
+        // (item.x, item.y)로 원점 이동 후 회전 적용 (일관적인 로컬 좌표계 사용)
+        ctx.translate(item.x, item.y)
+        if (rotation !== 0) {
+          ctx.rotate((rotation * Math.PI) / 180)
+        }
+
+        ctx.font = `${fontStyle === 'italic' ? 'italic' : 'normal'} bold ${fSize}px sans-serif`
+        ctx.textBaseline = 'top'
+        ctx.textAlign = 'left'
+
+        // 멀티라인 크기 및 줄 정보 획득
+        const { width: boundsWidth, height: boundsHeight, lineHeight, lines } = getTextBounds(ctx, item.text || '', fSize, fontStyle)
+
+        // 텍스트를 감싸는 배경 박스
+        const textBg = item.style.backgroundColor || 'transparent'
+        if (textBg && textBg !== 'transparent') {
+          const bgW = boundsWidth + 12
+          const bgH = boundsHeight + 10
+          ctx.fillStyle = textBg
+          ctx.fillRect(-6, -4, bgW, bgH)
+          ctx.strokeStyle = item.style.borderColor || '#cbd5e1'
+          ctx.lineWidth = 1
+          ctx.strokeRect(-6, -4, bgW, bgH)
+        }
+
+        ctx.fillStyle = item.style.textColor || textTextColor
+
+        // 줄 단위 텍스트 렌더링 및 밑줄/취소선 데코레이션 그리기
+        lines.forEach((line, index) => {
+          const lineY = index * lineHeight
+          ctx.fillText(line, 0, lineY)
+
+          if (textDecoration && textDecoration !== 'none') {
+            ctx.save()
+            const lineMetrics = ctx.measureText(line)
+            const lineW = lineMetrics.width
+            ctx.beginPath()
+            ctx.strokeStyle = item.style.textColor || textTextColor
+            ctx.lineWidth = Math.max(1.5, fSize / 12)
+            
+            if (textDecoration === 'underline') {
+              const underlineY = lineY + fSize + 2
+              ctx.moveTo(0, underlineY)
+              ctx.lineTo(lineW, underlineY)
+            } else if (textDecoration === 'line-through') {
+              const lineThroughY = lineY + fSize / 2 + 1
+              ctx.moveTo(0, lineThroughY)
+              ctx.lineTo(lineW, lineThroughY)
+            }
+            ctx.stroke()
+            ctx.restore()
+          }
+        })
+
+        // 선택 영역 하이라이트 & 회전 핸들 그리기
+        if (isSelected) {
+          ctx.strokeStyle = '#3b82f6'
+          ctx.lineWidth = 1.5
+          ctx.setLineDash([4, 4])
+          ctx.strokeRect(-8, -6, boundsWidth + 16, boundsHeight + 12)
+
+          // 텍스트 상단 중앙 26px 위에 회전 원형 핸들 표시 (실선)
+          ctx.save()
+          ctx.setLineDash([])
+          ctx.beginPath()
+          ctx.moveTo(boundsWidth / 2, -6)
+          ctx.lineTo(boundsWidth / 2, -26)
+          ctx.stroke()
+
+          ctx.beginPath()
+          ctx.arc(boundsWidth / 2, -26, 5, 0, 2 * Math.PI)
+          ctx.fillStyle = '#ffffff'
+          ctx.strokeStyle = '#3b82f6'
+          ctx.lineWidth = 1.5
+          ctx.fill()
+          ctx.stroke()
+          ctx.restore()
+        }
+      }
+
+      ctx.restore()
+    })
+
+    // 스마트 정렬 가이드선 (드래그로 다른 아이템 중심에 스냅됐을 때만 표시)
+    if (smartAlignEnabled && (alignGuides.x !== undefined || alignGuides.y !== undefined)) {
+      ctx.save()
+      ctx.strokeStyle = '#ec4899'
+      ctx.lineWidth = 1
+      ctx.setLineDash([4, 4])
+      if (alignGuides.x !== undefined) {
+        ctx.beginPath()
+        ctx.moveTo(alignGuides.x, 0)
+        ctx.lineTo(alignGuides.x, canvas.height)
+        ctx.stroke()
+      }
+      if (alignGuides.y !== undefined) {
+        ctx.beginPath()
+        ctx.moveTo(0, alignGuides.y)
+        ctx.lineTo(canvas.width, alignGuides.y)
+        ctx.stroke()
+      }
+      ctx.restore()
+    }
+
+    // 4. 임시 드로잉 가이드 피드백 (사각형 그리기 도중 또는 크롭 점선)
+    if (isDrawing && dragStart && dragCurrent) {
+      ctx.save()
+      if (activeTool === 'callout') {
+        ctx.strokeStyle = calloutBorderColor
+        ctx.lineWidth = calloutBorderWidth
+        ctx.setLineDash([4, 4])
+        const w = dragCurrent.x - dragStart.x
+        const h = dragCurrent.y - dragStart.y
+        ctx.strokeRect(dragStart.x, dragStart.y, w, h)
+      } else if (activeTool === 'box') {
+        ctx.strokeStyle = boxBorderColor
+        ctx.lineWidth = boxLineWidth
+        ctx.setLineDash([4, 4])
+        const w = dragCurrent.x - dragStart.x
+        const h = dragCurrent.y - dragStart.y
+        if (boxShape === 'circle') {
+          ctx.beginPath()
+          ctx.ellipse(dragStart.x + w / 2, dragStart.y + h / 2, Math.abs(w) / 2, Math.abs(h) / 2, 0, 0, 2 * Math.PI)
+          ctx.stroke()
+        } else {
+          const radius = Math.min(boxBorderRadius, Math.min(Math.abs(w), Math.abs(h)) / 2)
+          if (radius > 0) {
+            ctx.beginPath()
+            if (typeof ctx.roundRect === 'function') {
+              ctx.roundRect(dragStart.x, dragStart.y, w, h, radius)
+            } else {
+              const x = dragStart.x, y = dragStart.y
+              ctx.moveTo(x + radius, y)
+              ctx.arcTo(x + w, y, x + w, y + h, radius)
+              ctx.arcTo(x + w, y + h, x, y + h, radius)
+              ctx.arcTo(x, y + h, x, y, radius)
+              ctx.arcTo(x, y, x + w, y, radius)
+            }
+            ctx.stroke()
+          } else {
+            ctx.strokeRect(dragStart.x, dragStart.y, w, h)
+          }
+        }
+      } else if (activeTool === 'arrow') {
+        drawArrow(
+          ctx,
+          dragStart.x,
+          dragStart.y,
+          dragCurrent.x,
+          dragCurrent.y,
+          arrowColor,
+          arrowLineWidth,
+          arrowLineStyle,
+          false,
+          arrowHeadSize
+        )
+      } else if (activeTool === 'orthogonal-arrow') {
+        drawOrthogonalArrow(
+          ctx,
+          dragStart.x,
+          dragStart.y,
+          dragCurrent.x,
+          dragCurrent.y,
+          dragCurrent.x,
+          (dragStart.y + dragCurrent.y) / 2,
+          arrowColor,
+          arrowLineWidth,
+          arrowLineStyle,
+          false,
+          arrowHeadSize
+        )
+      } else if (activeTool === 'crop') {
+        const sX = Math.min(dragStart.x, dragCurrent.x)
+        const sY = Math.min(dragStart.y, dragCurrent.y)
+        const sW = Math.abs(dragCurrent.x - dragStart.x)
+        const sH = Math.abs(dragCurrent.y - dragStart.y)
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)' // 반투명 어두운 마스크
+
+        // 1. 위쪽 영역
+        ctx.fillRect(0, 0, canvas.width, sY)
+        // 2. 아래쪽 영역
+        ctx.fillRect(0, sY + sH, canvas.width, canvas.height - (sY + sH))
+        // 3. 왼쪽 영역
+        ctx.fillRect(0, sY, sX, sH)
+        // 4. 오른쪽 영역
+        ctx.fillRect(sX + sW, sY, canvas.width - (sX + sW), sH)
+
+        // 선택 영역 테두리 그리기
+        ctx.strokeStyle = '#6366f1'
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([4, 4])
+        ctx.strokeRect(sX, sY, sW, sH)
+      }
+      ctx.restore()
+    }
+
+    // 5. 외곽 테두리(박스라인) 그리기 (맨 위 레이어에 씌움)
+    if (bgImage && hasBorder) {
+      ctx.save()
+      ctx.strokeStyle = borderColor
+      ctx.lineWidth = borderWidth
+      
+      if (borderStyle === 'rounded') {
+        ctx.lineJoin = 'round'
+        const radius = 8
+        const offset = borderWidth / 2 + 0.5
+        createRoundedRectPath(ctx, offset, offset, canvas.width - borderWidth - 1, canvas.height - borderWidth - 1, radius - offset)
+        ctx.stroke()
+      } else {
+        ctx.lineJoin = 'miter'
+        // 모서리가 캔버스 경계에 의해 잘려 두 라인이 만나지 않는 현상을 방지하기 위해 0.5px 안쪽으로 인셋하여 그립니다.
+        const offset = borderWidth / 2 + 0.5
+        ctx.strokeRect(offset, offset, canvas.width - borderWidth - 1, canvas.height - borderWidth - 1)
+      }
+      ctx.restore()
+    }
+    // cacheTrigger는 draw() 본문에서 직접 읽진 않지만 subImageCache(Map) 비동기 로딩 완료 후
+    // 강제 재그리기를 트리거하기 위해 의도적으로 포함된 의존성이다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    bgImage, items, selectedItemId, isDrawing, dragCurrent, dragStart, activeTool, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign,
+    circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
+    boxBorderColor, boxLineWidth, boxBorderRadius, boxShape,
+    arrowColor, arrowLineWidth, arrowLineStyle, arrowHeadSize, textTextColor, textFontSize,
+    imageSrcBorderColor, imageSrcBorderWidth, calloutBorderColor, calloutBorderWidth,
+    canvasExpandBottom, canvasExpandRight, canvasExpandTop, canvasExpandLeft,
+    smartAlignEnabled, alignGuides, cacheTrigger
+  ])
+
+  // 데이터 및 배경 변경 시 리렌더링
+  useEffect(() => {
+    draw()
+  }, [draw])
+
+  // 사용자 속성조절기 로딩 시 기본값 적용
+  // (백엔드가 JWT로 사용자를 판별해 cms.user_settings에서 스코프하므로 키에 userId를 넣을 필요 없음)
+  const fetchUserSettings = async () => {
+    try {
+      const key = 'image_editor_defaults'
+      const res = await apiClient.get<{ value: string }>(`/admin/user-settings/${key}`)
+      if (res && res.value) {
+        const config = JSON.parse(res.value)
+        
+        // 1. 원숫자
+        if (config.circleNumberBgColor !== undefined) setCircleNumberBgColor(config.circleNumberBgColor)
+        if (config.circleNumberTextColor !== undefined) setCircleNumberTextColor(config.circleNumberTextColor)
+        if (config.circleNumberBorderColor !== undefined) setCircleNumberBorderColor(config.circleNumberBorderColor)
+        if (config.circleNumberBorderWidth !== undefined) setCircleNumberBorderWidth(config.circleNumberBorderWidth)
+        if (config.circleNumberFontSize !== undefined) setCircleNumberFontSize(config.circleNumberFontSize)
+        if (config.circleNumberShape !== undefined) setCircleNumberShape(config.circleNumberShape)
+
+        // 2. 강조 상자
+        if (config.boxBorderColor !== undefined) setBoxBorderColor(config.boxBorderColor)
+        if (config.boxLineWidth !== undefined) setBoxLineWidth(config.boxLineWidth)
+        if (config.boxLineStyle !== undefined) setBoxLineStyle(config.boxLineStyle)
+        if (config.boxBgColor !== undefined) setBoxBgColor(config.boxBgColor)
+        if (config.boxOpacity !== undefined) setBoxOpacity(config.boxOpacity)
+        if (config.boxBorderRadius !== undefined) setBoxBorderRadius(config.boxBorderRadius)
+        if (config.boxShape !== undefined) setBoxShape(config.boxShape)
+
+        // 3. 화살표
+        if (config.arrowColor !== undefined) setArrowColor(config.arrowColor)
+        if (config.arrowLineWidth !== undefined) setArrowLineWidth(config.arrowLineWidth)
+        if (config.arrowLineStyle !== undefined) setArrowLineStyle(config.arrowLineStyle)
+        if (config.arrowHeadSize !== undefined) setArrowHeadSize(config.arrowHeadSize)
+
+        // 4. 일반 텍스트
+        if (config.textTextColor !== undefined) setTextTextColor(config.textTextColor)
+        if (config.textFontSize !== undefined) setTextFontSize(config.textFontSize)
+        if (config.textBgColor !== undefined) setTextBgColor(config.textBgColor)
+        if (config.textFontStyle !== undefined) setTextFontStyle(config.textFontStyle)
+        if (config.textTextDecoration !== undefined) setTextTextDecoration(config.textTextDecoration)
+
+        // 5. 이모지 심볼
+        if (config.symbolEmoji !== undefined) setSymbolEmoji(config.symbolEmoji)
+        if (config.symbolScale !== undefined) setSymbolScale(config.symbolScale)
+
+        // 6. 이미지 아이템
+        if (config.imageSrcBorderColor !== undefined) setImageSrcBorderColor(config.imageSrcBorderColor)
+        if (config.imageSrcBorderWidth !== undefined) setImageSrcBorderWidth(config.imageSrcBorderWidth)
+        if (config.imageSrcBorderStyle !== undefined) setImageSrcBorderStyle(config.imageSrcBorderStyle)
+        if (config.imageSrcHasBorder !== undefined) setImageSrcHasBorder(config.imageSrcHasBorder)
+        if (config.imageSrcCaptionText !== undefined) setImageSrcCaptionText(config.imageSrcCaptionText)
+        if (config.imageSrcHasCaption !== undefined) setImageSrcHasCaption(config.imageSrcHasCaption)
+
+        // 7. 말풍선/설명선
+        if (config.calloutShape !== undefined) setCalloutShape(config.calloutShape)
+        if (config.calloutBgColor !== undefined) setCalloutBgColor(config.calloutBgColor)
+        if (config.calloutBorderColor !== undefined) setCalloutBorderColor(config.calloutBorderColor)
+        if (config.calloutBorderWidth !== undefined) setCalloutBorderWidth(config.calloutBorderWidth)
+        if (config.calloutLineStyle !== undefined) setCalloutLineStyle(config.calloutLineStyle)
+        if (config.calloutOpacity !== undefined) setCalloutOpacity(config.calloutOpacity)
+        if (config.calloutBorderRadius !== undefined) setCalloutBorderRadius(config.calloutBorderRadius)
+        if (config.calloutTextColor !== undefined) setCalloutTextColor(config.calloutTextColor)
+        if (config.calloutFontSize !== undefined) setCalloutFontSize(config.calloutFontSize)
+
+        if (config.captionAlign !== undefined) setCaptionAlign(config.captionAlign)
+        if (config.stampScale !== undefined) setStampScale(config.stampScale)
+        if (config.stampDirection !== undefined) setStampDirection(config.stampDirection)
+        if (config.stampShape !== undefined) setStampShape(config.stampShape)
+        if (config.hasBorder !== undefined) setHasBorder(config.hasBorder)
+        if (config.borderColor !== undefined) setBorderColor(config.borderColor)
+        if (config.borderWidth !== undefined) setBorderWidth(config.borderWidth)
+        if (config.borderStyle !== undefined) setBorderStyle(config.borderStyle)
+
+        // 선택된 아이템이 있으면 그 아이템에도 불러온 설정을 즉시 반영
+        applyConfigToSelectedItem({ ...SYSTEM_ITEM_DEFAULTS, ...config })
+      }
+    } catch (e) {
+      console.log('No user settings found or error fetching settings:', e)
+    }
+  }
+
+  // 현재 아이템별 스타일 상태(25필드)를 SYSTEM_ITEM_DEFAULTS와 동일한 shape으로 스냅샷
+  const buildStyleConfig = useCallback((): StyleConfig => ({
+    circleNumberBgColor,
+    circleNumberTextColor,
+    circleNumberBorderColor,
+    circleNumberBorderWidth,
+    circleNumberFontSize,
+    circleNumberShape,
+    boxBorderColor,
+    boxLineWidth,
+    boxLineStyle,
+    boxBgColor,
+    boxOpacity,
+    boxBorderRadius,
+    boxShape,
+    arrowColor,
+    arrowLineWidth,
+    arrowLineStyle,
+    arrowHeadSize,
+    textTextColor,
+    textFontSize,
+    textBgColor,
+    textFontStyle,
+    textTextDecoration,
+    textRotation,
+    symbolEmoji,
+    symbolScale,
+    imageSrcBorderColor,
+    imageSrcBorderWidth,
+    imageSrcBorderStyle,
+    imageSrcHasBorder,
+    imageSrcCaptionText,
+    imageSrcHasCaption,
+    captionAlign,
+    stampScale,
+    stampDirection,
+    stampShape,
+    calloutShape,
+    calloutBgColor,
+    calloutBorderColor,
+    calloutBorderWidth,
+    calloutLineStyle,
+    calloutOpacity,
+    calloutBorderRadius,
+    calloutTextColor,
+    calloutFontSize,
+    hasBorder,
+    borderColor,
+    borderWidth,
+    borderStyle
+  }), [
+    circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize, circleNumberShape,
+    boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius, boxShape,
+    arrowColor, arrowLineWidth, arrowLineStyle, arrowHeadSize,
+    textTextColor, textFontSize, textBgColor, textFontStyle, textTextDecoration, textRotation,
+    symbolEmoji, symbolScale,
+    imageSrcBorderColor, imageSrcBorderWidth, imageSrcBorderStyle, imageSrcHasBorder, imageSrcCaptionText, imageSrcHasCaption,
+    captionAlign, stampScale, stampDirection, stampShape,
+    calloutShape, calloutBgColor, calloutBorderColor, calloutBorderWidth, calloutLineStyle, calloutOpacity, calloutBorderRadius, calloutTextColor, calloutFontSize,
+    hasBorder, borderColor, borderWidth, borderStyle
+  ])
+
+  // buildStyleConfig() + 캔버스 캡션/바탕확장 필드 (작업(Work) 저장/복원용 확장 shape)
+  const buildWorkStyleConfig = useCallback((): WorkStyleConfig => ({
+    ...buildStyleConfig(),
+    hasCaption,
+    captionText,
+    canvasExpandBottom,
+    canvasExpandRight,
+    canvasExpandTop,
+    canvasExpandLeft
+  }), [buildStyleConfig, hasCaption, captionText, canvasExpandBottom, canvasExpandRight, canvasExpandTop, canvasExpandLeft])
+
+  // 25필드 스타일 상태를 일괄 적용
+  const applyStyleConfig = (cfg: StyleConfig) => {
+    setCircleNumberBgColor(cfg.circleNumberBgColor)
+    setCircleNumberTextColor(cfg.circleNumberTextColor)
+    setCircleNumberBorderColor(cfg.circleNumberBorderColor)
+    setCircleNumberBorderWidth(cfg.circleNumberBorderWidth)
+    setCircleNumberFontSize(cfg.circleNumberFontSize)
+    setCircleNumberShape(cfg.circleNumberShape)
+    setBoxBorderColor(cfg.boxBorderColor)
+    setBoxLineWidth(cfg.boxLineWidth)
+    setBoxLineStyle(cfg.boxLineStyle)
+    setBoxBgColor(cfg.boxBgColor)
+    setBoxOpacity(cfg.boxOpacity)
+    setBoxBorderRadius(cfg.boxBorderRadius)
+    setBoxShape(cfg.boxShape)
+    setArrowColor(cfg.arrowColor)
+    setArrowLineWidth(cfg.arrowLineWidth)
+    setArrowLineStyle(cfg.arrowLineStyle)
+    setTextTextColor(cfg.textTextColor)
+    setTextFontSize(cfg.textFontSize)
+    setTextBgColor(cfg.textBgColor || 'transparent')
+    setTextFontStyle(cfg.textFontStyle || 'normal')
+    setTextTextDecoration(cfg.textTextDecoration || 'none')
+    setTextRotation(cfg.textRotation !== undefined ? cfg.textRotation : SYSTEM_ITEM_DEFAULTS.textRotation)
+    setSymbolEmoji(cfg.symbolEmoji)
+    setSymbolScale(cfg.symbolScale)
+    setImageSrcBorderColor(cfg.imageSrcBorderColor)
+    setImageSrcBorderWidth(cfg.imageSrcBorderWidth)
+    setImageSrcBorderStyle(cfg.imageSrcBorderStyle)
+    setImageSrcHasBorder(cfg.imageSrcHasBorder)
+    setImageSrcCaptionText(cfg.imageSrcCaptionText)
+    setImageSrcHasCaption(cfg.imageSrcHasCaption)
+    setCaptionAlign(cfg.captionAlign)
+    setStampScale(cfg.stampScale !== undefined ? cfg.stampScale : SYSTEM_ITEM_DEFAULTS.stampScale)
+    setStampDirection(cfg.stampDirection || SYSTEM_ITEM_DEFAULTS.stampDirection)
+    setStampShape(cfg.stampShape || SYSTEM_ITEM_DEFAULTS.stampShape)
+    setCalloutShape(cfg.calloutShape || SYSTEM_ITEM_DEFAULTS.calloutShape)
+    setCalloutBgColor(cfg.calloutBgColor || SYSTEM_ITEM_DEFAULTS.calloutBgColor)
+    setCalloutBorderColor(cfg.calloutBorderColor || SYSTEM_ITEM_DEFAULTS.calloutBorderColor)
+    setCalloutBorderWidth(cfg.calloutBorderWidth !== undefined ? cfg.calloutBorderWidth : SYSTEM_ITEM_DEFAULTS.calloutBorderWidth)
+    setCalloutLineStyle(cfg.calloutLineStyle || SYSTEM_ITEM_DEFAULTS.calloutLineStyle)
+    setCalloutOpacity(cfg.calloutOpacity !== undefined ? cfg.calloutOpacity : SYSTEM_ITEM_DEFAULTS.calloutOpacity)
+    setCalloutBorderRadius(cfg.calloutBorderRadius !== undefined ? cfg.calloutBorderRadius : SYSTEM_ITEM_DEFAULTS.calloutBorderRadius)
+    setCalloutTextColor(cfg.calloutTextColor || SYSTEM_ITEM_DEFAULTS.calloutTextColor)
+    setCalloutFontSize(cfg.calloutFontSize !== undefined ? cfg.calloutFontSize : SYSTEM_ITEM_DEFAULTS.calloutFontSize)
+    setHasBorder(cfg.hasBorder)
+    setBorderColor(cfg.borderColor)
+    setBorderWidth(cfg.borderWidth)
+    setBorderStyle(cfg.borderStyle)
+  }
+
+  // 타입별 스타일 설정(cfg)을 해당 타입의 item.style 필드로 매핑 (아이템 생성 시 매핑과 동일한 대응 관계)
+  const buildItemStyleFromConfig = (type: CanvasItem['type'], cfg: StyleConfig): Partial<CanvasItem['style']> => {
+    switch (type) {
+      case 'circle-number':
+        return {
+          backgroundColor: cfg.circleNumberBgColor,
+          borderColor: cfg.circleNumberBorderColor,
+          borderWidth: cfg.circleNumberBorderWidth,
+          textColor: cfg.circleNumberTextColor,
+          fontSize: cfg.circleNumberFontSize,
+          shape: cfg.circleNumberShape
+        }
+      case 'box':
+        return {
+          borderColor: cfg.boxBorderColor,
+          borderWidth: cfg.boxLineWidth,
+          lineStyle: cfg.boxLineStyle,
+          backgroundColor: cfg.boxBgColor,
+          opacity: cfg.boxOpacity / 100,
+          borderRadius: cfg.boxBorderRadius,
+          shape: cfg.boxShape
+        }
+      case 'arrow':
+      case 'orthogonal-arrow':
+      case 'bracket-arrow':
+        return {
+          borderColor: cfg.arrowColor,
+          borderWidth: cfg.arrowLineWidth,
+          lineStyle: cfg.arrowLineStyle
+        }
+      case 'text':
+        return {
+          textColor: cfg.textTextColor,
+          fontSize: cfg.textFontSize,
+          backgroundColor: cfg.textBgColor,
+          fontStyle: cfg.textFontStyle,
+          textDecoration: cfg.textTextDecoration
+        }
+      case 'symbol': {
+        const scaleMapping = [20, 32, 48, 64, 80]
+        return { fontSize: scaleMapping[cfg.symbolScale - 1] || 48 }
+      }
+      case 'block-arrow-stamp':
+        return { borderColor: cfg.arrowColor, stampDirection: cfg.stampDirection, stampShape: cfg.stampShape }
+      case 'callout':
+        return {
+          calloutShape: cfg.calloutShape,
+          backgroundColor: cfg.calloutBgColor,
+          borderColor: cfg.calloutBorderColor,
+          borderWidth: cfg.calloutBorderWidth,
+          lineStyle: cfg.calloutLineStyle,
+          opacity: cfg.calloutOpacity / 100,
+          borderRadius: cfg.calloutBorderRadius,
+          textColor: cfg.calloutTextColor,
+          fontSize: cfg.calloutFontSize
+        }
+      case 'image':
+        return {
+          borderColor: cfg.imageSrcBorderColor,
+          borderWidth: cfg.imageSrcBorderWidth,
+          lineStyle: cfg.imageSrcBorderStyle,
+          hasBorder: cfg.imageSrcHasBorder,
+          hasCaption: cfg.imageSrcHasCaption
+        }
+      default:
+        return {}
+    }
+  }
+
+  // '나의 설정 가져오기'/'시스템설정' 클릭 시 선택된 아이템이 있으면 그 아이템에도 즉시 반영
+  const applyConfigToSelectedItem = (cfg: StyleConfig) => {
+    if (!selectedItemId) return
+    const updated = items.map((item) =>
+      item.id === selectedItemId
+        ? { ...item, style: { ...item.style, ...buildItemStyleFromConfig(item.type, cfg) } }
+        : item
+    )
+    pushToUndo(updated)
+  }
+
+  // 구버전 jsonData/사용자설정 로드시 레거시 키 하위호환 폴백 체인
+  // (docs/설계_이미지에디터_속성분리.md §2.1과 동일한 우선순위 유지)
+  const resolveWorkStyleConfigFromLegacyData = (data: Record<string, unknown>) => ({
+    circleNumberBgColor: data.circleNumberBgColor ?? data.indigoColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberBgColor,
+    circleNumberTextColor: data.circleNumberTextColor ?? data.textColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberTextColor,
+    circleNumberBorderColor: data.circleNumberBorderColor ?? data.circleBorderColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor,
+    circleNumberBorderWidth: data.circleNumberBorderWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth,
+    circleNumberFontSize: data.circleNumberFontSize ?? data.fontSize ?? SYSTEM_ITEM_DEFAULTS.circleNumberFontSize,
+    circleNumberShape: data.circleNumberShape ?? SYSTEM_ITEM_DEFAULTS.circleNumberShape,
+    boxBorderColor: data.boxBorderColor ?? data.primaryColor ?? SYSTEM_ITEM_DEFAULTS.boxBorderColor,
+    boxLineWidth: data.boxLineWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.boxLineWidth,
+    boxLineStyle: data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.boxLineStyle,
+    boxBgColor: data.boxBgColor ?? SYSTEM_ITEM_DEFAULTS.boxBgColor,
+    boxOpacity: data.boxOpacity ?? SYSTEM_ITEM_DEFAULTS.boxOpacity,
+    boxBorderRadius: data.boxBorderRadius ?? SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
+    boxShape: data.boxShape ?? SYSTEM_ITEM_DEFAULTS.boxShape,
+    arrowColor: data.arrowColor ?? data.primaryColor ?? SYSTEM_ITEM_DEFAULTS.arrowColor,
+    arrowLineWidth: data.arrowLineWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
+    arrowLineStyle: data.arrowLineStyle ?? data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
+    arrowHeadSize: data.arrowHeadSize ?? SYSTEM_ITEM_DEFAULTS.arrowHeadSize,
+    textTextColor: data.textTextColor ?? data.textColor ?? SYSTEM_ITEM_DEFAULTS.textTextColor,
+    textFontSize: data.textFontSize ?? data.fontSize ?? SYSTEM_ITEM_DEFAULTS.textFontSize,
+    textBgColor: data.textBgColor ?? SYSTEM_ITEM_DEFAULTS.textBgColor,
+    textFontStyle: data.textFontStyle ?? SYSTEM_ITEM_DEFAULTS.textFontStyle,
+    textTextDecoration: data.textTextDecoration ?? SYSTEM_ITEM_DEFAULTS.textTextDecoration,
+    textRotation: data.textRotation ?? SYSTEM_ITEM_DEFAULTS.textRotation,
+    symbolEmoji: data.symbolEmoji ?? data.selectedEmoji ?? SYSTEM_ITEM_DEFAULTS.symbolEmoji,
+    symbolScale: data.symbolScale ?? SYSTEM_ITEM_DEFAULTS.symbolScale,
+    imageSrcBorderColor: data.imageSrcBorderColor ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor,
+    imageSrcBorderWidth: data.imageSrcBorderWidth ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth,
+    imageSrcBorderStyle: data.imageSrcBorderStyle ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle,
+    imageSrcHasBorder: data.imageSrcHasBorder ?? SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder,
+    imageSrcCaptionText: data.imageSrcCaptionText ?? SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText,
+    imageSrcHasCaption: data.imageSrcHasCaption ?? SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption,
+    captionAlign: data.captionAlign ?? SYSTEM_ITEM_DEFAULTS.captionAlign,
+    stampScale: data.stampScale ?? SYSTEM_ITEM_DEFAULTS.stampScale,
+    stampDirection: data.stampDirection ?? SYSTEM_ITEM_DEFAULTS.stampDirection,
+    stampShape: data.stampShape ?? SYSTEM_ITEM_DEFAULTS.stampShape,
+    calloutShape: data.calloutShape ?? SYSTEM_ITEM_DEFAULTS.calloutShape,
+    calloutBgColor: data.calloutBgColor ?? SYSTEM_ITEM_DEFAULTS.calloutBgColor,
+    calloutBorderColor: data.calloutBorderColor ?? SYSTEM_ITEM_DEFAULTS.calloutBorderColor,
+    calloutBorderWidth: data.calloutBorderWidth ?? SYSTEM_ITEM_DEFAULTS.calloutBorderWidth,
+    calloutLineStyle: data.calloutLineStyle ?? SYSTEM_ITEM_DEFAULTS.calloutLineStyle,
+    calloutOpacity: data.calloutOpacity ?? SYSTEM_ITEM_DEFAULTS.calloutOpacity,
+    calloutBorderRadius: data.calloutBorderRadius ?? SYSTEM_ITEM_DEFAULTS.calloutBorderRadius,
+    calloutTextColor: data.calloutTextColor ?? SYSTEM_ITEM_DEFAULTS.calloutTextColor,
+    calloutFontSize: data.calloutFontSize ?? SYSTEM_ITEM_DEFAULTS.calloutFontSize,
+    hasBorder: data.hasBorder ?? SYSTEM_ITEM_DEFAULTS.hasBorder,
+    borderColor: data.borderColor ?? SYSTEM_ITEM_DEFAULTS.borderColor,
+    borderWidth: data.borderWidth ?? SYSTEM_ITEM_DEFAULTS.borderWidth,
+    borderStyle: data.borderStyle ?? SYSTEM_ITEM_DEFAULTS.borderStyle,
+    hasCaption: data.hasCaption ?? false,
+    captionText: data.captionText ?? '',
+    canvasExpandBottom: data.canvasExpandBottom ?? 0,
+    canvasExpandRight: data.canvasExpandRight ?? 0,
+    canvasExpandTop: data.canvasExpandTop ?? 0,
+    canvasExpandLeft: data.canvasExpandLeft ?? 0
+  }) as WorkStyleConfig
+
+  // 이미지 작업 저장 payload 구성 및 POST 공용 함수 (handleSaveToHistory/handleGenerateUrl 공용)
+  const buildImageWorkPayload = useCallback((title: string, dataToSave: object, id?: number) => ({
+    ...(id !== undefined ? { id } : {}),
+    title,
+    jsonData: JSON.stringify(dataToSave)
+  }), [])
+  const saveImageWork = useCallback((payload: { id?: number; title: string; jsonData: string }) =>
+    apiClient.post<{ id: number }>('/admin/image-work', payload), [])
+
+  // 사용자 지정 기본값 저장 (Post)
+  const handleSaveUserSettings = async () => {
+    try {
+      const key = 'image_editor_defaults'
+      const config = buildStyleConfig()
+
+      await apiClient.post('/admin/user-settings', {
+        key,
+        value: JSON.stringify(config)
+      })
+
+      showSaveMessage('현재 속성들이 개인 기본값으로 보관되었습니다.', 'success')
+    } catch (e) {
+      console.error('Failed to save user settings:', e)
+      showSaveMessage('기본값 보관 처리 중 오류가 발생했습니다.', 'error')
+    }
+  }
+
+  // 사용자 지정 기본값 불러오기 (Get)
+  const handleLoadUserSettings = async () => {
+    try {
+      await fetchUserSettings()
+      showSaveMessage('보관된 개인 기본 설정을 적용했습니다.', 'success')
+    } catch (e) {
+      console.error('Failed to load user settings:', e)
+      showSaveMessage('기본 설정을 불러오는 중 오류가 발생했습니다.', 'error')
+    }
+  }
+
+  // 현재 설정을 시스템 기본값으로 복원 ('시스템설정' 버튼) - DB에 저장된 나의 설정은 삭제하지 않음
+  const handleDeleteUserSettings = async () => {
+    try {
+      // 설정을 시스템 디폴트 설정으로 복원 (handleResetToEmpty와 동일한 방식)
+      applyStyleConfig(SYSTEM_ITEM_DEFAULTS)
+      // arrowHeadSize는 StyleConfig에 포함되지 않아 applyStyleConfig가 리셋하지 않으므로 별도 처리
+      setArrowHeadSize(SYSTEM_ITEM_DEFAULTS.arrowHeadSize)
+      // 선택된 아이템이 있으면 그 아이템에도 시스템 기본값을 즉시 반영
+      applyConfigToSelectedItem(SYSTEM_ITEM_DEFAULTS)
+
+      showSaveMessage('현재 설정을 시스템 기본값으로 복원했습니다.', 'success')
+    } catch (e) {
+      console.error('Failed to reset to system defaults:', e)
+      showSaveMessage('시스템 기본값 복원 중 오류가 발생했습니다.', 'error')
+    }
+  }
+
+  // 서브 이미지 레이어로 이미지 추가
+  const addSubImage = useCallback(async (file: File) => {
+    const { img, dataUrl } = await loadImageFromFile(file)
+
+    // 원본 이미지 크기
+    const origW = img.width
+    const origH = img.height
+
+    // zoom 비율 적용하여 삽입 크기 결정
+    const targetW = Math.round(origW * zoom)
+    const targetH = Math.round(origH * zoom)
+
+    // 캔버스의 중앙 좌표 계산
+    const canvas = canvasRef.current
+    const canvasW = canvas ? canvas.width : 800
+    const canvasH = canvas ? canvas.height : 500
+
+    const posX = Math.round((canvasW - targetW) / 2)
+    const posY = Math.round((canvasH - targetH) / 2)
+
+    // CanvasItem 생성
+    const newItem: CanvasItem = {
+      id: `item-${Date.now()}`,
+      type: 'image',
+      x: posX,
+      y: posY,
+      width: targetW,
+      height: targetH,
+      imageSrc: dataUrl,
+      text: imageSrcHasCaption ? imageSrcCaptionText : '',
+      style: {
+        borderColor: imageSrcBorderColor,
+        borderWidth: imageSrcBorderWidth,
+        lineStyle: imageSrcBorderStyle,
+        hasBorder: imageSrcHasBorder,
+        hasCaption: imageSrcHasCaption
+      }
+    }
+
+    // 캐시에 미리 이미지 등록해 로드 시 깜빡임 방지
+    subImageCache.current.set(dataUrl, img)
+
+    pushToUndo([...items, newItem])
+    setSelectedItemId(newItem.id)
+  }, [zoom, imageSrcHasCaption, imageSrcCaptionText, imageSrcBorderColor, imageSrcBorderWidth, imageSrcBorderStyle, imageSrcHasBorder, items, pushToUndo])
+
+  // 파일 업로드 처리
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    loadImage(file)
+    e.target.value = '' // 동일 파일 연속 업로드 가능하도록 브라우저 인풋값 리셋
+  }
+
+  // 컨트롤(RangeSlider, 다음번호 등)에서 ESC를 눌러 포커스 해제 시 에디터 모드를 'pointer'로 전환
+  useEffect(() => {
+    const handleEditorEscape = () => {
+      setSelectedItemId(null)
+      setActiveTool('pointer')
+    }
+    window.addEventListener('editor-escape', handleEditorEscape)
+    return () => window.removeEventListener('editor-escape', handleEditorEscape)
+  }, [])
+
+  // 도화지 및 상태 초기화
+  const handleResetToEmpty = () => {
+    if (isDirty && !window.confirm('저장되지 않은 변경 사항이 있습니다. 정말 초기화하시겠습니까?')) {
+      return
+    }
+
+    setItems([])
+    setBgImage(null)
+    setBgImageSrc('')
+    setBaseBgImage(null)
+    setBaseBgImageSrc('')
+    setImageScale(1.0)
+    setCanvasExpandBottom(0)
+    setCanvasExpandRight(0)
+    setCanvasExpandTop(0)
+    setCanvasExpandLeft(0)
+    setZoom(1.0)
+    setSelectedItemId(null)
+    setCircleCounter(1)
+    setEditorTitle(getDefaultEditorTitle())
+    setUndoStack([])
+    setRedoStack([])
+    setGeneratedImageUrl('')
+    setActiveHistoryId(null)
+    setActiveTool('pointer')
+    setResetPanelTrigger(prev => prev + 1)
+    setArrowHeadSize(SYSTEM_ITEM_DEFAULTS.arrowHeadSize)
+    setStampScale(SYSTEM_ITEM_DEFAULTS.stampScale)
+    setStampDirection(SYSTEM_ITEM_DEFAULTS.stampDirection)
+    setStampShape(SYSTEM_ITEM_DEFAULTS.stampShape)
+    
+    setHasBorder(SYSTEM_ITEM_DEFAULTS.hasBorder)
+    setBorderColor(SYSTEM_ITEM_DEFAULTS.borderColor)
+    setBorderWidth(SYSTEM_ITEM_DEFAULTS.borderWidth)
+    setBorderStyle(SYSTEM_ITEM_DEFAULTS.borderStyle)
+    setHasCaption(false)
+    setCaptionText('')
+    setCaptionAlign(SYSTEM_ITEM_DEFAULTS.captionAlign)
+    
+    applyStyleConfig(SYSTEM_ITEM_DEFAULTS)
+
+    setLastSavedState({
+      title: getDefaultEditorTitle(),
+      bgImageSrc: '',
+      items: [],
+      canvasExpandBottom: 0,
+      canvasExpandRight: 0,
+      canvasExpandTop: 0,
+      canvasExpandLeft: 0,
+      hasCaption: false,
+      captionText: '',
+      imageScale: 1.0, // 추가
+      ...SYSTEM_ITEM_DEFAULTS
+    })
+    showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
+  }
+
+  // 새 이미지 업로드 핸들러
+  const handleUploadClick = () => {
+    if (isDirty && !window.confirm('저장되지 않은 변경 사항이 있습니다. 정말 새 이미지를 업로드하시겠습니까?')) {
+      return
+    }
+    fileInputRef.current?.click()
+  }
+
+  // 이미지 최초 로딩 시 백엔드 자동 임시저장 수행
+  const autoSaveOnImageLoad = useCallback(async (_img: HTMLImageElement, dataUrl: string) => {
+    setSavingWork(true)
+    try {
+      const prefix = getDefaultEditorTitle()
+      const cleanPrefix = prefix.replace(/_\d+$/, '')
+      const count = historyList.filter(h => h.title === cleanPrefix || h.title.startsWith(cleanPrefix + '_')).length
+      const finalTitle = `${cleanPrefix}_${count + 1}`
+
+      const dataToSave = {
+        title: finalTitle,
+        originalImageUrl: dataUrl,
+        editedImageUrl: dataUrl,
+        items: [],
+        circleCounter: 1,
+        physicalUrl: '',
+        imageScale: 1.0, // 추가
+        ...buildWorkStyleConfig(),
+        arrowHeadSize
+      }
+
+      const res = await saveImageWork(buildImageWorkPayload(finalTitle, dataToSave))
+
+      if (res && res.id) {
+        setActiveHistoryId(res.id)
+      }
+
+      setLastSavedState({
+        title: finalTitle,
+        bgImageSrc: dataUrl,
+        items: [],
+        imageScale: 1.0, // 추가
+        ...buildWorkStyleConfig()
+      })
+      setEditorTitle(finalTitle)
+
+      showSaveMessage(`원본 이미지가 로드되어 '${finalTitle}' 명칭으로 자동 임시 저장되었습니다.`, 'success')
+      fetchHistory()
+    } catch (err) {
+      console.error('이미지 로딩 시 자동 임시저장 에러:', err)
+    } finally {
+      setSavingWork(false)
+    }
+  }, [historyList, buildWorkStyleConfig, arrowHeadSize, saveImageWork, buildImageWorkPayload, showSaveMessage, fetchHistory])
+
+  // loadImage 두 분기(리사이즈됨/안됨) 공용 후처리: 배경이미지 반영 + 편집상태 초기화 + lastSavedState 갱신
+  const applyLoadedImage = useCallback((img: HTMLImageElement, dataUrl: string) => {
+    setBgImage(img)
+    setBgImageSrc(dataUrl)
+    setBaseBgImage(img)
+    setBaseBgImageSrc(dataUrl)
+    setImageScale(1.0)
+    setCanvasExpandBottom(0)
+    setCanvasExpandRight(0)
+    setCanvasExpandTop(0)
+    setCanvasExpandLeft(0)
+    setZoom(1.0)
+    setItems([])
+    setCircleCounter(1)
+    setEditorTitle(getDefaultEditorTitle())
+    setUndoStack([])
+    setRedoStack([])
+    setGeneratedImageUrl('')
+    setActiveHistoryId(null)
+    setLastSavedState({
+      title: getDefaultEditorTitle(),
+      bgImageSrc: dataUrl,
+      items: [],
+      canvasExpandBottom: 0,
+      canvasExpandRight: 0,
+      canvasExpandTop: 0,
+      canvasExpandLeft: 0,
+      hasCaption: false,
+      captionText: '',
+      imageScale: 1.0, // 추가
+      ...buildStyleConfig(),
+      // 기존 동작 보존: 라이브 captionAlign이 아닌 항상 'center'로 기록됨 (의도 불명확하나 그대로 유지)
+      captionAlign: 'center'
+    })
+
+    // 이미지 로드 완료 시점 자동 임시저장 실행
+    autoSaveOnImageLoad(img, dataUrl)
+  }, [buildStyleConfig, autoSaveOnImageLoad])
+
+  // 이미지 파일을 HTMLImageElement로 로드 및 비율 유지 축소 리사이징
+  // 원본 해상도 그대로 캔버스에 적용 (화면보다 크면 스크롤로 작업)
+  const loadImage = useCallback(async (file: File) => {
+    const { img, dataUrl } = await loadImageFromFile(file)
+    applyLoadedImage(img, dataUrl)
+  }, [applyLoadedImage])
+
+  // 클립보드 Paste 처리
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (!isVisible()) return
+      const clipboardItems = e.clipboardData?.items
+
+      // 1순위: 시스템 클립보드에 이미지가 있으면 이미지 붙여넣기
+      if (clipboardItems) {
+        for (let i = 0; i < clipboardItems.length; i++) {
+          if (clipboardItems[i].type.indexOf('image') !== -1) {
+            const blob = clipboardItems[i].getAsFile()
+            if (blob) {
+              if (bgImage) {
+                addSubImage(blob)
+              } else {
+                loadImage(blob)
+              }
+              e.preventDefault()
+              return
+            }
+          }
+        }
+      }
+
+      // 2순위: 이미지 없으면 복사된 아이템 붙여넣기 (Ctrl+C로 저장된 것)
+      if (!bgImage) return
+      const copiedStr = localStorage.getItem('pcms_copied_item')
+      if (!copiedStr) return
+      try {
+        const copiedItem: CanvasItem = JSON.parse(copiedStr)
+        const newItem: CanvasItem = {
+          ...copiedItem,
+          id: `item-${Date.now()}`,
+          x: copiedItem.x + 20,
+          y: copiedItem.y + 20,
+          style: { ...copiedItem.style }
+        }
+        pushToUndo([...items, newItem])
+        setSelectedItemId(newItem.id)
+        e.preventDefault()
+      } catch (err) {
+        console.warn('아이템 붙여넣기 파싱 실패:', err)
+      }
+    }
+
+    window.addEventListener('paste', handlePaste)
+    return () => window.removeEventListener('paste', handlePaste)
+  }, [bgImage, zoom, items, addSubImage, loadImage, pushToUndo])
+
+  // 캔버스 마우스 상대 좌표 스케일링 계산 함수
+  const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return { x: 0, y: 0 }
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    }
+  }
+
+  // 더블클릭 핸들러: 텍스트 요소를 더블클릭 시 즉시 편집 팝업창 활성화
+  const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!bgImage) return
+    const { x, y } = getCanvasCoords(e)
+
+    const clickedItem = [...items].reverse().find((item) => {
+      if (item.type === 'text') {
+        const rotation = item.style.rotation || 0
+        const fSize = item.style.fontSize || textFontSize
+        const fontStyle = item.style.fontStyle || 'normal'
+        const canvas = canvasRef.current
+        const ctx = canvas?.getContext('2d') || null
+        const { width: boundsWidth, height: boundsHeight } = getTextBounds(ctx, item.text || '', fSize, fontStyle)
+
+        const dx = x - item.x
+        const dy = y - item.y
+        const rad = -rotation * Math.PI / 180
+        const localX = dx * Math.cos(rad) - dy * Math.sin(rad)
+        const localY = dx * Math.sin(rad) + dy * Math.cos(rad)
+
+        return (
+          localX >= -6 &&
+          localX <= boundsWidth + 6 &&
+          localY >= -4 &&
+          localY <= boundsHeight + 6
+        )
+      }
+      if (item.type === 'callout') {
+        return (
+          x >= item.x && x <= item.x + (item.width || 0) &&
+          y >= item.y && y <= item.y + (item.height || 0)
+        )
+      }
+      return false
+    })
+
+    if (clickedItem) {
+      setTextInputValue(clickedItem.text || '')
+      setTextInput({
+        x: clickedItem.x,
+        y: clickedItem.y,
+        visible: true,
+        id: clickedItem.id
+      })
+      setSelectedItemId(clickedItem.id)
+    }
+  }
+
+  // 마우스 다운 핸들러
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!bgImage) return
+    const { x, y } = getCanvasCoords(e)
+
+    if (activeTool === 'pointer') {
+      // 1순위: 선택된 사각형이 존재할 때 네 꼭지점 리사이즈 핸들 클릭 여부를 우선 판정!
+      if (selectedItemId) {
+        const selectedItem = items.find(item => item.id === selectedItemId)
+        if (selectedItem && (selectedItem.type === 'box' || selectedItem.type === 'image' || selectedItem.type === 'callout')) {
+          const tl = { x: selectedItem.x, y: selectedItem.y }
+          const tr = { x: selectedItem.x + (selectedItem.width || 0), y: selectedItem.y }
+          const bl = { x: selectedItem.x, y: selectedItem.y + (selectedItem.height || 0) }
+          const br = { x: selectedItem.x + (selectedItem.width || 0), y: selectedItem.y + (selectedItem.height || 0) }
+          const clickRadius = 8 // 클릭 반경 8px 허용
+
+          if (Math.hypot(tl.x - x, tl.y - y) <= clickRadius) {
+            setResizeHandle('tl')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (Math.hypot(tr.x - x, tr.y - y) <= clickRadius) {
+            setResizeHandle('tr')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (Math.hypot(bl.x - x, bl.y - y) <= clickRadius) {
+            setResizeHandle('bl')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (Math.hypot(br.x - x, br.y - y) <= clickRadius) {
+            setResizeHandle('br')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (selectedItem.type === 'callout') {
+            const tail = getCalloutTailPoint(selectedItem)
+            if (Math.hypot(tail.x - x, tail.y - y) <= clickRadius) {
+              setResizeHandle('callout-tail')
+              setIsDrawing(true)
+              setDragStart({ x, y })
+              return
+            }
+          }
+        } else if (selectedItem && selectedItem.type === 'arrow') {
+          const fromX = selectedItem.x
+          const fromY = selectedItem.y
+          const toX = selectedItem.x + (selectedItem.width || 0)
+          const toY = selectedItem.y + (selectedItem.height || 0)
+          const clickRadius = 8
+
+          if (Math.hypot(fromX - x, fromY - y) <= clickRadius) {
+            setResizeHandle('arrow-start')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (Math.hypot(toX - x, toY - y) <= clickRadius) {
+            setResizeHandle('arrow-end')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          }
+        } else if (selectedItem && selectedItem.type === 'orthogonal-arrow') {
+          const fromX = selectedItem.x
+          const fromY = selectedItem.y
+          const toX = selectedItem.x + (selectedItem.width || 0)
+          const toY = selectedItem.y + (selectedItem.height || 0)
+          const midX = selectedItem.style.midX !== undefined ? selectedItem.style.midX : toX
+          const rawMidY = selectedItem.style.midY !== undefined ? selectedItem.style.midY : (fromY + toY) / 2
+          const clickRadius = 8
+
+          const minX = Math.min(fromX, toX), maxX = Math.max(fromX, toX)
+          const minY = Math.min(fromY, toY), maxY = Math.max(fromY, toY)
+          const xOut = Math.max(0, minX - midX, midX - maxX)
+          const yOut = Math.max(0, minY - rawMidY, rawMidY - maxY)
+          const handleMidX = xOut >= yOut ? midX : (fromX + toX) / 2
+          const handleMidY = xOut >= yOut ? (fromY + toY) / 2 : rawMidY
+
+          if (Math.hypot(fromX - x, fromY - y) <= clickRadius) {
+            setResizeHandle('arrow-start')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (Math.hypot(toX - x, toY - y) <= clickRadius) {
+            setResizeHandle('arrow-end')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (Math.hypot(handleMidX - x, handleMidY - y) <= clickRadius) {
+            setResizeHandle('orthogonal-mid')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          }
+        } else if (selectedItem && selectedItem.type === 'text') {
+          const rotation = selectedItem.style.rotation || 0
+          const fSize = selectedItem.style.fontSize || textFontSize
+          const fontStyle = selectedItem.style.fontStyle || 'normal'
+          const canvas = canvasRef.current
+          const ctx = canvas?.getContext('2d') || null
+          const { width: boundsWidth } = getTextBounds(ctx, selectedItem.text || '', fSize, fontStyle)
+
+          const dx = x - selectedItem.x
+          const dy = y - selectedItem.y
+          const rad = -rotation * Math.PI / 180
+          const localX = dx * Math.cos(rad) - dy * Math.sin(rad)
+          const localY = dx * Math.sin(rad) + dy * Math.cos(rad)
+
+          const clickRadius = 8
+          const dist = Math.hypot(localX - boundsWidth / 2, localY - (-26))
+          if (dist <= clickRadius) {
+            setResizeHandle('text-rotate')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          }
+        }
+      }
+
+      // 가장 마지막에 추가된 도형부터 역순으로 클릭 타겟 판정 (상위 레이어 우선)
+      dragMoveStartItemsRef.current = items
+      let found = false
+      for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i]
+        
+        if (item.type === 'circle-number') {
+          const radius = (item.style.fontSize || 13) * 1.05
+          const shape = item.style.shape || 'circle'
+          const hit = shape === 'rect'
+            ? (x >= item.x - radius - 2 && x <= item.x + radius + 2 && y >= item.y - radius - 2 && y <= item.y + radius + 2)
+            : Math.hypot(item.x - x, item.y - y) <= radius + 2
+          if (hit) {
+            setSelectedItemId(item.id)
+            setDraggedItemOffset({ x: x - item.x, y: y - item.y })
+            found = true
+            break
+          }
+        } 
+        else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp' || item.type === 'callout') {
+          const x2 = item.x + (item.width || 0)
+          const y2 = item.y + (item.height || 0)
+          const minX = Math.min(item.x, x2)
+          const maxX = Math.max(item.x, x2)
+          const minY = Math.min(item.y, y2)
+          const maxY = Math.max(item.y, y2)
+          const insideBox = x >= minX && x <= maxX && y >= minY && y <= maxY
+          const onCalloutTail = item.type === 'callout' && (() => {
+            const tail = getCalloutTailPoint(item)
+            return Math.hypot(tail.x - x, tail.y - y) <= 10
+          })()
+          if (insideBox || onCalloutTail) {
+            setSelectedItemId(item.id)
+            setDraggedItemOffset({ x: x - item.x, y: y - item.y })
+            found = true
+            break
+          }
+        }
+        else if (item.type === 'arrow') {
+          const x2 = item.x + (item.width || 0)
+          const y2 = item.y + (item.height || 0)
+          const dist = getDistanceToSegment(x, y, item.x, item.y, x2, y2)
+          if (dist <= 8) {
+            setSelectedItemId(item.id)
+            setDraggedItemOffset({ x: x - item.x, y: y - item.y })
+            found = true
+            break
+          }
+        }
+        else if (item.type === 'orthogonal-arrow') {
+          const x2 = item.x + (item.width || 0)
+          const y2 = item.y + (item.height || 0)
+          const midX = item.style.midX !== undefined ? item.style.midX : x2
+          const midY = item.style.midY !== undefined ? item.style.midY : (item.y + y2) / 2
+          const minX = Math.min(item.x, x2), maxX = Math.max(item.x, x2)
+          const minY = Math.min(item.y, y2), maxY = Math.max(item.y, y2)
+          const xOutside = Math.max(0, minX - midX, midX - maxX)
+          const yOutside = Math.max(0, minY - midY, midY - maxY)
+          let dist1: number, dist2: number, dist3: number
+          if (xOutside >= yOutside) {
+            dist1 = getDistanceToSegment(x, y, item.x, item.y, midX, item.y)
+            dist2 = getDistanceToSegment(x, y, midX, item.y, midX, y2)
+            dist3 = getDistanceToSegment(x, y, midX, y2, x2, y2)
+          } else {
+            dist1 = getDistanceToSegment(x, y, item.x, item.y, item.x, midY)
+            dist2 = getDistanceToSegment(x, y, item.x, midY, x2, midY)
+            dist3 = getDistanceToSegment(x, y, x2, midY, x2, y2)
+          }
+          const minDist = Math.min(dist1, dist2, dist3)
+          if (minDist <= 8) {
+            setSelectedItemId(item.id)
+            setDraggedItemOffset({ x: x - item.x, y: y - item.y })
+            found = true
+            break
+          }
+        }
+        else if (item.type === 'symbol') {
+          const radius = (item.style.fontSize || 48) / 2
+          const dist = Math.hypot(item.x - x, item.y - y)
+          if (dist <= radius + 4) {
+            setSelectedItemId(item.id)
+            setDraggedItemOffset({ x: x - item.x, y: y - item.y })
+            found = true
+            break
+          }
+        }
+        else if (item.type === 'text') {
+          const rotation = item.style.rotation || 0
+          const fSize = item.style.fontSize || textFontSize
+          const fontStyle = item.style.fontStyle || 'normal'
+          const canvas = canvasRef.current
+          const ctx = canvas?.getContext('2d') || null
+          const { width: boundsWidth, height: boundsHeight } = getTextBounds(ctx, item.text || '', fSize, fontStyle)
+
+          const dx = x - item.x
+          const dy = y - item.y
+          const rad = -rotation * Math.PI / 180
+          const localX = dx * Math.cos(rad) - dy * Math.sin(rad)
+          const localY = dx * Math.sin(rad) + dy * Math.cos(rad)
+
+          if (localX >= -6 && localX <= boundsWidth + 6 && localY >= -4 && localY <= boundsHeight + 6) {
+            setSelectedItemId(item.id)
+            setDraggedItemOffset({ x: x - item.x, y: y - item.y })
+            found = true
+            break
+          }
+        }
+      }
+
+      if (!found) {
+        setSelectedItemId(null)
+      }
+    } 
+    else if (activeTool === 'block-arrow-stamp') {
+      const scaleMapping = [32, 48, 64, 80, 96]
+      const size = scaleMapping[stampScale - 1] || 64
+      const newItem: CanvasItem = {
+        id: `item-${Date.now()}`,
+        type: 'block-arrow-stamp',
+        x: x - size / 2,
+        y: y - size / 2,
+        width: size,
+        height: size,
+        style: {
+          borderColor: arrowColor,
+          stampDirection: stampDirection,
+          stampScale: stampScale,
+          stampShape: stampShape
+        }
+      }
+      pushToUndo([...items, newItem])
+      setSelectedItemId(newItem.id)
+    }
+    else if (activeTool === 'callout') {
+      setIsDrawing(true)
+      setDragStart({ x, y })
+      setDragCurrent({ x, y })
+    }
+    else if (activeTool === 'circle-number') {
+      const newItem: CanvasItem = {
+        id: `item-${Date.now()}`,
+        type: 'circle-number',
+        x,
+        y,
+        text: String(circleCounter),
+        style: {
+          backgroundColor: circleNumberBgColor,
+          borderColor: circleNumberBorderColor,
+          borderWidth: circleNumberBorderWidth,
+          textColor: circleNumberTextColor,
+          fontSize: circleNumberFontSize,
+          shape: circleNumberShape
+        }
+      }
+      pushToUndo([...items, newItem])
+      setCircleCounter((prev) => prev + 1)
+      setSelectedItemId(newItem.id)
+    } 
+    else if (activeTool === 'symbol') {
+      const scaleMapping = [20, 32, 48, 64, 80]
+      const actualSize = scaleMapping[symbolScale - 1] || 48
+      const newItem: CanvasItem = {
+        id: `item-${Date.now()}`,
+        type: 'symbol',
+        x,
+        y,
+        text: symbolEmoji,
+        style: {
+          fontSize: actualSize
+        }
+      }
+      pushToUndo([...items, newItem])
+      setSelectedItemId(newItem.id)
+    }
+    else if (activeTool === 'box' || activeTool === 'crop' || activeTool === 'arrow' || activeTool === 'orthogonal-arrow') {
+      setIsDrawing(true)
+      setDragStart({ x, y })
+      setDragCurrent({ x, y })
+    } 
+    else if (activeTool === 'text') {
+      // 텍스트 인풋 띄우기
+      setTextInputValue('')
+      setTextInput({ x, y, visible: true })
+      setDragStart({ x, y }) // 캔버스 실제 픽셀 좌표 저장
+    }
+  }
+
+  // 마우스 무브 핸들러
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!bgImage) return
+    const { x, y } = getCanvasCoords(e)
+
+    if (isDrawing && dragStart) {
+      setDragCurrent({ x, y })
+    }
+
+    // 포인터 모드 리사이징 처리
+    if (activeTool === 'pointer' && selectedItemId && resizeHandle) {
+      const updated = items.map((item) => {
+        if (item.id === selectedItemId && item.type === 'callout' && resizeHandle === 'callout-tail') {
+          return { ...item, style: { ...item.style, calloutTailX: x, calloutTailY: y } }
+        } else if (item.id === selectedItemId && (item.type === 'box' || item.type === 'image' || item.type === 'callout')) {
+          const originalX = item.x
+          const originalY = item.y
+          const originalW = item.width || 0
+          const originalH = item.height || 0
+          
+          let newX = originalX
+          let newY = originalY
+          let newW = originalW
+          let newH = originalH
+
+          const minSize = 5 // 최소 크기 제한
+
+          if (resizeHandle === 'br') {
+            newW = Math.max(minSize, x - originalX)
+            newH = Math.max(minSize, y - originalY)
+          } 
+          else if (resizeHandle === 'bl') {
+            const originalRight = originalX + originalW
+            newW = Math.max(minSize, originalRight - x)
+            newX = originalRight - newW
+            newH = Math.max(minSize, y - originalY)
+          } 
+          else if (resizeHandle === 'tr') {
+            const originalBottom = originalY + originalH
+            newW = Math.max(minSize, x - originalX)
+            newH = Math.max(minSize, originalBottom - y)
+            newY = originalBottom - newH
+          } 
+          else if (resizeHandle === 'tl') {
+            const originalRight = originalX + originalW
+            const originalBottom = originalY + originalH
+            newW = Math.max(minSize, originalRight - x)
+            newX = originalRight - newW
+            newH = Math.max(minSize, originalBottom - y)
+            newY = originalBottom - newH
+          }
+
+          return { ...item, x: newX, y: newY, width: newW, height: newH }
+        } else if (item.id === selectedItemId && item.type === 'arrow') {
+          if (resizeHandle === 'arrow-start') {
+            const originalEndX = item.x + (item.width || 0)
+            const originalEndY = item.y + (item.height || 0)
+            const newX = x
+            const newY = y
+            const newW = originalEndX - newX
+            const newH = originalEndY - newY
+            return { ...item, x: newX, y: newY, width: newW, height: newH }
+          } else if (resizeHandle === 'arrow-end') {
+            const newW = x - item.x
+            const newH = y - item.y
+            return { ...item, width: newW, height: newH }
+          }
+        } else if (item.id === selectedItemId && item.type === 'orthogonal-arrow') {
+          if (resizeHandle === 'arrow-start') {
+            const originalEndX = item.x + (item.width || 0)
+            const originalEndY = item.y + (item.height || 0)
+            const newX = x
+            const newY = y
+            const newW = originalEndX - newX
+            const newH = originalEndY - newY
+            return { ...item, x: newX, y: newY, width: newW, height: newH }
+          } else if (resizeHandle === 'arrow-end') {
+            const newW = x - item.x
+            const newH = y - item.y
+            return { ...item, width: newW, height: newH }
+          } else if (resizeHandle === 'orthogonal-mid') {
+            return { ...item, style: { ...item.style, midX: x, midY: y } }
+          }
+        } else if (item.id === selectedItemId && item.type === 'text') {
+          if (resizeHandle === 'text-rotate') {
+            const canvas = canvasRef.current
+            const ctx = canvas?.getContext('2d') || null
+            const fSize = item.style.fontSize || textFontSize
+            const fontStyle = item.style.fontStyle || 'normal'
+            const { width: boundsWidth } = getTextBounds(ctx, item.text || '', fSize, fontStyle)
+
+            const dx = x - item.x
+            const dy = y - item.y
+            const baseAngle = Math.atan2(-26, boundsWidth / 2)
+            const currentAngle = Math.atan2(dy, dx)
+            const newRotationRad = currentAngle - baseAngle
+            let newRotationDeg = (newRotationRad * 180) / Math.PI
+
+            if (e.shiftKey) {
+              newRotationDeg = Math.round(newRotationDeg / 15) * 15
+            }
+
+            // Normalize to [-180, 180] range
+            newRotationDeg = ((newRotationDeg + 180) % 360 + 360) % 360 - 180
+
+            return {
+              ...item,
+              style: {
+                ...item.style,
+                rotation: Math.round(newRotationDeg)
+              }
+            }
+          }
+        }
+        return item
+      })
+      setItems(updated)
+    }
+
+    // 포인터 모드 드래그 이동
+    if (activeTool === 'pointer' && selectedItemId && draggedItemOffset) {
+      const draggedItem = items.find((item) => item.id === selectedItemId)
+      let newX = x - draggedItemOffset.x
+      let newY = y - draggedItemOffset.y
+      const nextAlignGuides: { x?: number; y?: number } = {}
+
+      // 스마트 정렬: 다른 아이템의 중심점과 가까우면(SNAP_THRESHOLD 이내) 스냅
+      if (smartAlignEnabled && draggedItem) {
+        const draggedW = draggedItem.width || 0
+        const draggedH = draggedItem.height || 0
+        const draggedCx = newX + draggedW / 2
+        const draggedCy = newY + draggedH / 2
+        let bestDx: number | null = null
+        let bestDy: number | null = null
+
+        items.forEach((other) => {
+          if (other.id === selectedItemId) return
+          const { cx: otherCx, cy: otherCy } = getItemCenter(other)
+
+          const dx = otherCx - draggedCx
+          if (Math.abs(dx) <= SNAP_THRESHOLD && (bestDx === null || Math.abs(dx) < Math.abs(bestDx))) {
+            bestDx = dx
+            nextAlignGuides.x = otherCx
+          }
+          const dy = otherCy - draggedCy
+          if (Math.abs(dy) <= SNAP_THRESHOLD && (bestDy === null || Math.abs(dy) < Math.abs(bestDy))) {
+            bestDy = dy
+            nextAlignGuides.y = otherCy
+          }
+        })
+
+        if (bestDx !== null) newX += bestDx
+        if (bestDy !== null) newY += bestDy
+      }
+
+      const updated = items.map((item) => {
+        if (item.id === selectedItemId) {
+          const deltaX = newX - item.x
+
+          if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
+            const deltaY = newY - item.y
+            return {
+              ...item,
+              x: newX,
+              y: newY,
+              style: {
+                ...item.style,
+                midX: item.style.midX + deltaX,
+                ...(item.style.midY !== undefined ? { midY: item.style.midY + deltaY } : {})
+              }
+            }
+          }
+          return { ...item, x: newX, y: newY }
+        }
+        return item
+      })
+      setItems(updated)
+      setAlignGuides(nextAlignGuides)
+    }
+  }
+
+  // 마우스 업 핸들러
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!bgImage) return
+    const { x, y } = getCanvasCoords(e)
+
+    if (isDrawing && dragStart) {
+      setIsDrawing(false)
+      const w = x - dragStart.x
+      const h = y - dragStart.y
+
+      if (activeTool === 'callout') {
+        if (Math.abs(w) > 10 && Math.abs(h) > 10) {
+          const newItem: CanvasItem = {
+            id: `item-${Date.now()}`,
+            type: 'callout',
+            x: Math.min(dragStart.x, x),
+            y: Math.min(dragStart.y, y),
+            width: Math.abs(w),
+            height: Math.abs(h),
+            text: '더블클릭으로 변경',
+            style: {
+              calloutShape,
+              backgroundColor: calloutBgColor,
+              borderColor: calloutBorderColor,
+              borderWidth: calloutBorderWidth,
+              lineStyle: calloutLineStyle,
+              opacity: calloutOpacity / 100,
+              borderRadius: calloutBorderRadius,
+              textColor: calloutTextColor,
+              fontSize: calloutFontSize
+            }
+          }
+          pushToUndo([...items, newItem])
+          setSelectedItemId(newItem.id)
+        }
+      }
+      else if (activeTool === 'box') {
+        // 의미 있는 크기만 등록
+        if (Math.abs(w) > 5 && Math.abs(h) > 5) {
+          const newItem: CanvasItem = {
+            id: `item-${Date.now()}`,
+            type: 'box',
+            x: Math.min(dragStart.x, x),
+            y: Math.min(dragStart.y, y),
+            width: Math.abs(w),
+            height: Math.abs(h),
+            style: {
+              borderColor: boxBorderColor,
+              borderWidth: boxLineWidth,
+              lineStyle: boxLineStyle,
+              backgroundColor: boxBgColor,
+              opacity: boxOpacity / 100,
+              borderRadius: boxBorderRadius,
+              shape: boxShape
+            }
+          }
+          pushToUndo([...items, newItem])
+          setSelectedItemId(newItem.id)
+        }
+      } 
+      else if (activeTool === 'arrow') {
+        // 어느정도 선 길이가 있을 때만 화살표 생성
+        if (Math.hypot(w, h) > 8) {
+          const newItem: CanvasItem = {
+            id: `item-${Date.now()}`,
+            type: 'arrow',
+            x: dragStart.x,
+            y: dragStart.y,
+            width: w,
+            height: h,
+            style: {
+              borderColor: arrowColor,
+              borderWidth: arrowLineWidth,
+              lineStyle: arrowLineStyle,
+              headSize: arrowHeadSize
+            }
+          }
+          pushToUndo([...items, newItem])
+          setSelectedItemId(newItem.id)
+        }
+      }
+      else if (activeTool === 'orthogonal-arrow') {
+        if (Math.hypot(w, h) > 8) {
+          const newItem: CanvasItem = {
+            id: `item-${Date.now()}`,
+            type: 'orthogonal-arrow',
+            x: dragStart.x,
+            y: dragStart.y,
+            width: w,
+            height: h,
+            style: {
+              borderColor: arrowColor,
+              borderWidth: arrowLineWidth,
+              lineStyle: arrowLineStyle,
+              midX: x,
+              midY: dragStart.y + h / 2,
+              headSize: arrowHeadSize
+            }
+          }
+          pushToUndo([...items, newItem])
+          setSelectedItemId(newItem.id)
+        }
+      }
+      else if (activeTool === 'crop') {
+        const cX = Math.min(dragStart.x, x)
+        const cY = Math.min(dragStart.y, y)
+        const cW = Math.abs(w)
+        const cH = Math.abs(h)
+
+        if (cW > 10 && cH > 10) {
+          const runCrop = async () => {
+            if (isDirty) {
+              try {
+                await handleSaveToHistory()
+                fetchHistory()
+              } catch (err) {
+                console.error('크롭 전 자동 저장 실패:', err)
+              }
+            }
+            cropImage(cX, cY, cW, cH)
+          }
+          runCrop()
+        }
+      }
+      // 리사이즈 드래그 끝마침 처리
+      if (resizeHandle) {
+        setResizeHandle(null)
+        pushToUndo([...items])
+      }
+
+      setDragStart(null)
+      setDragCurrent(null)
+    }
+
+    // 순수 이동(드래그) 종료 처리: 위치가 실제로 바뀐 경우에만 undo 기록
+    if (draggedItemOffset && dragMoveStartItemsRef.current) {
+      const startItem = dragMoveStartItemsRef.current.find((i) => i.id === selectedItemId)
+      const movedItem = items.find((i) => i.id === selectedItemId)
+      if (startItem && movedItem && (startItem.x !== movedItem.x || startItem.y !== movedItem.y)) {
+        pushToUndo(items, dragMoveStartItemsRef.current)
+      }
+    }
+    dragMoveStartItemsRef.current = null
+
+    setDraggedItemOffset(null)
+    setAlignGuides({})
+  }
+
+  // 이미지 크롭 처리
+  const cropImage = (cX: number, cY: number, cW: number, cH: number) => {
+    const canvas = canvasRef.current
+    if (!canvas || !bgImage) return
+
+    // 새 가상 캔버스로 크롭 영역을 따냄
+    const tempCanvas = document.createElement('canvas')
+    tempCanvas.width = cW
+    tempCanvas.height = cH
+    const tempCtx = tempCanvas.getContext('2d')
+    if (!tempCtx) return
+
+    tempCtx.drawImage(bgImage, cX, cY, cW, cH, 0, 0, cW, cH)
+
+    // 크롭 이미지를 클립보드에 복사: bgImage 대신 main canvas에서 캡처해야
+    // items(원숫자·박스·화살표 등) 포함 + canvasExpand 오프셋 문제 없음
+    if (navigator.clipboard && window.isSecureContext && typeof ClipboardItem !== 'undefined') {
+      const clipCanvas = document.createElement('canvas')
+      clipCanvas.width = cW
+      clipCanvas.height = cH
+      const clipCtx = clipCanvas.getContext('2d')
+      if (clipCtx) {
+        clipCtx.drawImage(canvas, cX, cY, cW, cH, 0, 0, cW, cH)
+        clipCanvas.toBlob((blob) => {
+          if (blob) {
+            navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+              .catch((err) => console.warn('크롭 이미지 클립보드 복사 실패:', err))
+          }
+        }, 'image/png')
+      }
+    }
+
+    const croppedDataUrl = tempCanvas.toDataURL('image/png')
+    const croppedImg = new Image()
+    croppedImg.onload = () => {
+      canvas.width = cW
+      canvas.height = cH
+      
+      // 크롭 영역 바깥의 아이템 필터링 및 오프셋 조정
+      const updatedItems = items
+        .map((item) => offsetItemForCrop(item, cX, cY))
+        .filter((item) => isItemWithinCropBounds(item, cW, cH))
+
+      // 크롭 직전 상태(uncropped bgImageSrc & items)를 undoStack에 보관
+      setUndoStack((prev) => [...prev, { items: items, bgImageSrc: bgImageSrc, imageScale: imageScale }])
+      setRedoStack([])
+      setItems(updatedItems)
+      setBgImage(croppedImg)
+      setBgImageSrc(croppedDataUrl)
+      setBaseBgImage(croppedImg)
+      setBaseBgImageSrc(croppedDataUrl)
+      setImageScale(1.0)
+      setSelectedItemId(null)
+    }
+    croppedImg.src = croppedDataUrl
+    setActiveTool('pointer')
+  }
+
+  // 텍스트 완료 처리
+  const handleTextSubmit = () => {
+    if (!textInputValue.trim()) {
+      setTextInput({ x: 0, y: 0, visible: false })
+      return
+    }
+
+    if (textInput.id) {
+      // 기존 텍스트 수정
+      const updated = items.map((item) => {
+        if (item.id === textInput.id) {
+          return { ...item, text: textInputValue }
+        }
+        return item
+      })
+      pushToUndo(updated)
+    } else if (dragStart) {
+      // 신규 생성
+      const newItem: CanvasItem = {
+        id: `item-${Date.now()}`,
+        type: 'text',
+        x: dragStart.x,
+        y: dragStart.y,
+        text: textInputValue,
+        style: {
+          textColor: textTextColor,
+          fontSize: textFontSize,
+          backgroundColor: textBgColor,
+          fontStyle: textFontStyle,
+          textDecoration: textTextDecoration
+        }
+      }
+      pushToUndo([...items, newItem])
+      setSelectedItemId(newItem.id)
+    }
+    setTextInput({ x: 0, y: 0, visible: false })
+    setTextInputValue('')
+    setDragStart(null)
+  }
+
+  // 숫자키 1~9 → 좌측 툴바 도구 매핑 (pointer는 Escape가 이미 담당)
+  const NUMBER_KEY_TOOLS = useMemo((): Record<string, typeof activeTool> => ({
+    '1': 'circle-number',
+    '2': 'box',
+    '3': 'arrow',
+    '4': 'orthogonal-arrow',
+    '5': 'block-arrow-stamp',
+    '6': 'callout',
+    '7': 'symbol',
+    '8': 'text',
+    '9': 'crop'
+  }), [])
+
+  // 키보드로 지우기 감지 및 ESC/복제(Ctrl+D) 핸들링
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isVisible()) return
+      // 인풋을 작성 중일 땐 차단
+      if (textInput.visible) return
+
+      // 포커스가 HTML 입력 필드(INPUT, TEXTAREA 등)에 있을 때는 단축키 동작 방지
+      const activeEl = document.activeElement
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.getAttribute('contenteditable') === 'true')
+      ) {
+        return
+      }
+
+      // 'a' 키를 누르면 선택된 화살표 아이템 자동 수정 (수평/수직 정렬 및 꺾임 꼬리 제거)
+      if (selectedItemId && e.key.toLowerCase() === 'a') {
+        const targetItem = items.find(item => item.id === selectedItemId)
+        if (targetItem && targetItem.type === 'arrow') {
+          e.preventDefault()
+          const w = targetItem.width ?? 0
+          const h = targetItem.height ?? 0
+          
+          let newW = w
+          let newH = h
+          
+          if (Math.abs(w) >= Math.abs(h)) {
+            // 수평 보정 (세로 변화량을 0으로)
+            newH = 0
+          } else {
+            // 수직 보정 (가로 변화량을 0으로)
+            newW = 0
+          }
+          
+          if (w !== newW || h !== newH) {
+            const updated = items.map((item) => {
+              if (item.id === selectedItemId) {
+                return {
+                  ...item,
+                  width: newW,
+                  height: newH
+                }
+              }
+              return item
+            })
+            pushToUndo(updated)
+          }
+          return
+        }
+        
+        if (targetItem && targetItem.type === 'orthogonal-arrow') {
+          e.preventDefault()
+          const fromX = targetItem.x
+          const fromY = targetItem.y
+          const toX = fromX + (targetItem.width ?? 0)
+          const toY = fromY + (targetItem.height ?? 0)
+          
+          const midX = targetItem.style.midX !== undefined ? targetItem.style.midX : toX
+          const midY = targetItem.style.midY !== undefined ? targetItem.style.midY : (fromY + toY) / 2
+
+          const minX = Math.min(fromX, toX), maxX = Math.max(fromX, toX)
+          const minY = Math.min(fromY, toY), maxY = Math.max(fromY, toY)
+          const xOutside = Math.max(0, minX - midX, midX - maxX)
+          const yOutside = Math.max(0, minY - midY, midY - maxY)
+          const useHorizontal = xOutside >= yOutside
+
+          let newMidX = midX
+          let newMidY = midY
+
+          if (useHorizontal) {
+            // H-V-H 경로: midX를 시작점(fromX) 또는 끝점(toX) 중 가까운 쪽으로 스냅하여 꼬리 제거
+            if (Math.abs(midX - fromX) < Math.abs(midX - toX)) {
+              newMidX = fromX
+            } else {
+              newMidX = toX
+            }
+          } else {
+            // V-H-V 경로: midY를 시작점(fromY) 또는 끝점(toY) 중 가까운 쪽으로 스냅하여 꼬리 제거
+            if (Math.abs(midY - fromY) < Math.abs(midY - toY)) {
+              newMidY = fromY
+            } else {
+              newMidY = toY
+            }
+          }
+
+          if (midX !== newMidX || midY !== newMidY) {
+            const updated = items.map((item) => {
+              if (item.id === selectedItemId) {
+                return {
+                  ...item,
+                  style: {
+                    ...item.style,
+                    midX: newMidX,
+                    midY: newMidY
+                  }
+                }
+              }
+              return item
+            })
+            pushToUndo(updated)
+          }
+          return
+        }
+
+        // box는 가로/세로를 같게 맞춰 정사각형(원 모양이면 정원)으로 스냅 (중심 고정)
+        if (targetItem && targetItem.type === 'box') {
+          e.preventDefault()
+          const w = targetItem.width ?? 0
+          const h = targetItem.height ?? 0
+          const size = Math.max(w, h)
+
+          if (w !== size || h !== size) {
+            const cx = targetItem.x + w / 2
+            const cy = targetItem.y + h / 2
+            const updated = items.map((item) => {
+              if (item.id === selectedItemId) {
+                return {
+                  ...item,
+                  x: cx - size / 2,
+                  y: cy - size / 2,
+                  width: size,
+                  height: size
+                }
+              }
+              return item
+            })
+            pushToUndo(updated)
+          }
+          return
+        }
+      }
+
+      // 'r' 키를 누르면 선택된 화살표 아이템 방향 반전 (Reverse)
+      if (selectedItemId && e.key.toLowerCase() === 'r') {
+        const targetItem = items.find(item => item.id === selectedItemId)
+        if (targetItem && targetItem.type === 'arrow') {
+          e.preventDefault()
+          const w = targetItem.width ?? 0
+          const h = targetItem.height ?? 0
+          
+          const updated = items.map((item) => {
+            if (item.id === selectedItemId) {
+              return {
+                ...item,
+                x: item.x + w,
+                y: item.y + h,
+                width: -w,
+                height: -h
+              }
+            }
+            return item
+          })
+          pushToUndo(updated)
+          return
+        }
+
+        if (targetItem && targetItem.type === 'orthogonal-arrow') {
+          e.preventDefault()
+          const w = targetItem.width ?? 0
+          const h = targetItem.height ?? 0
+
+          const updated = items.map((item) => {
+            if (item.id === selectedItemId) {
+              return {
+                ...item,
+                x: item.x + w,
+                y: item.y + h,
+                width: -w,
+                height: -h
+              }
+            }
+            return item
+          })
+          pushToUndo(updated)
+          return
+        }
+
+        // 스탬프 아이템은 'r'을 누를 때마다 8방향 중 다음 방향으로 순환
+        if (targetItem && targetItem.type === 'block-arrow-stamp') {
+          e.preventDefault()
+          const directions = Object.keys(STAMP_ANGLES)
+          const currentDir = targetItem.style.stampDirection || 'right'
+          const nextDir = directions[(directions.indexOf(currentDir) + 1) % directions.length]
+
+          setStampDirection(nextDir)
+          const updated = items.map((item) => {
+            if (item.id === selectedItemId) {
+              return { ...item, style: { ...item.style, stampDirection: nextDir } }
+            }
+            return item
+          })
+          pushToUndo(updated)
+          return
+        }
+      }
+
+      // Ctrl + 키보드 화살표 키를 이용한 box 요소의 크기 미세 조절 (Resize - 1px)
+      if (selectedItemId && (e.ctrlKey || e.metaKey) && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        const targetItem = items.find(item => item.id === selectedItemId)
+        if (targetItem && targetItem.type === 'box') {
+          e.preventDefault() // 브라우저 방향키에 의한 스크롤 방지
+          let dw = 0
+          let dh = 0
+          if (e.key === 'ArrowLeft') dw = -1
+          else if (e.key === 'ArrowRight') dw = 1
+          else if (e.key === 'ArrowUp') dh = -1
+          else if (e.key === 'ArrowDown') dh = 1
+
+          const updated = items.map((item) => {
+            if (item.id === selectedItemId) {
+              const currentW = item.width ?? 10
+              const currentH = item.height ?? 10
+              return {
+                ...item,
+                width: Math.max(5, currentW + dw),
+                height: Math.max(5, currentH + dh)
+              }
+            }
+            return item
+          })
+          pushToUndo(updated)
+          return
+        }
+      }
+
+      // 키보드 화살표 키를 이용한 선택 요소 미세 이동 (Nudge - 1px)
+      if (selectedItemId && !e.ctrlKey && !e.metaKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault() // 브라우저 방향키에 의한 스크롤 방지
+        let dx = 0
+        let dy = 0
+        if (e.key === 'ArrowLeft') dx = -1
+        else if (e.key === 'ArrowRight') dx = 1
+        else if (e.key === 'ArrowUp') dy = -1
+        else if (e.key === 'ArrowDown') dy = 1
+
+        const updated = items.map((item) => {
+          if (item.id === selectedItemId) {
+            return {
+              ...item,
+              x: item.x + dx,
+              y: item.y + dy
+            }
+          }
+          return item
+        })
+        pushToUndo(updated)
+        return
+      }
+
+      if (e.key === 'Escape') {
+        setSelectedItemId(null)
+        setActiveTool('pointer')
+        return
+      }
+
+      // 숫자키 1~9로 좌측 툴바 도구 순서대로 즉시 전환 (마우스로 툴바까지 왕복하는 수고를 줄임)
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && NUMBER_KEY_TOOLS[e.key]) {
+        setActiveTool(NUMBER_KEY_TOOLS[e.key])
+        setSelectedItemId(null)
+        return
+      }
+
+      // Ctrl + Z / Cmd + Z (Undo 실행 취소)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        handleUndo()
+        return
+      }
+
+      // Ctrl + Y / Cmd + Y (Redo 다시 실행)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault()
+        handleRedo()
+        return
+      }
+
+      // Ctrl + Shift + Z / Cmd + Shift + Z (Redo 다시 실행 - 보조 단축키)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        handleRedo()
+        return
+      }
+
+      // Ctrl + C / Cmd + C (아이템 복사 → localStorage)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+        if (selectedItemId) {
+          const targetItem = items.find(item => item.id === selectedItemId)
+          if (targetItem) {
+            localStorage.setItem('pcms_copied_item', JSON.stringify(targetItem))
+            // 시스템 클립보드를 텍스트 마커로 교체: 다음 Ctrl+V에서 이미지 판별을 막고
+            // paste 핸들러가 localStorage item 경로로 진입하도록 유도
+            copyTextToClipboard('__pcms_item__').catch(() => {})
+            e.preventDefault()
+            showSaveMessage('아이템이 복사되었습니다. 다른 이미지에서 Ctrl+V로 붙여넣기 가능합니다.', 'success')
+          }
+        }
+        return
+      }
+
+      // Ctrl + D / Cmd + D (Duplicate 복제)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        if (selectedItemId) {
+          e.preventDefault() // 브라우저 북마크 추가 동작 방지
+          const targetItem = items.find(item => item.id === selectedItemId)
+          if (targetItem) {
+            const duplicatedItem: CanvasItem = {
+              ...targetItem,
+              id: `item-${Date.now()}`,
+              x: targetItem.x + 20,
+              y: targetItem.y + 20,
+              style: {
+                ...targetItem.style
+              }
+            }
+            const newItems = [...items, duplicatedItem]
+            pushToUndo(newItems)
+            setSelectedItemId(duplicatedItem.id)
+          }
+        }
+        return
+      }
+
+      // 앞으로 보내기 (Ctrl + ]) / 맨 앞으로 보내기 (Ctrl + Shift + ])
+      const isRightBracket = e.key === ']' || e.key === '}' || e.code === 'BracketRight'
+      if ((e.ctrlKey || e.metaKey) && isRightBracket) {
+        if (selectedItemId) {
+          e.preventDefault()
+          const index = items.findIndex(item => item.id === selectedItemId)
+          if (index !== -1 && index < items.length - 1) {
+            if (e.shiftKey) {
+              // 맨 앞으로 보내기
+              const item = items[index]
+              const newItems = [...items]
+              newItems.splice(index, 1)
+              newItems.push(item)
+              pushToUndo(newItems)
+            } else {
+              // 앞으로 한 단계 보내기
+              const newItems = [...items]
+              const temp = newItems[index]
+              newItems[index] = newItems[index + 1]
+              newItems[index + 1] = temp
+              pushToUndo(newItems)
+            }
+          }
+        }
+        return
+      }
+
+      // 뒤로 보내기 (Ctrl + [) / 맨 뒤로 보내기 (Ctrl + Shift + [)
+      const isLeftBracket = e.key === '[' || e.key === '{' || e.code === 'BracketLeft'
+      if ((e.ctrlKey || e.metaKey) && isLeftBracket) {
+        if (selectedItemId) {
+          e.preventDefault()
+          const index = items.findIndex(item => item.id === selectedItemId)
+          if (index !== -1 && index > 0) {
+            if (e.shiftKey) {
+              // 맨 뒤로 보내기
+              const item = items[index]
+              const newItems = [...items]
+              newItems.splice(index, 1)
+              newItems.unshift(item)
+              pushToUndo(newItems)
+            } else {
+              // 뒤로 한 단계 보내기
+              const newItems = [...items]
+              const temp = newItems[index]
+              newItems[index] = newItems[index - 1]
+              newItems[index - 1] = temp
+              pushToUndo(newItems)
+            }
+          }
+        }
+        return
+      }
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedItemId) {
+          const filtered = items.filter((x) => x.id !== selectedItemId)
+          pushToUndo(filtered)
+          setSelectedItemId(null)
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedItemId, items, textInput, NUMBER_KEY_TOOLS, handleUndo, handleRedo, pushToUndo, showSaveMessage])
+
+  // 현재 이미지 복사(Copy)
+  const handleCopyClipboard = () => {
+    const canvas = canvasRef.current
+    if (!canvas || !bgImage) {
+      showMessage('복사할 이미지가 없습니다.', 'error')
+      return
+    }
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        try {
+          const item = new ClipboardItem({ 'image/png': blob })
+          navigator.clipboard.write([item]).then(() => {
+            showMessage('최종 편집 이미지가 클립보드에 복사되었습니다. (Ctrl+V 붙여넣기 가능)', 'success')
+          })
+        } catch (err) {
+          console.error('Clipboard API 실패, 복사 수동 처리 유도:', err)
+          showMessage('브라우저 보안으로 직접 복사를 실패했습니다. 다운로드 버튼을 이용해 주세요.', 'error')
+        }
+      }
+    }, 'image/png')
+  }
+
+  // 로컬 다운로드
+  const handleDownload = () => {
+    const canvas = canvasRef.current
+    if (!canvas || !bgImage) return
+
+    const url = canvas.toDataURL('image/png')
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${editorTitle.replace(/\s+/g, '_')}_edited.png`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // [중요] 백엔드 임시저장
+  const handleSaveToHistory = useCallback(async () => {
+    if (!bgImage) {
+      showMessage('저장할 대상 이미지가 로드되지 않았습니다.', 'error')
+      return
+    }
+
+    setSavingWork(true)
+    try {
+      // 캔버스 최종 그래픽을 Base64 포맷으로 복제
+      const canvas = canvasRef.current
+      const editedBase64 = canvas?.toDataURL('image/png') || ''
+
+      // 임시저장(Ctrl+S) 시에는 버전 이력 누적을 위해 언제나 새로운 레코드로 추가 저장 수행
+      const prefix = editorTitle.trim() || '임시작업'
+      const cleanPrefix = prefix.replace(/_\d+$/, '') // "작업_3" 형태일 때 중복 방지
+      const count = historyList.filter(h => h.title === cleanPrefix || h.title.startsWith(cleanPrefix + '_')).length
+      const finalTitle = `${cleanPrefix}_${count + 1}`
+
+      const dataToSave = {
+        title: finalTitle,
+        originalImageUrl: bgImageSrc, // 원본 Base64 또는 URL
+        editedImageUrl: editedBase64,  // 최종 편집본 Base64
+        items: items,
+        circleCounter: circleCounter,
+        physicalUrl: generatedImageUrl, // 물리 url이 이미 생성된 상태면 함께 저장
+        imageScale: imageScale, // 추가
+        ...buildWorkStyleConfig(),
+        arrowHeadSize // 화살머리 크기 영구 귀속 저장 연동
+      }
+
+      // id 값을 전달하지 않아 언제나 새로운 이미지 작업 레코드로 DB 저장되게 처리
+      const res = await saveImageWork(buildImageWorkPayload(finalTitle, dataToSave))
+
+      if (res && res.id) {
+        setActiveHistoryId(res.id)
+      }
+
+      // 저장 완료 후 기준 상태 동기화
+      setLastSavedState({
+        title: finalTitle,
+        bgImageSrc: bgImageSrc,
+        items: items,
+        imageScale: imageScale, // 추가
+        ...buildWorkStyleConfig()
+      })
+      setEditorTitle(finalTitle)
+
+      showSaveMessage(`작업이 '${finalTitle}' 명칭으로 임시 보관함에 저장되었습니다.`, 'success')
+      fetchHistory()
+    } catch (err) {
+      console.error('작업 임시저장 에러:', err)
+      showSaveMessage('작업 임시 저장 도중 오류가 발생했습니다.', 'error')
+    } finally {
+      setSavingWork(false)
+    }
+  }, [bgImage, showMessage, editorTitle, historyList, bgImageSrc, items, circleCounter, generatedImageUrl, imageScale, buildWorkStyleConfig, arrowHeadSize, saveImageWork, buildImageWorkPayload, showSaveMessage, fetchHistory])
+
+  // Ctrl + S 임시저장 단축키 리스너
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isVisible() && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        handleSaveToHistory()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleSaveToHistory])
+
+  // 최종 이미지 서버 물리 저장 및 정적 URL 획득
+  const handleGenerateUrl = () => {
+    const canvas = canvasRef.current
+    if (!canvas || !bgImage) {
+      showMessage('저장할 이미지가 없습니다.', 'error')
+      return
+    }
+
+    // 1. 선택 해제 및 툴 초기화 (ESC 키 누른 것과 동일)
+    setSelectedItemId(null)
+    setActiveTool('pointer')
+
+    setInsertingImage(true)
+
+    // 2. 리액트 상태 변경 리렌더링으로 캔버스 하이라이트가 지워지도록 100ms 지연 후 캡처 진행
+    setTimeout(() => {
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          setInsertingImage(false)
+          return
+        }
+
+        try {
+          const formData = new FormData()
+          const cleanTitle = editorTitle.replace(/[^a-zA-Z0-9가-힣]/g, '_')
+          const file = new File([blob], `${cleanTitle || 'edited'}_${Date.now()}.png`, { type: 'image/png' })
+          formData.append('file', file)
+
+          const res = await apiClient.post<{ url: string }>('/files/editor-image', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+
+          if (res && res.url) {
+            setGeneratedImageUrl(res.url)
+            
+            // 1번: 클립보드에 마크다운 복사까지 즉시 수행
+            const markdownFormat = `![image](${res.url})\n`
+            await copyTextToClipboard(markdownFormat)
+            
+            // 2번: 물리 url을 해당 이미지 작업 레코드에 영구적으로 귀속 저장 (덮어쓰기 업데이트)
+            if (activeHistoryId) {
+              const dataToSave = {
+                title: editorTitle,
+                originalImageUrl: bgImageSrc,
+                editedImageUrl: canvas.toDataURL('image/png') || '',
+                items: items,
+                circleCounter: circleCounter,
+                physicalUrl: res.url,
+                ...buildWorkStyleConfig(),
+                arrowHeadSize // 화살머리 크기 영구 귀속 저장 연동
+              }
+
+              await saveImageWork(buildImageWorkPayload(editorTitle, dataToSave, activeHistoryId))
+
+              // 기준 상태 동기화
+              setLastSavedState({
+                title: editorTitle,
+                bgImageSrc: bgImageSrc,
+                items: items,
+                imageScale,
+                ...buildWorkStyleConfig()
+              })
+
+              fetchHistory()
+            }
+
+            showSaveMessage('물리 이미지 저장 성공 및 마크다운이 클립보드에 자동 복사되었습니다!', 'success')
+          } else {
+            showSaveMessage('서버로부터 업로드 URL을 받지 못했습니다.', 'error')
+          }
+        } catch (err) {
+          console.error('이미지 업로드 실패:', err)
+          showSaveMessage('이미지 업로드에 실패했습니다.', 'error')
+        } finally {
+          setInsertingImage(false)
+        }
+      }, 'image/png')
+    }, 100)
+  }
+
+  // 생성된 이미지 URL을 클립보드에 복사
+  const handleCopyGeneratedUrl = async () => {
+    try {
+      await copyTextToClipboard(generatedImageUrl)
+      showSaveMessage('이미지 주소가 클립보드에 복사되었습니다.', 'success')
+    } catch (err) {
+      console.error(err)
+      showSaveMessage('주소 복사에 실패했습니다.', 'error')
+    }
+  }
+
+  // 생성된 이미지 URL을 마크다운 이미지 태그 포맷으로 클립보드에 복사
+  const handleCopyMarkdownUrl = async () => {
+    try {
+      const markdownFormat = `![image](${generatedImageUrl})\n`
+      await copyTextToClipboard(markdownFormat)
+      showSaveMessage('마크다운 이미지 태그가 클립보드에 복사되었습니다.', 'success')
+    } catch (err) {
+      console.error(err)
+      showSaveMessage('마크다운 복사에 실패했습니다.', 'error')
+    }
+  }
+
+  // 제목 인라인 수정 완료 처리
+  const handleUpdateTitle = async (work: ImageWork, newTitle: string) => {
+    if (!newTitle.trim()) {
+      showMessage('제목은 비워둘 수 없습니다.', 'error')
+      return
+    }
+    try {
+      let updatedJsonData = work.jsonData
+      try {
+        const parsed = JSON.parse(work.jsonData)
+        parsed.title = newTitle.trim()
+        updatedJsonData = JSON.stringify(parsed)
+      } catch {
+        console.warn('jsonData 파싱 실패로 텍스트 치환 시도')
+      }
+
+      await apiClient.post('/admin/image-work', {
+        id: work.id,
+        title: newTitle.trim(),
+        jsonData: updatedJsonData
+      })
+      
+      fetchHistory()
+    } catch (err) {
+      console.error('제목 수정 오류:', err)
+      showMessage('제목을 수정하지 못했습니다.', 'error')
+    }
+  }
+
+  // 선택된 항목 다중 삭제 (SQLite 락 충돌 방지를 위해 직렬 순차 처리)
+  const deleteImageWorkById = (id: number) => apiClient.delete(`/admin/image-work/${id}`)
+
+  const handleDeleteSelected = async (ids: number[]) => {
+    try {
+      for (const id of ids) {
+        // 순차 삭제: SQLite 락 회피 목적, 병렬화 금지
+        await deleteImageWorkById(id)
+      }
+      fetchHistory()
+    } catch (err) {
+      console.error('선택 항목 삭제 중 에러:', err)
+      showMessage('일부 항목 삭제를 실패했습니다.', 'error')
+      fetchHistory()
+    }
+  }
+
+  // 임시 보관 작업 복원하기
+  async function handleLoadWork(work: ImageWork) {
+    if (isDirty) {
+      try {
+        await handleSaveToHistory()
+      } catch (err) {
+        console.error('자동 저장 중 오류 발생:', err)
+      }
+    }
+    try {
+      const data = JSON.parse(work.jsonData)
+      
+      const img = new Image()
+      img.onload = () => {
+        const canvas = canvasRef.current
+        
+        // 새로운 설정 값들 로드 및 적용 (하위 호환성 Fallback 적용)
+        const resolved = resolveWorkStyleConfigFromLegacyData(data)
+        
+        if (canvas) {
+          canvas.width = img.width + (resolved.canvasExpandLeft ?? 0) + (resolved.canvasExpandRight ?? 0)
+          canvas.height = img.height + (resolved.canvasExpandTop ?? 0) + (resolved.hasCaption ? captionHeight : 0) + (resolved.canvasExpandBottom ?? 0)
+        }
+        
+        applyStyleConfig(resolved)
+        setHasBorder(resolved.hasBorder)
+        setBorderColor(resolved.borderColor)
+        setBorderWidth(resolved.borderWidth)
+        setBorderStyle(resolved.borderStyle)
+        setHasCaption(resolved.hasCaption)
+        setCaptionText(resolved.captionText)
+        setCanvasExpandBottom(resolved.canvasExpandBottom ?? 0)
+        setCanvasExpandRight(resolved.canvasExpandRight ?? 0)
+        setCanvasExpandTop(resolved.canvasExpandTop ?? 0)
+        setCanvasExpandLeft(resolved.canvasExpandLeft ?? 0)
+
+        setBgImage(img)
+        setBgImageSrc(data.originalImageUrl || '')
+        setBaseBgImage(img)
+        setBaseBgImageSrc(data.originalImageUrl || '')
+        setImageScale(data.imageScale ?? 1.0)
+        setZoom(1.0)
+        setItems(data.items || [])
+        setCircleCounter(data.circleCounter || 1)
+        setEditorTitle(work.title)
+        setUndoStack([])
+        setRedoStack([])
+        setSelectedItemId(null)
+        
+        // 2번: 물리 url이 이미 존재한다면 바로 보여줍니다.
+        if (data.physicalUrl) {
+          setGeneratedImageUrl(data.physicalUrl)
+        } else {
+          setGeneratedImageUrl('')
+        }
+
+        // 현재 작업 중인 이력 ID 세팅
+        setActiveHistoryId(work.id)
+
+        setLastSavedState({
+          title: work.title,
+          bgImageSrc: data.originalImageUrl || '',
+          items: data.items || [],
+          imageScale: data.imageScale ?? 1.0, // 추가
+          ...resolved
+        })
+      }
+      img.src = data.originalImageUrl
+    } catch (e) {
+      console.error('Failed to parse load data:', e)
+      showSaveMessage('이미지 작업 데이터를 복원하는 데 실패했습니다.', 'error')
+    }
+  }
+
+  // 이력 삭제
+  const handleDeleteHistory = async (id: number) => {
+    try {
+      await deleteImageWorkById(id)
+      fetchHistory()
+    } catch (err) {
+      console.error('이력 삭제 오류:', err)
+    }
+  }
+
+
+
+  // 여백 위에 배치된 도형들을 보호하기 위한 최소 여백 값 계산
+  const minBottomMargin = React.useMemo(() => {
+    if (!bgImage) return 0
+    let maxEdge = 0
+    items.forEach((item) => {
+      const { bottom } = getItemEdgeBounds(item, { circleNumberFontSize, textFontSize })
+      const imageBottom = bgImage.height + canvasExpandTop
+      if (bottom > imageBottom) {
+        const edge = bottom - imageBottom
+        if (edge > maxEdge) {
+          maxEdge = edge
+        }
+      }
+    })
+    return Math.ceil(maxEdge)
+  }, [items, bgImage, circleNumberFontSize, textFontSize, canvasExpandTop])
+
+  const minRightMargin = React.useMemo(() => {
+    if (!bgImage) return 0
+    let maxEdge = 0
+    items.forEach((item) => {
+      const { right } = getItemEdgeBounds(item, { circleNumberFontSize, textFontSize })
+      const imageRight = bgImage.width + canvasExpandLeft
+      if (right > imageRight) {
+        const edge = right - imageRight
+        if (edge > maxEdge) {
+          maxEdge = edge
+        }
+      }
+    })
+    return Math.ceil(maxEdge)
+  }, [items, bgImage, circleNumberFontSize, textFontSize, canvasExpandLeft])
+
+  // 상단 및 좌측 축소 가능 여부 계산
+  const canShrinkTop = React.useMemo(() => {
+    if (canvasExpandTop < 100) return false
+    let safe = true
+    items.forEach(item => {
+      const { top } = getItemEdgeBounds(item, { circleNumberFontSize, textFontSize })
+      if (top < 100) safe = false
+    })
+    return safe
+  }, [items, canvasExpandTop, circleNumberFontSize, textFontSize])
+
+  const canShrinkLeft = React.useMemo(() => {
+    if (canvasExpandLeft < 100) return false
+    let safe = true
+    items.forEach(item => {
+      const { left } = getItemEdgeBounds(item, { circleNumberFontSize, textFontSize })
+      if (left < 100) safe = false
+    })
+    return safe
+  }, [items, canvasExpandLeft, circleNumberFontSize, textFontSize])
+
+  // 원본 이미지 크기 조절 실행 함수
+  const handleResizeImage = async (targetScale: number) => {
+    if (!baseBgImage || !baseBgImageSrc) return
+    if (targetScale === imageScale) return // 이미 동일한 배율인 경우 무시
+
+    const ratio = targetScale / imageScale // 기존 대비 변경 비율
+
+    // 1. 임시 캔버스를 만들어 baseBgImage를 targetScale 배율로 다시 그린다
+    const targetW = Math.round(baseBgImage.width * targetScale)
+    const targetH = Math.round(baseBgImage.height * targetScale)
+
+    const tempCanvas = document.createElement('canvas')
+    tempCanvas.width = targetW
+    tempCanvas.height = targetH
+    const tempCtx = tempCanvas.getContext('2d')
+    if (!tempCtx) return
+
+    // 이미지 퀄리티 설정
+    tempCtx.imageSmoothingEnabled = true
+    tempCtx.imageSmoothingQuality = 'high'
+    tempCtx.drawImage(baseBgImage, 0, 0, targetW, targetH)
+
+    const resizedDataUrl = tempCanvas.toDataURL('image/png')
+    const resizedImg = new Image()
+    
+    resizedImg.onload = () => {
+      // 2. 실행 취소(Undo) 스택에 현재 상태 푸시
+      pushToUndo(scaledItems)
+
+      // 3. 이미지 상태 업데이트
+      setBgImage(resizedImg)
+      setBgImageSrc(resizedDataUrl)
+      setImageScale(targetScale)
+
+      // 4. 여백(Canvas Expand) 정보도 비율대로 조절
+      setCanvasExpandLeft(prev => Math.round(prev * ratio))
+      setCanvasExpandRight(prev => Math.round(prev * ratio))
+      setCanvasExpandTop(prev => Math.round(prev * ratio))
+      setCanvasExpandBottom(prev => Math.round(prev * ratio))
+
+      setSelectedItemId(null)
+    }
+
+    // items 스케일링
+    const scaledItems = items.map((item) => {
+      const newItem = { ...item, x: item.x * ratio, y: item.y * ratio }
+      if (item.width !== undefined) newItem.width = item.width * ratio
+      if (item.height !== undefined) newItem.height = item.height * ratio
+
+      newItem.style = { ...item.style }
+      if (item.style.midX !== undefined) newItem.style.midX = item.style.midX * ratio
+      if (item.style.midY !== undefined) newItem.style.midY = item.style.midY * ratio
+      if (item.style.calloutTailX !== undefined) newItem.style.calloutTailX = item.style.calloutTailX * ratio
+      if (item.style.calloutTailY !== undefined) newItem.style.calloutTailY = item.style.calloutTailY * ratio
+      if (item.style.fontSize !== undefined) newItem.style.fontSize = Math.round(item.style.fontSize * ratio)
+      if (item.style.borderWidth !== undefined) newItem.style.borderWidth = Math.round(item.style.borderWidth * ratio)
+
+      return newItem
+    })
+
+    resizedImg.src = resizedDataUrl
+  }
+
+  // 4방향 확장/축소 실행 함수
+  const handleExpandTop = () => {
+    setCanvasExpandTop(prev => prev + 100)
+    const shifted = items.map(item => shiftItemY(item, 100))
+    pushToUndo(shifted)
+  }
+
+  const handleShrinkTop = () => {
+    if (!canShrinkTop) return
+    setCanvasExpandTop(prev => prev - 100)
+    const shifted = items.map(item => shiftItemY(item, -100))
+    pushToUndo(shifted)
+  }
+
+  const handleExpandBottom = () => {
+    setCanvasExpandBottom(prev => prev + 100)
+    pushToUndo(items)
+  }
+
+  const handleShrinkBottom = () => {
+    const val = Math.max(minBottomMargin, canvasExpandBottom - 100)
+    setCanvasExpandBottom(val)
+    pushToUndo(items)
+  }
+
+  const handleExpandLeft = () => {
+    setCanvasExpandLeft(prev => prev + 100)
+    const shifted = items.map(item => shiftItemX(item, 100))
+    pushToUndo(shifted)
+  }
+
+  const handleShrinkLeft = () => {
+    if (!canShrinkLeft) return
+    setCanvasExpandLeft(prev => prev - 100)
+    const shifted = items.map(item => shiftItemX(item, -100))
+    pushToUndo(shifted)
+  }
+
+  const handleExpandRight = () => {
+    setCanvasExpandRight(prev => prev + 100)
+    pushToUndo(items)
+  }
+
+  const handleShrinkRight = () => {
+    const val = Math.max(minRightMargin, canvasExpandRight - 100)
+    setCanvasExpandRight(val)
+    pushToUndo(items)
+  }
+
+  // 바탕 확장 라디오에서 선택된 방향에 맞는 핸들러/축소가능여부/문구 조회용 맵
+  const EXPAND_DIRECTION_LABELS: Record<typeof expandDirection, string> = {
+    top: '상단', bottom: '하단', left: '좌측', right: '우측'
+  }
+  const expandDirectionActions: Record<typeof expandDirection, {
+    expand: () => void
+    shrink: () => void
+    canShrink: boolean
+    shrinkBlockedTitle: string
+  }> = {
+    top: { expand: handleExpandTop, shrink: handleShrinkTop, canShrink: canShrinkTop, shrinkBlockedTitle: '상단에 도형이 있거나 여백이 없어 축소할 수 없습니다' },
+    bottom: { expand: handleExpandBottom, shrink: handleShrinkBottom, canShrink: canvasExpandBottom > minBottomMargin, shrinkBlockedTitle: '하단에 도형이 있거나 여백이 없어 축소할 수 없습니다' },
+    left: { expand: handleExpandLeft, shrink: handleShrinkLeft, canShrink: canShrinkLeft, shrinkBlockedTitle: '좌측에 도형이 있거나 여백이 없어 축소할 수 없습니다' },
+    right: { expand: handleExpandRight, shrink: handleShrinkRight, canShrink: canvasExpandRight > minRightMargin, shrinkBlockedTitle: '우측에 도형이 있거나 여백이 없어 축소할 수 없습니다' }
+  }
+  const activeExpandAction = expandDirectionActions[expandDirection]
+
+  return (
+    <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-900 transition-all animate-in fade-in duration-200">
+      <div className="w-full h-full flex flex-col overflow-hidden">
+        
+        {/* 헤더 영역 */}
+        <div className="h-14 border-b border-gray-200 dark:border-slate-800 px-6 flex items-center justify-between shrink-0 bg-gray-50 dark:bg-slate-950">
+          <div className="flex items-center space-x-3">
+            <span className="font-bold text-gray-800 dark:text-slate-100 flex items-center space-x-1.5 text-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
+              <span>도움말 이미지 편집기</span>
+            </span>
+            <label className="text-xs text-gray-500 dark:text-slate-400 font-semibold shrink-0 ml-3">임시보관 접두어:</label>
+            <input
+              type="text"
+              value={editorTitle}
+              onChange={(e) => setEditorTitle(e.target.value)}
+              className="px-2.5 py-1 text-xs bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded font-semibold text-gray-800 dark:text-slate-100 w-48 focus:outline-hidden focus:border-indigo-500"
+              placeholder="작업 제목 입력"
+              title="이 작업의 임시보관용 제목"
+            />
+            {saveMessage.text && (
+              <span className={`text-xs px-3 py-1 rounded-md font-bold animate-in fade-in slide-in-from-top-1 duration-200 ${
+                saveMessage.type === 'success' 
+                  ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50' 
+                  : 'bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-400 border border-red-100 dark:border-red-900/50'
+              }`}>
+                {saveMessage.text}
+              </span>
+            )}
+          </div>
+
+          {/* 우측 상단 컨트롤 그룹 (이미지 크기 + 바탕 확장 + 보기 배율 나란히 배치) */}
+          {bgImage && (
+            <div className="flex items-center space-x-2 mr-2">
+              {/* 이미지 크기 배율 컨트롤 */}
+              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs transition-all duration-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowImageScaleControls(!showImageScaleControls)
+                    setShowCanvasExpandControls(false)
+                    setShowZoomControls(false)
+                  }}
+                  className={`flex items-center space-x-1.5 px-2 py-1 text-[11px] font-bold rounded-md transition-colors cursor-pointer ${
+                    showImageScaleControls 
+                      ? 'text-indigo-650 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' 
+                      : 'text-gray-650 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                  title="이미지 크기 조절 메뉴 토글"
+                >
+                  <span>이미지 크기: {Math.round(imageScale * 100)}%</span>
+                  <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showImageScaleControls ? 'rotate-180' : ''}`} />
+                </button>
+                {showImageScaleControls && (
+                  <div className="flex items-center space-x-1 pl-1.5 border-l border-gray-150 dark:border-slate-800 ml-1.5 animate-in fade-in slide-in-from-left-1 duration-150">
+                    {[0.3, 0.5, 0.75, 1.0, 1.5, 2.0].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => handleResizeImage(s)}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
+                          imageScale === s
+                            ? 'bg-indigo-650 text-gray-700 shadow-xs'
+                            : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {Math.round(s * 100)}%
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 바탕 확장 컨트롤 (방향 라디오 + 공용 증감 버튼) */}
+              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs transition-all duration-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCanvasExpandControls(!showCanvasExpandControls)
+                    setShowImageScaleControls(false)
+                    setShowZoomControls(false)
+                  }}
+                  className={`flex items-center space-x-1.5 px-2 py-1 text-[11px] font-bold rounded-md transition-colors cursor-pointer ${
+                    showCanvasExpandControls 
+                      ? 'text-indigo-650 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' 
+                      : 'text-gray-650 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                  title="바탕 확장 메뉴 토글"
+                >
+                  <span>바탕 확장 ({EXPAND_DIRECTION_LABELS[expandDirection]})</span>
+                  <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showCanvasExpandControls ? 'rotate-180' : ''}`} />
+                </button>
+                {showCanvasExpandControls && (
+                  <div className="flex items-center space-x-1 pl-1.5 border-l border-gray-150 dark:border-slate-800 ml-1.5 animate-in fade-in slide-in-from-left-1 duration-150">
+                    {/* 방향 라디오 (단일 선택) */}
+                    <div role="radiogroup" aria-label="바탕 확장 방향" className="flex items-center space-x-1">
+                      {(['top', 'bottom', 'left', 'right'] as const).map((dir) => (
+                        <button
+                          key={dir}
+                          type="button"
+                          role="radio"
+                          aria-checked={expandDirection === dir}
+                          onClick={() => setExpandDirection(dir)}
+                          className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
+                            expandDirection === dir
+                              ? 'bg-indigo-650 text-gray-700 shadow-xs'
+                              : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                          }`}
+                          title={`${EXPAND_DIRECTION_LABELS[dir]} 방향 선택`}
+                        >
+                          {expandDirection === dir && <Check className="w-2.5 h-2.5" />}
+                          {EXPAND_DIRECTION_LABELS[dir]}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="border-r border-gray-150 dark:border-slate-800 h-3.5 mx-1 shrink-0" />
+
+                    {/* 선택된 방향에 적용되는 공용 증감 버튼 */}
+                    <button
+                      type="button"
+                      onClick={activeExpandAction.expand}
+                      className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-500 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-all shrink-0"
+                      title={`${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 추가`}
+                    >
+                      +100
+                    </button>
+                    <button
+                      type="button"
+                      onClick={activeExpandAction.shrink}
+                      disabled={!activeExpandAction.canShrink}
+                      className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-500 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shrink-0"
+                      title={!activeExpandAction.canShrink ? activeExpandAction.shrinkBlockedTitle : `${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 축소`}
+                    >
+                      -100
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 보기 배율 컨트롤 */}
+              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs transition-all duration-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowZoomControls(!showZoomControls)
+                    setShowImageScaleControls(false)
+                    setShowCanvasExpandControls(false)
+                  }}
+                  className={`flex items-center space-x-1.5 px-2 py-1 text-[11px] font-bold rounded-md transition-colors cursor-pointer ${
+                    showZoomControls 
+                      ? 'text-indigo-650 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' 
+                      : 'text-gray-650 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                  title="보기 배율 조절 메뉴 토글"
+                >
+                  <span>보기 배율: {Math.round(zoom * 100)}%</span>
+                  <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showZoomControls ? 'rotate-180' : ''}`} />
+                </button>
+                {showZoomControls && (
+                  <div className="flex items-center space-x-1 pl-1.5 border-l border-gray-150 dark:border-slate-800 ml-1.5 animate-in fade-in slide-in-from-left-1 duration-150">
+                    {[1.2, 1.0, 0.85, 0.7, 0.5, 0.3].map((z) => (
+                      <button
+                        key={z}
+                        onClick={() => setZoom(z)}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
+                          zoom === z
+                            ? 'bg-indigo-650 text-gray-700 shadow-xs'
+                            : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {Math.round(z * 100)}%
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 바디 영역 */}
+        <div className="flex-1 flex overflow-hidden items-stretch">
+          
+          {/* 1. 좌측 에디터 툴바 */}
+          <aside className="w-14 bg-gray-50 dark:bg-slate-950 border-r border-gray-200 dark:border-slate-800 flex flex-col items-center py-4 space-y-2 shrink-0">
+            {[
+              { id: 'pointer', label: 'ESC:선택 / 이동 (Del로 삭제)', icon: <MousePointer className="w-4 h-4" /> },
+              { id: 'circle-number', label: '1:원숫자 마크', icon: <CircleDot className="w-4 h-4 text-indigo-500" /> },
+              { id: 'box', label: '2:강조 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
+              { id: 'arrow', label: '3:화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
+              { id: 'orthogonal-arrow', label: '4:꺾임 화살표선', icon: <CornerDownRight className="w-4 h-4 text-teal-500" /> },
+
+              { id: 'block-arrow-stamp', label: '5:스탬프', icon: <Stamp className="w-4 h-4 text-orange-500 -rotate-45" /> },
+              { id: 'callout', label: '6:말풍선 / 설명선', icon: <MessageSquare className="w-4 h-4 text-sky-500" /> },
+              { id: 'symbol', label: '7:이모지 심볼 스탬프', icon: <Smile className="w-4 h-4 text-pink-500" /> },
+              { id: 'text', label: '8:글씨 텍스트 캡션', icon: <Type className="w-4 h-4" /> },
+              { id: 'crop', label: '9:잘라내어 새로운 이미지', icon: <Crop className="w-4 h-4" /> }
+            ].map((tool) => (
+              <button
+                key={tool.id}
+                onClick={() => {
+                  setActiveTool(tool.id as typeof activeTool)
+                  setSelectedItemId(null)
+                }}
+                className={`p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                  activeTool === tool.id
+                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 shadow-xs ring-1 ring-indigo-200 dark:ring-indigo-900/50 scale-105'
+                    : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'
+                }`}
+                title={tool.label}
+              >
+                {tool.icon}
+              </button>
+            ))}
+
+            <span className="w-6 h-px bg-gray-200 dark:bg-slate-800 my-2"></span>
+
+            {/* 스마트 정렬 가이드 토글 */}
+            <button
+              onClick={() => setSmartAlignEnabled((v) => !v)}
+              className={`p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                smartAlignEnabled
+                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 shadow-xs ring-1 ring-indigo-200 dark:ring-indigo-900/50'
+                  : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'
+              }`}
+              title="정렬 가이드 (다른 요소 중심에 스냅)"
+            >
+              <Magnet className="w-4 h-4" />
+            </button>
+
+            <span className="w-6 h-px bg-gray-200 dark:bg-slate-800 my-2"></span>
+
+            {/* Undo / Redo */}
+            <button
+              onClick={handleUndo}
+              disabled={undoStack.length === 0}
+              className="p-2.5 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              title="실행 취소 (Ctrl+Z)"
+            >
+              <Undo className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleRedo}
+              disabled={redoStack.length === 0}
+              className="p-2.5 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              title="재실행 (Ctrl+Y)"
+            >
+              <Redo className="w-4 h-4" />
+            </button>
+          </aside>
+
+          {/* 2. 중앙 이미지 캔버스 편집 영역 */}
+          <main className="flex-1 bg-gray-100 dark:bg-slate-950 p-6 flex flex-col items-center justify-center overflow-auto relative">
+
+            {/* 파일 로드 컨트롤 (업로드 유도) */}
+            {!bgImage && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-slate-900">
+                <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 rounded-full text-indigo-600 dark:text-indigo-400 mb-4 animate-bounce">
+                  <Square className="w-8 h-8" />
+                </div>
+                <h4 className="text-base font-bold text-gray-800 dark:text-slate-100 mb-2">로컬 이미지 업로드 또는 클립보드 붙여넣기</h4>
+                <p className="text-xs text-gray-400 dark:text-slate-500 max-w-sm mb-5 leading-relaxed">
+                  스크린샷 캡쳐 후 이 화면 위에서 <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 border rounded font-mono text-[10px]">Ctrl + V</kbd> 키를 누르면 클립보드 원본 이미지가 즉시 편집창으로 가져와집니다.
+                </p>
+                <button
+                  onClick={handleUploadClick}
+                  className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold shadow-md transition-colors cursor-pointer"
+                >
+                  이미지 파일 선택
+                </button>
+              </div>
+            )}
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+            />
+
+            {/* 실제 캔버스 영역 */}
+            <div className="relative shadow-xl max-w-full max-h-full border border-gray-300 dark:border-slate-800 rounded bg-white overflow-auto custom-scroll">
+              <canvas
+                ref={canvasRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onDoubleClick={handleDoubleClick}
+                className={`block ${activeTool === 'pointer' ? 'cursor-default' : 'cursor-crosshair'}`}
+                style={{
+                  width: bgImage ? `${(bgImage.width + canvasExpandLeft + canvasExpandRight) * zoom}px` : 'auto',
+                  height: bgImage ? `${(bgImage.height + canvasExpandTop + (hasCaption ? captionHeight : 0) + canvasExpandBottom) * zoom}px` : 'auto',
+                }}
+                width={bgImage ? bgImage.width + canvasExpandLeft + canvasExpandRight : 800}
+                height={bgImage ? bgImage.height + canvasExpandTop + (hasCaption ? captionHeight : 0) + canvasExpandBottom : 500}
+              />
+
+
+              {/* 텍스트 실시간 캔버스 오버레이 인풋 창 */}
+              {textInput.visible && (
+                <TextItemInput
+                  x={textInput.x}
+                  y={textInput.y}
+                  zoom={zoom}
+                  rotation={
+                    textInput.id
+                      ? (items.find((item) => item.id === textInput.id)?.style.rotation || 0)
+                      : textRotation
+                  }
+                  value={textInputValue}
+                  onChange={setTextInputValue}
+                  onSubmit={handleTextSubmit}
+                  onCancel={() => {
+                    setTextInput({ x: 0, y: 0, visible: false })
+                    setTextInputValue('')
+                    setDragStart(null)
+                  }}
+                />
+              )}
+            </div>
+
+            {/* 플로팅 속성 조절기 판넬 (드래그 가능 및 탭 구조) */}
+            {bgImage && (
+              <FloatingPropertyPanel
+                circleNumberBgColor={circleNumberBgColor}
+                setCircleNumberBgColor={setCircleNumberBgColor}
+                circleNumberTextColor={circleNumberTextColor}
+                setCircleNumberTextColor={setCircleNumberTextColor}
+                circleNumberBorderColor={circleNumberBorderColor}
+                setCircleNumberBorderColor={setCircleNumberBorderColor}
+                circleNumberBorderWidth={circleNumberBorderWidth}
+                setCircleNumberBorderWidth={setCircleNumberBorderWidth}
+                circleNumberFontSize={circleNumberFontSize}
+                setCircleNumberFontSize={setCircleNumberFontSize}
+                circleNumberShape={circleNumberShape}
+                setCircleNumberShape={setCircleNumberShape}
+                boxBorderColor={boxBorderColor}
+                setBoxBorderColor={setBoxBorderColor}
+                boxLineWidth={boxLineWidth}
+                setBoxLineWidth={setBoxLineWidth}
+                boxLineStyle={boxLineStyle}
+                setBoxLineStyle={setBoxLineStyle}
+                boxBgColor={boxBgColor}
+                setBoxBgColor={setBoxBgColor}
+                boxOpacity={boxOpacity}
+                setBoxOpacity={setBoxOpacity}
+                boxBorderRadius={boxBorderRadius}
+                setBoxBorderRadius={setBoxBorderRadius}
+                boxShape={boxShape}
+                setBoxShape={setBoxShape}
+                arrowColor={arrowColor}
+                setArrowColor={setArrowColor}
+                arrowLineWidth={arrowLineWidth}
+                setArrowLineWidth={setArrowLineWidth}
+                arrowLineStyle={arrowLineStyle}
+                setArrowLineStyle={setArrowLineStyle}
+                textTextColor={textTextColor}
+                setTextTextColor={setTextTextColor}
+                textFontSize={textFontSize}
+                setTextFontSize={setTextFontSize}
+                textBgColor={textBgColor}
+                setTextBgColor={setTextBgColor}
+                textFontStyle={textFontStyle}
+                setTextFontStyle={setTextFontStyle}
+                textTextDecoration={textTextDecoration}
+                setTextTextDecoration={setTextTextDecoration}
+                textRotation={textRotation}
+                setTextRotation={setTextRotation}
+                symbolEmoji={symbolEmoji}
+                setSymbolEmoji={setSymbolEmoji}
+                symbolScale={symbolScale}
+                setSymbolScale={setSymbolScale}
+                hasBorder={hasBorder}
+                setHasBorder={setHasBorder}
+                borderColor={borderColor}
+                setBorderColor={setBorderColor}
+                borderWidth={borderWidth}
+                setBorderWidth={setBorderWidth}
+                borderStyle={borderStyle}
+                setBorderStyle={setBorderStyle}
+                hasCaption={hasCaption}
+                setHasCaption={setHasCaption}
+                captionText={captionText}
+                setCaptionText={setCaptionText}
+                captionAlign={captionAlign}
+                setCaptionAlign={setCaptionAlign}
+                selectedItemId={selectedItemId}
+                circleCounter={circleCounter}
+                setCircleCounter={setCircleCounter}
+                activeTool={activeTool}
+                items={items}
+                pushToUndo={pushToUndo}
+                imageSrcBorderColor={imageSrcBorderColor}
+                setImageSrcBorderColor={setImageSrcBorderColor}
+                imageSrcBorderWidth={imageSrcBorderWidth}
+                setImageSrcBorderWidth={setImageSrcBorderWidth}
+                imageSrcBorderStyle={imageSrcBorderStyle}
+                setImageSrcBorderStyle={setImageSrcBorderStyle}
+                imageSrcHasBorder={imageSrcHasBorder}
+                setImageSrcHasBorder={setImageSrcHasBorder}
+                imageSrcCaptionText={imageSrcCaptionText}
+                setImageSrcCaptionText={setImageSrcCaptionText}
+                imageSrcHasCaption={imageSrcHasCaption}
+                setImageSrcHasCaption={setImageSrcHasCaption}
+                onSaveDefaults={handleSaveUserSettings}
+                onLoadDefaults={handleLoadUserSettings}
+                onDeleteDefaults={handleDeleteUserSettings}
+                resetTrigger={resetPanelTrigger}
+                arrowHeadSize={arrowHeadSize}
+                setArrowHeadSize={setArrowHeadSize}
+                stampScale={stampScale}
+                setStampScale={setStampScale}
+                stampDirection={stampDirection}
+                setStampDirection={setStampDirection}
+                stampShape={stampShape}
+                setStampShape={setStampShape}
+                calloutShape={calloutShape}
+                setCalloutShape={setCalloutShape}
+                calloutBgColor={calloutBgColor}
+                setCalloutBgColor={setCalloutBgColor}
+                calloutBorderColor={calloutBorderColor}
+                setCalloutBorderColor={setCalloutBorderColor}
+                calloutBorderWidth={calloutBorderWidth}
+                setCalloutBorderWidth={setCalloutBorderWidth}
+                calloutLineStyle={calloutLineStyle}
+                setCalloutLineStyle={setCalloutLineStyle}
+                calloutOpacity={calloutOpacity}
+                setCalloutOpacity={setCalloutOpacity}
+                calloutBorderRadius={calloutBorderRadius}
+                setCalloutBorderRadius={setCalloutBorderRadius}
+                calloutTextColor={calloutTextColor}
+                setCalloutTextColor={setCalloutTextColor}
+                calloutFontSize={calloutFontSize}
+                setCalloutFontSize={setCalloutFontSize}
+              />
+            )}
+          </main>
+
+          {/* 3. 우측 임시 보관 히스토리 사이드바 */}
+          <WorkHistory
+            historyList={historyList}
+            totalHistoryCount={totalHistoryCount}
+            loadingHistory={loadingHistory}
+            onLoadWork={handleLoadWork}
+            onUpdateTitle={handleUpdateTitle}
+            onDeleteHistory={handleDeleteHistory}
+            onDeleteSelected={handleDeleteSelected}
+          />
+
+        </div>
+
+        {/* 액션바 (푸터) 영역 */}
+        <ImageEditorFooter
+          bgImage={bgImage}
+          savingWork={savingWork}
+          isDirty={isDirty}
+          insertingImage={insertingImage}
+          generatedImageUrl={generatedImageUrl}
+          onUploadClick={handleUploadClick}
+          onReset={handleResetToEmpty}
+          onSaveToHistory={handleSaveToHistory}
+          onGenerateUrl={handleGenerateUrl}
+          onCopyUrl={handleCopyGeneratedUrl}
+          onCopyMarkdown={handleCopyMarkdownUrl}
+          onDownload={handleDownload}
+          onCopyClipboard={handleCopyClipboard}
+        />
+
+      </div>
+    </div>
+  )
+}
+
+export default ActionImageEditor

@@ -145,3 +145,37 @@ export function formatCost(cost: number | null | undefined, defaultValue = '0'):
   if (cost === undefined || cost === null) return defaultValue
   return cost.toLocaleString('en-US')
 }
+
+/**
+ * 날짜를 "n분 전" 같은 상대 시간 문자열로 포맷팅합니다. 7일 이상 지나면 로케일 날짜로 표시합니다.
+ * @param dateString 날짜 문자열 또는 Date
+ */
+export function formatRelativeTime(dateString: string | Date): string {
+  if (!dateString) return ''
+
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+
+  // 미래의 시간이 간혹 시스템 시간차로 인입될 경우에 대응
+  if (diffMs < 0) {
+    return '방금 전'
+  }
+
+  const diffSec = Math.floor(diffMs / 1000)
+  const diffMin = Math.floor(diffSec / 60)
+  const diffHr = Math.floor(diffMin / 60)
+  const diffDays = Math.floor(diffHr / 24)
+
+  if (diffSec < 60) {
+    return '방금 전'
+  } else if (diffMin < 60) {
+    return `${diffMin}분 전`
+  } else if (diffHr < 24) {
+    return `${diffHr}시간 전`
+  } else if (diffDays < 7) {
+    return `${diffDays}일 전`
+  } else {
+    return date.toLocaleDateString()
+  }
+}

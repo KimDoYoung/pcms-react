@@ -29,6 +29,7 @@ import UserInfoPage from '@/user/UserInfoPage'
 import SettingsPage from '@/user/SettingsPage'
 import AssetManagePage from '@/domain/asset/AssetManagePage'
 import MediaManagePage from '@/domain/media/MediaManagePage'
+import ImageEditorPage from '@/domain/imageeditor/ImageEditorPage'
 import Practice01Flex from '@/practice/Practice01Flex'
 import Practice02Hooks from '@/practice/Practice02Hooks'
 import Practice03Hanja from '@/practice/Practice03Hanja'
@@ -75,6 +76,7 @@ export const APP_ROUTES: AppRoute[] = [
   // 자산
   { path: '/assets', label: '🗂️ 자산관리', Component: AssetManagePage, menuGroup: '🗂️ 자산', tabGroup: 'asset-manage' },
   { path: '/videos', label: '🎬 비디오관리', Component: MediaManagePage, menuGroup: '🗂️ 자산', tabGroup: 'media-manage' },
+  { path: '/image-editor', label: '🖼️ 이미지 에디터', Component: ImageEditorPage, menuGroup: '🗂️ 자산', tabGroup: 'image-editor' },
 
   // 실습
   { path: '/practice/tailwindcss', label: '✏️ Tailwind CSS 연습', Component: Practice01Flex, menuGroup: '📝 실습', tabGroup: 'practice-1' },

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.domain.imageeditor.service.ImageWorkMapper">
+
+    <insert id="insertImageWork" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO cms.image_work (created_by, title, json_data)
+        VALUES (#{createdBy}, #{title}, #{jsonData})
+    </insert>
+
+    <update id="updateImageWork">
+        UPDATE cms.image_work
+        SET title      = #{title},
+            json_data  = #{jsonData},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND created_by = #{createdBy}
+    </update>
+
+    <delete id="deleteImageWork">
+        DELETE FROM cms.image_work WHERE id = #{id} AND created_by = #{createdBy}
+    </delete>
+
+    <select id="selectImageWorkList" resultType="kr.co.kalpa.pcms.domain.imageeditor.entity.ImageWork">
+        SELECT id, created_by as createdBy, title, json_data as jsonData,
+               created_at as createdAt, updated_at as updatedAt
+        FROM cms.image_work
+        WHERE created_by = #{createdBy}
+        ORDER BY updated_at DESC
+        LIMIT 200
+    </select>
+
+    <select id="selectImageWorkCount" resultType="int">
+        SELECT count(*) FROM cms.image_work WHERE created_by = #{createdBy}
+    </select>
+
+</mapper>
