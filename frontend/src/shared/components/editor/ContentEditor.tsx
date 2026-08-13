@@ -71,6 +71,7 @@ const ContentEditor = forwardRef<ContentEditorHandle, Props>(function ContentEdi
         heading: {
           levels: headingLevels || [1, 2, 3],
         },
+        link: false,
       }),
       Placeholder.configure({ placeholder }),
       ResizableInlineImage.configure({ allowBase64: true }),

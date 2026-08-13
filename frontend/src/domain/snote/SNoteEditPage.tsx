@@ -7,12 +7,13 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTabParams } from '@/shared/layout/useTabParams'
+import { useMessage } from '@/shared/hooks/useMessage'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
-import { Lock, Save, Unlock } from 'lucide-react'
+import { List, Lock, Save, Unlock } from 'lucide-react'
 import { extractHint, validatePassword, decryptNote, encryptNote } from '@/domain/snote/snote_crypto'
 import { formatDate } from '@/lib/utils'
 import type { SnoteDto } from '@/domain/snote/types/snote'
@@ -21,6 +22,7 @@ export default function SNoteEditPage() {
   const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { showMessage } = useMessage()
 
   const { data: snote, isLoading: loading } = useQuery<SnoteDto>({
     queryKey: ['snote', id],
@@ -36,7 +38,6 @@ export default function SNoteEditPage() {
   const [content, setContent] = useState('')
 
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
   useEffect(() => {
     if (snote) setTitle(snote.title ?? '')
@@ -56,27 +57,25 @@ export default function SNoteEditPage() {
 
   async function handleRestore() {
     if (!snote || !passwordInput) return
-    setMessage(null)
     try {
       const valid = await validatePassword(snote.note, passwordInput)
       if (!valid) {
-        setMessage({ text: '비밀번호가 틀렸습니다.', type: 'error' })
+        showMessage('비밀번호가 틀렸습니다.', 'error')
         return
       }
       const plain = await decryptNote(snote.note, passwordInput)
       setContent(plain)
       setUnlockPassword(passwordInput)
       setDecrypted(true)
-      setMessage(null)
     } catch {
-      setMessage({ text: '복원 중 오류가 발생했습니다.', type: 'error' })
+      showMessage('복원 중 오류가 발생했습니다.', 'error')
     }
   }
 
   async function handleSave() {
     if (!snote || !unlockPassword) return
     if (!content.trim()) {
-      setMessage({ text: '내용을 입력해주세요.', type: 'error' })
+      showMessage('내용을 입력해주세요.', 'error')
       return
     }
 
@@ -84,15 +83,14 @@ export default function SNoteEditPage() {
     const useTitle = title.trim() || `제목없음 ${Date.now()}`
 
     setSaving(true)
-    setMessage(null)
     try {
       const encryptedNote = await encryptNote(content, unlockPassword, hint)
       await apiClient.put(`/snote/${snote.id}`, { title: useTitle, note: encryptedNote })
       queryClient.invalidateQueries({ queryKey: ['snote-list'] })
       queryClient.invalidateQueries({ queryKey: ['snote', id] })
-      setMessage({ text: '저장되었습니다.', type: 'success' })
+      showMessage('저장되었습니다.', 'success')
     } catch {
-      setMessage({ text: '저장 중 오류가 발생했습니다.', type: 'error' })
+      showMessage('저장 중 오류가 발생했습니다.', 'error')
     } finally {
       setSaving(false)
     }
@@ -179,22 +177,17 @@ export default function SNoteEditPage() {
               </div>
             )}
 
-            {/* 메시지 */}
-            {message && (
-              <p className={`text-sm ${message.type === 'error' ? 'text-red-500' : 'text-green-600'}`}>
-                {message.text}
-              </p>
-            )}
-
             {/* 버튼 */}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="cancel" onClick={() => navigate('/snote')}>
+                <List/>
                 리스트로 이동
               </Button>
               {decrypted && (
-              <Button variant="navy" onClick={handleSave} disabled={saving}>
-                {saving ? '저장 중...' : (<><Save />수정</>)}
-              </Button>
+                <Button variant="navy" onClick={handleSave} disabled={saving}>
+                  {saving ? '저장 중...' : <Save />}
+                  {saving ? null : '수정'}
+                </Button>
               )}
             </div>
           </div>
