@@ -151,6 +151,7 @@ export default function SNoteEditPage() {
                   <Input
                     type="password"
                     placeholder="비밀번호"
+                    autoFocus
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleRestore()}

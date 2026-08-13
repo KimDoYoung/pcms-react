@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import type { ColDef, GridReadyEvent, IDatasource, IGetRowsParams, GridApi, IRowNode, CellValueChangedEvent, ICellRendererParams, RowStyle } from 'ag-grid-community';
-import { Search } from 'lucide-react';
+import { RefreshCw, Save, Search } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import type { MovieDto, MovieSearchDto, PagedResponse } from './types/movie';
 import { Button } from '@/shared/components/ui/button';
@@ -145,7 +145,7 @@ const MoviePage = () => {
     { field: 'title2', headerName: '제목(영어)', editable: true, flex: 1, minWidth: 200 },
     { field: 'category', headerName: '분야', editable: true, width: 120 },
     { field: 'gamdok', headerName: '감독', editable: true, width: 150 },
-    { field: 'makeYear', headerName: '제작년', editable: true, width: 100 },
+    { field: 'makeYear', headerName: '제작년도', editable: true, width: 100 },
     { field: 'nara', headerName: '국적', editable: true, width: 100 },
     { field: 'dvdId', headerName: 'DVD ID', width: 100 },
     {
@@ -252,14 +252,15 @@ const MoviePage = () => {
               )}
             </div>
             <div className="flex gap-2 ml-auto">
-              <Button onClick={handleSearch}>찾기</Button>
-              <Button variant="outline" onClick={handleReset}>초기화</Button>
+              <Button onClick={handleSearch} variant="navy"><Search />찾기</Button>
+              <Button variant="outline" onClick={handleReset}><RefreshCw/>초기화</Button>
               <Button
                 variant="default"
                 onClick={handleSave}
                 disabled={changedCount === 0}
                 className="bg-green-600 hover:bg-green-700 disabled:opacity-40"
               >
+                <Save />
                 저장{changedCount > 0 ? ` (${changedCount}건)` : ''}
               </Button>
             </div>

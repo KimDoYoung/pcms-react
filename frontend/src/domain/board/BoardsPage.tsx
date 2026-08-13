@@ -94,7 +94,7 @@ export default function BoardsPage() {
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold text-gray-800">📋 게시판 관리</h1>
-          <Button size="sm" onClick={openCreate}>
+          <Button variant="action" size="sm" onClick={openCreate}>
             <Plus className="w-4 h-4 mr-1" /> 게시판 생성
           </Button>
         </div>

@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-import { Search, ChevronDown, ChevronUp, Pencil, Eye, CalendarRange, ArrowDownUp } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp, Pencil, Eye, CalendarRange, ArrowDownUp, CircleArrowRight, CircleArrowLeft, RefreshCw } from 'lucide-react'
 import { formatCount, formatDate, formatYmd } from '@/lib/utils'
 import { format } from 'date-fns'
 import type { DiaryListDto, DiaryPageResponse } from '@/domain/diary/types/diary'
@@ -184,7 +184,7 @@ export default function DiaryPage() {
               >
                 <CalendarRange className="w-4 h-4 mr-2 sm:mr-0" />
                 <span className="sm:hidden text-xs">기간 빠른 선택</span>
-              </Button>
+              </Button>              
               {showPicker && (
                 <DateRangeSetter
                   onRangeChange={(start, end) => {
@@ -221,10 +221,11 @@ export default function DiaryPage() {
             />
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleSearch} className="flex-1 sm:flex-none shrink-0">
+            <Button onClick={handleSearch} variant="action" size="pill">
               <Search className="w-4 h-4 mr-1" /> 찾기
             </Button>
-            <Button variant="outline" onClick={handleReset} className="flex-1 sm:flex-none shrink-0">
+            <Button variant="cancel" size="pill" onClick={handleReset} className="flex-1 sm:flex-none shrink-0">
+              <RefreshCw />
               초기화
             </Button>
           </div>
@@ -235,7 +236,7 @@ export default function DiaryPage() {
           <p className="text-sm text-gray-400 text-center py-10">불러오는 중...</p>
         ) : (
           <>
-            <div className="text-xs text-gray-400 mb-2 px-1">
+            <div className="text-xs text-gray-500 mb-2 px-1">
               총 {formatCount(data?.total) ?? 0}건
             </div>
             <ul className="flex flex-col gap-2">
@@ -256,6 +257,7 @@ export default function DiaryPage() {
                   disabled={page <= 1}
                   onClick={() => setSearchParams((p) => { p.set('page', String(page - 1)); return p })}
                 >
+                <CircleArrowLeft/>
                   이전
                 </Button>
                 <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
@@ -268,6 +270,7 @@ export default function DiaryPage() {
                   onClick={() => setSearchParams((p) => { p.set('page', String(page + 1)); return p })}
                 >
                   다음
+                  <CircleArrowRight/>
                 </Button>
               </div>
             )}

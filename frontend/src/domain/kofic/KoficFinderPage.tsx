@@ -5,7 +5,7 @@
  */
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
+import { RefreshCw, Search } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import Toolbar from '@/shared/layout/Toolbar';
 import { Button } from '@/shared/components/ui/button';
@@ -95,11 +95,11 @@ export default function KoficFinderPage() {
             />
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleSearch} disabled={!form.movieNm.trim() && !form.directorNm.trim()}>
+            <Button variant="navy"  onClick={handleSearch} disabled={!form.movieNm.trim() && !form.directorNm.trim()}>
               <Search className="w-4 h-4" />
               찾기
             </Button>
-            <Button variant="outline" onClick={handleReset}>초기화</Button>
+            <Button variant="cancel" onClick={handleReset}><RefreshCw/>초기화</Button>
           </div>
         </div>
 
@@ -112,7 +112,7 @@ export default function KoficFinderPage() {
             <p className="text-sm text-gray-400 text-center py-20">검색 결과가 없습니다</p>
           ) : (
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
+              <thead className="bg-gray-200 border-b border-gray-100">
                 <tr>
                   <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">제목(한글)</th>
                   <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">제목(영어)</th>

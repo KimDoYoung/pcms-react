@@ -18,6 +18,7 @@
  *   - saveDisabled?: 저장 버튼 비활성화 여부.
  */
 import { Button } from '@/shared/components/ui/button'
+import { Ban, Save, Trash2 } from 'lucide-react'
 
 interface Props {
   onDelete?: () => void
@@ -34,16 +35,18 @@ export default function ButtonsOfEdit({ onDelete, onCancel, onSave, saving, save
         {onDelete && (
           <Button variant="delete" size="sm" onClick={onDelete}
             className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
+            <Trash2/>  
             삭제
           </Button>
         )}
       </div>
       <div className="flex gap-2">
-        {onCancel && (
-          <Button variant="action" onClick={onCancel}>취소</Button>
+        {onCancel && (          
+          <Button variant="cancel"  onClick={onCancel}><Ban/> 취소</Button>
         )}
         {onSave && (
-          <Button onClick={onSave} disabled={saving || saveDisabled}>
+          <Button variant="action" onClick={onSave} disabled={saving || saveDisabled}>
+            <Save />
             {saving ? '저장 중...' : '저장'}
           </Button>
         )}

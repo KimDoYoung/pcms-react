@@ -128,16 +128,10 @@ export default function PostEditPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
-      <main className="px-[30px] py-6">
+      <main className="px-[30px] py-3">
 
         {/* 헤더 */}
-        <div className="flex items-center gap-3 mb-6">
-          <button
-            onClick={() => navigate(`/posts/${id}`, { state: { boardId } })}
-            className="p-1.5 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+        <div className="flex items-center gap-3 mb-2">
           <h1 className="text-xl font-bold text-gray-800">
             ✏️ {board?.boardNameKor} - 글 수정
           </h1>
@@ -151,10 +145,10 @@ export default function PostEditPage() {
               />
               공개 (URL로 누구나 조회 가능)
             </label>
-            <Button variant="outline" onClick={() => navigate(`/posts/${id}`, { state: { boardId } })}>
+            <Button variant="cancel" size="pill" onClick={() => navigate(`/posts/${id}`, { state: { boardId } })}>
               <ArrowLeft className="w-4 h-4 mr-1" /> 목록으로
             </Button>
-            <Button onClick={() => handleSubmit(false)} disabled={saving || !form.title.trim()}>
+            <Button variant="action" size="pill" onClick={() => handleSubmit(false)} disabled={saving || !form.title.trim()}>
               {saving ? '저장 중...' : '저장'}
             </Button>
           </div>
