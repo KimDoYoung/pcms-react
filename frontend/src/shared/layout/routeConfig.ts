@@ -25,6 +25,7 @@ import MovieReviewPage from '@/domain/movie/MovieReviewPage'
 import MovieReviewFormPage from '@/domain/movie/MovieReviewFormPage'
 import MovieReviewViewPage from '@/domain/movie/MovieReviewViewPage'
 import HddPage from '@/domain/movie/HddPage'
+import KoficFinderPage from '@/domain/kofic/KoficFinderPage'
 import UserInfoPage from '@/user/UserInfoPage'
 import SettingsPage from '@/user/SettingsPage'
 import AssetManagePage from '@/domain/asset/AssetManagePage'
@@ -71,6 +72,7 @@ export const APP_ROUTES: AppRoute[] = [
   { path: '/movie/review', label: '🎬 영화감상평', Component: MovieReviewPage, menuGroup: '📽️ 영화', tabGroup: 'movie-review' },
   { path: '/movie/review/register', label: '🎬 영화감상평 등록', Component: MovieReviewFormPage, tabGroup: 'movie-review' },
   { path: '/movie/hdd', label: '🎞️ 하드디스크', Component: HddPage, menuGroup: '📽️ 영화', tabGroup: 'movie-hdd' },
+  { path: '/movie/kofic', label: '🔍 kofic영화찾기', Component: KoficFinderPage, menuGroup: '📽️ 영화', tabGroup: 'movie-kofic' },
 
   
   // 자산

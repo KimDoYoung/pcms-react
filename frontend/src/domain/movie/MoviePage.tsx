@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
-import type { ColDef, GridReadyEvent, IDatasource, IGetRowsParams, GridApi, CellValueChangedEvent, RowStyle } from 'ag-grid-community';
+import type { ColDef, GridReadyEvent, IDatasource, IGetRowsParams, GridApi, IRowNode, CellValueChangedEvent, ICellRendererParams, RowStyle } from 'ag-grid-community';
+import { Search } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import type { MovieDto, MovieSearchDto, PagedResponse } from './types/movie';
 import { Button } from '@/shared/components/ui/button';
@@ -11,6 +12,8 @@ import { InputWithIcon } from '@/shared/components/InputWithIcon';
 import { CountrySelectPanel } from '@/shared/components/CountrySelectPanel';
 import { BadgeSelectPanel } from '@/shared/components/BadgeSelectPanel';
 import Toolbar from '@/shared/layout/Toolbar';
+import KoficSearchPopup from '@/domain/kofic/components/KoficSearchPopup';
+import type { KoficMovieDto } from '@/domain/kofic/types/kofic';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -26,6 +29,7 @@ const MoviePage = () => {
   const [changedCount, setChangedCount] = useState(0);
   const [showCountryPanel, setShowCountryPanel] = useState(false);
   const [showGenrePanel, setShowGenrePanel] = useState(false);
+  const [koficTarget, setKoficTarget] = useState<{ node: IRowNode<MovieDto>; data: MovieDto } | null>(null);
 
   const GENRE_OPTIONS = [
     { label: '액션', value: '액션' },
@@ -118,6 +122,21 @@ const MoviePage = () => {
     }
   };
 
+  const handleKoficFill = useCallback((data: MovieDto, node: IRowNode<MovieDto>, movie: KoficMovieDto) => {
+    const updated: MovieDto = {
+      ...data,
+      title2: movie.movieNmEn || data.title2,
+      category: movie.repGenreNm || data.category,
+      gamdok: movie.directorNm || data.gamdok,
+      nara: movie.repNationNm || data.nara,
+      makeYear: movie.prdtYear || data.makeYear,
+    };
+    node.setData(updated);
+    changedRowsRef.current.set(updated.id!, updated);
+    setChangedCount(changedRowsRef.current.size);
+    gridApiRef.current?.redrawRows({ rowNodes: [node] });
+  }, []);
+
   const columnDefs = useMemo<ColDef<MovieDto>[]>(() => [
     { field: 'id', headerName: 'ID', width: 80 },
     { field: 'gubun', headerName: '구분', editable: true, width: 80, valueFormatter: (params) => params.value === 'D' ? '드라마' : params.value === 'M' ? '영화' : params.value },
@@ -129,6 +148,24 @@ const MoviePage = () => {
     { field: 'makeYear', headerName: '제작년', editable: true, width: 100 },
     { field: 'nara', headerName: '국적', editable: true, width: 100 },
     { field: 'dvdId', headerName: 'DVD ID', width: 100 },
+    {
+      headerName: '조작',
+      width: 70,
+      cellRenderer: (params: ICellRendererParams<MovieDto>) => (
+        params.data?.gubun !== 'M' ? null : (
+          <div className="flex h-full items-center justify-center">
+            <Button
+              size="icon-sm"
+              variant="action"
+              title="KOFIC 영화 찾기"
+              onClick={() => params.data && setKoficTarget({ node: params.node, data: params.data })}
+            >
+              <Search className="w-4 h-4" />
+            </Button>
+          </div>
+        )
+      )
+    },
   ], []);
 
   return (
@@ -247,6 +284,16 @@ const MoviePage = () => {
           </div>
         </div>
       </main>
+
+      {koficTarget && (
+        <KoficSearchPopup
+          open={!!koficTarget}
+          onClose={() => setKoficTarget(null)}
+          initialTitle={koficTarget.data.title1}
+          initialYear={koficTarget.data.makeYear}
+          onFill={(movie) => handleKoficFill(koficTarget.data, koficTarget.node, movie)}
+        />
+      )}
     </div>
   );
 };

@@ -63,7 +63,7 @@ export default function HddFileList({ selected }: HddFileListProps) {
                   <td className="p-2">
                     <div className="flex items-center gap-2">
                       <FileVideo className="w-4 h-4 text-indigo-400 flex-shrink-0" />
-                      <span className="truncate text-gray-800" title={f.fileName}>{f.fileName}</span>
+                      <span className="truncate text-gray-800" title={f.name}>{f.name}</span>
                     </div>
                   </td>
                   <td className="p-3 text-right text-gray-500">{formatFileSize(f.size ?? 0)}</td>
