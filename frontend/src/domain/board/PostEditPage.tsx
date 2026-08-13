@@ -209,6 +209,7 @@ export default function PostEditPage() {
                   value={form.content}
                   onChange={(html) => set('content', html)}
                   placeholder="내용을 입력하세요..."
+                  onSave={() => handleSubmit(true)}
                 />
               )
             ) : isMarkdown ? (

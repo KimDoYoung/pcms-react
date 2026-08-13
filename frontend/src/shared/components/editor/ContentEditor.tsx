@@ -10,6 +10,7 @@
  * - minHeight : 에디터 최소 높이 (기본 250px)
  * - headingLevels : 툴바에 노출할 헤딩 레벨 (기본 [1,2,3])
  * - placeholder : 빈 상태 안내 문구
+ * - onSave : Ctrl+S(맥은 Cmd+S) 저장 콜백. 지정하면 브라우저 기본 "페이지 저장" 다이얼로그를 막고 대신 호출한다.
  *
  * 날짜/카테고리 전환처럼 외부에서 내용을 통째로 바꿔야 할 때는
  * key prop을 바꿔 컴포넌트를 재마운트하면 syncedRef가 초기화되어 새 값이 반영된다.
@@ -40,6 +41,7 @@ interface Props {
   minHeight?: string
   headingLevels?: (1 | 2 | 3)[]
   onShiftTab?: () => void
+  onSave?: () => void
 }
 
 export interface ContentEditorHandle {
@@ -53,9 +55,15 @@ const ContentEditor = forwardRef<ContentEditorHandle, Props>(function ContentEdi
   minHeight = '250px',
   headingLevels,
   onShiftTab,
+  onSave,
 }, ref) {
   const editorRef = useRef<ReturnType<typeof useEditor>>(null)
   const initialValueRef = useRef(value)
+  const onSaveRef = useRef(onSave)
+
+  useEffect(() => {
+    onSaveRef.current = onSave
+  }, [onSave])
 
   const editor = useEditor({
     extensions: [
@@ -92,6 +100,12 @@ const ContentEditor = forwardRef<ContentEditorHandle, Props>(function ContentEdi
         // ProseMirror 단계에서 최대한 먼저 preventDefault 처리
         if (event.ctrlKey && !event.shiftKey && !event.altKey && event.key === '.') {
           event.preventDefault()
+        }
+        // Ctrl+S(맥 Cmd+S)는 브라우저 기본 "페이지 저장" 다이얼로그로 먼저 먹혀버리므로 여기서 가로챈다.
+        if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 's') {
+          event.preventDefault()
+          onSaveRef.current?.()
+          return true
         }
         return false
       },

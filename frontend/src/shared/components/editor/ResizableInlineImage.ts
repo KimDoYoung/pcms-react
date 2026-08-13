@@ -15,6 +15,7 @@
  *   - NodeView 루트를 <span>(인라인 요소)으로 렌더링 → 같은 단락 내 이미지들이 나란히 배치됨
  *   - 우측 하단 핸들을 드래그해 너비 조절 가능
  *   - 리사이징 중 stopEvent로 ProseMirror 이벤트 간섭 차단
+ *   - width/height 없이 viewBox만 있는 SVG가 크기 0으로 사라지는 크로미움 버그 보정(로드 후 0이면 자연 크기로 명시 폭 지정)
  */
 import Image from '@tiptap/extension-image'
 import { mergeAttributes } from '@tiptap/core'
@@ -49,7 +50,6 @@ const ResizableInlineImage = Image.extend({
         'display: inline-block; position: relative; vertical-align: bottom; line-height: 0; cursor: default;'
 
       const img = document.createElement('img')
-      img.src = node.attrs.src || ''
       if (node.attrs.alt) img.alt = node.attrs.alt
       if (node.attrs.title) img.title = node.attrs.title
       img.style.cssText = [
@@ -60,6 +60,16 @@ const ResizableInlineImage = Image.extend({
       ]
         .filter(Boolean)
         .join('; ')
+      // width/height 속성 없이 viewBox만 있는 SVG는 절대 크기가 없어서, inline-block 래퍼 안에서
+      // max-width:100%만으로는 크기가 0으로 붕괴되는 크로미움 레이아웃 버그가 있음(래퍼의 shrink-to-fit
+      // 너비가 아직 안 정해진 상태라 퍼센트 max-width가 순환 참조가 됨). 로드 후 실제로 0이면
+      // 자연 크기로 명시 폭을 줘서 복구한다 — 절대 크기가 있는 PNG/JPG 등은 애초에 붕괴가 안 나므로 영향 없음.
+      img.onload = () => {
+        if (!node.attrs.width && img.offsetWidth === 0 && img.naturalWidth > 0) {
+          img.style.width = `${img.naturalWidth}px`
+        }
+      }
+      img.src = node.attrs.src || ''
 
       wrapper.appendChild(img)
 
