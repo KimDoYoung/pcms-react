@@ -29,7 +29,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@/shared/components/ui/popover'
 import { Input } from '@/shared/components/ui/input'
 
 const HEADING_ICONS = { 1: Heading1, 2: Heading2, 3: Heading3 } as const

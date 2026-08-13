@@ -30,12 +30,12 @@ import { ko } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Calendar } from "@/components/ui/calendar"
+import { Calendar } from "@/shared/components/ui/calendar"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/shared/components/ui/popover"
 import { Button, buttonVariants } from "@/shared/components/ui/button"
 import { type VariantProps } from "class-variance-authority"
 

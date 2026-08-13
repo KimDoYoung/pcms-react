@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils"
 import { DatePicker } from "@/shared/components/DatePicker"
 import { DateRangeSetter } from "@/shared/components/DateRangeSetter"
 import { Button, buttonVariants } from "@/shared/components/ui/button"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover"
 import { type VariantProps } from "class-variance-authority"
 
 type ButtonSize = VariantProps<typeof buttonVariants>["size"]

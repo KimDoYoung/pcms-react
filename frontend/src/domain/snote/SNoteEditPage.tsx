@@ -12,7 +12,7 @@ import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
-import { Lock, Unlock } from 'lucide-react'
+import { Lock, Save, Unlock } from 'lucide-react'
 import { extractHint, validatePassword, decryptNote, encryptNote } from '@/domain/snote/snote_crypto'
 import { formatDate } from '@/lib/utils'
 import type { SnoteDto } from '@/domain/snote/types/snote'
@@ -187,14 +187,14 @@ export default function SNoteEditPage() {
             )}
 
             {/* 버튼 */}
-            <div className="flex justify-between pt-2">
+            <div className="flex justify-end gap-2 pt-2">
               <Button variant="cancel" onClick={() => navigate('/snote')}>
                 리스트로 이동
               </Button>
               {decrypted && (
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving ? '저장 중...' : '수정'}
-                </Button>
+              <Button variant="navy" onClick={handleSave} disabled={saving}>
+                {saving ? '저장 중...' : (<><Save />수정</>)}
+              </Button>
               )}
             </div>
           </div>

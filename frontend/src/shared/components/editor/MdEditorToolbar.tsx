@@ -46,7 +46,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@/shared/components/ui/popover'
 
 // 내보낸 정적 HTML 안에서 .media-card 토글 버튼(비디오/오디오/유튜브 펼치기)을 동작시키는 스크립트.
 // useMediaCardToggle.ts의 클릭 위임 로직을 순수 JS로 옮긴 것 — 앱 안에서는 그 훅이 대신 동작하므로

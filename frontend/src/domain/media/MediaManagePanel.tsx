@@ -26,7 +26,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/shared/components/ui/dialog'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
