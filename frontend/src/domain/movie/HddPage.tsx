@@ -59,7 +59,7 @@ const HddPage = () => {
   return (
     <div className="h-full flex flex-col bg-gray-50">
       <Toolbar />
-      <main className="flex-1 flex flex-col overflow-hidden px-4 py-6">
+      <main className="container mx-auto flex-1 flex flex-col overflow-hidden px-4 py-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-4 flex-shrink-0">🎞️ 하드디스크 파일 탐색기</h1>
         <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex gap-2 items-center mb-4 flex-shrink-0">
           <Input
