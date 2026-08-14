@@ -115,8 +115,8 @@ export default function PostsPage() {
           </div>
 
           {boardId && (
-            <Button size="sm" onClick={() => navigate(`/posts/new?boardId=${boardId}`)}>
-              <Plus className="w-4 h-4 mr-1" /> 새 글 쓰기
+            <Button variant="navy" size="sm" onClick={() => navigate(`/posts/new?boardId=${boardId}`)}>
+              <Plus  className="w-4 h-4 mr-1" /> 새 글 쓰기
             </Button>
           )}
         </div>
@@ -131,7 +131,7 @@ export default function PostsPage() {
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               className="text-sm"
             />
-            <Button onClick={handleSearch} className="shrink-0">
+            <Button variant="navy" onClick={handleSearch} className="shrink-0">
               <Search className="w-4 h-4 mr-1" /> 찾기
             </Button>
             <Button variant="outline" onClick={handleReset} className="shrink-0">

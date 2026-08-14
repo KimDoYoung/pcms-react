@@ -11,10 +11,13 @@
  *   - initialTitle: 최초 검색어로 쓸 제목
  *   - initialYear: 최초 검색어로 쓸 제작년도
  *   - onFill: "채우기" 클릭 시 선택된 KoficMovieDto를 전달하는 콜백
+ * 그 외: 헤더(제목) 영역을 마우스로 드래그하면 팝업 위치를 이동할 수 있다(AG Grid를 가리는 것을
+ *        피하기 위함). 다시 열릴 때 위치는 초기화된다. 제작년도 입력창 오른쪽 x 아이콘을 누르면
+ *        제작년도를 비운다.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/shared/components/ui/dialog'
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
@@ -34,6 +37,8 @@ export default function KoficSearchPopup({ open, onClose, initialTitle, initialY
   const [prdtYear, setPrdtYear] = useState('')
   const [query, setQuery] = useState<{ movieNm: string; prdtYear: string } | null>(null)
   const [selected, setSelected] = useState<KoficMovieDto | null>(null)
+  const [dragPos, setDragPos] = useState({ x: 0, y: 0 })
+  const dragStateRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null)
 
   useEffect(() => {
     if (open) {
@@ -43,8 +48,30 @@ export default function KoficSearchPopup({ open, onClose, initialTitle, initialY
       setPrdtYear(year)
       setSelected(null)
       setQuery(title ? { movieNm: title, prdtYear: year } : null)
+      setDragPos({ x: 0, y: 0 })
     }
   }, [open, initialTitle, initialYear])
+
+  useEffect(() => {
+    function onMouseMove(e: MouseEvent) {
+      if (!dragStateRef.current) return
+      const { startX, startY, origX, origY } = dragStateRef.current
+      setDragPos({ x: origX + (e.clientX - startX), y: origY + (e.clientY - startY) })
+    }
+    function onMouseUp() {
+      dragStateRef.current = null
+    }
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+
+  function handleHeaderMouseDown(e: ReactMouseEvent) {
+    dragStateRef.current = { startX: e.clientX, startY: e.clientY, origX: dragPos.x, origY: dragPos.y }
+  }
 
   const { data: results = [], isFetching } = useQuery<KoficMovieDto[]>({
     queryKey: ['kofic-movies', query?.movieNm, query?.prdtYear],
@@ -67,8 +94,11 @@ export default function KoficSearchPopup({ open, onClose, initialTitle, initialY
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent
+        className="max-w-2xl"
+        style={{ transform: `translate(calc(-50% + ${dragPos.x}px), calc(-50% + ${dragPos.y}px))` }}
+      >
+        <DialogHeader className="cursor-move select-none" onMouseDown={handleHeaderMouseDown}>
           <DialogTitle>KOFIC 영화 찾기</DialogTitle>
         </DialogHeader>
 
@@ -80,13 +110,24 @@ export default function KoficSearchPopup({ open, onClose, initialTitle, initialY
             placeholder="영화 제목"
             className="flex-1"
           />
-          <Input
-            value={prdtYear}
-            onChange={(e) => setPrdtYear(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder="제작년도"
-            className="w-28"
-          />
+          <div className="relative w-28">
+            <Input
+              value={prdtYear}
+              onChange={(e) => setPrdtYear(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="제작년도"
+              className="pr-7"
+            />
+            {prdtYear && (
+              <button
+                type="button"
+                onClick={() => setPrdtYear('')}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
           <Button onClick={handleSearch} disabled={!movieNm.trim()}>
             <Search />
             찾기

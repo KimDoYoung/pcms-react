@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import type { ColDef, GridReadyEvent, IDatasource, IGetRowsParams, GridApi, IRowNode, CellValueChangedEvent, ICellRendererParams, RowStyle } from 'ag-grid-community';
-import { RefreshCw, Save, Search } from 'lucide-react';
+import { RefreshCw, Save, Search, ScanSearch } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import type { MovieDto, MovieSearchDto, PagedResponse } from './types/movie';
 import { Button } from '@/shared/components/ui/button';
@@ -14,6 +14,7 @@ import { BadgeSelectPanel } from '@/shared/components/BadgeSelectPanel';
 import Toolbar from '@/shared/layout/Toolbar';
 import KoficSearchPopup from '@/domain/kofic/components/KoficSearchPopup';
 import type { KoficMovieDto } from '@/domain/kofic/types/kofic';
+import TmdbSearchPopup from '@/domain/tmdb/components/TmdbSearchPopup';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -30,6 +31,7 @@ const MoviePage = () => {
   const [showCountryPanel, setShowCountryPanel] = useState(false);
   const [showGenrePanel, setShowGenrePanel] = useState(false);
   const [koficTarget, setKoficTarget] = useState<{ node: IRowNode<MovieDto>; data: MovieDto } | null>(null);
+  const [tmdbTarget, setTmdbTarget] = useState<{ node: IRowNode<MovieDto>; data: MovieDto } | null>(null);
 
   const GENRE_OPTIONS = [
     { label: '액션', value: '액션' },
@@ -162,6 +164,14 @@ const MoviePage = () => {
             >
               <Search className="w-4 h-4" />
             </Button>
+            <Button
+              size="icon-sm"
+              variant="action"
+              title="TMDB 정보 찾기"
+              onClick={() => params.data && setTmdbTarget({ node: params.node, data: params.data })}
+            >
+              <ScanSearch className="w-4 h-4" />
+            </Button>
           </div>
         )
       )
@@ -293,6 +303,16 @@ const MoviePage = () => {
           initialTitle={koficTarget.data.title1}
           initialYear={koficTarget.data.makeYear}
           onFill={(movie) => handleKoficFill(koficTarget.data, koficTarget.node, movie)}
+        />
+      )}
+
+      {tmdbTarget && (
+        <TmdbSearchPopup
+          open={!!tmdbTarget}
+          onClose={() => setTmdbTarget(null)}
+          titleKo={tmdbTarget.data.title1}
+          titleEn={tmdbTarget.data.title2}
+          year={tmdbTarget.data.makeYear}
         />
       )}
     </div>
