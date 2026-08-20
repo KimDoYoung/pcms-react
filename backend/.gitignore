@@ -1,3 +1,4 @@
 # Gradle
 .gradle/
 build/
+application-jskn.properties
