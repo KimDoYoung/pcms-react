@@ -41,6 +41,7 @@ import { ROTATE_TEXT_COLORS, ROTATE_BG_COLORS } from '@/shared/components/editor
 import type { AssetType } from '@/domain/asset/types/asset'
 import type { MdTextareaHandle } from '@/shared/components/editor/MdTextarea'
 import { renderMarkdown } from '@/lib/markdownRenderer'
+import { copyTextToClipboard } from '@/lib/utils'
 import markdownCss from '@/styles/markdown.css?raw'
 import {
   Popover,
@@ -163,7 +164,7 @@ export default function MdEditorToolbar({
 
   async function handleCopyMarkdown() {
     try {
-      await navigator.clipboard.writeText(value)
+      await copyTextToClipboard(value)
     } catch {
       // fallback: ignore
     }

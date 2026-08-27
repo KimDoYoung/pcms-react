@@ -15,7 +15,7 @@ import { AgGridReact } from 'ag-grid-react'
 import { AllCommunityModule, ModuleRegistry, type ColDef, type ICellRendererParams } from 'ag-grid-community'
 import { Upload, Trash2, Copy, Video, Music, Pencil, Play, Download } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
-import { formatFileSize } from '@/lib/utils'
+import { formatFileSize, copyTextToClipboard } from '@/lib/utils'
 import { type MediaFile, mediaDownloadUrl, mediaLabel } from '@/lib/mediaFile'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -108,7 +108,7 @@ export default function MediaManagePanel() {
   async function handleCopyTag(item: MediaFile) {
     const tag = `![${mediaLabel(item)}](${mediaDownloadUrl(item)})`
     try {
-      await navigator.clipboard.writeText(tag)
+      await copyTextToClipboard(tag)
       showMessage('마크다운 태그가 복사되었습니다.', 'success')
     } catch {
       showMessage('복사에 실패했습니다.', 'error')

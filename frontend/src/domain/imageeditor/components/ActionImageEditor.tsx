@@ -5,7 +5,8 @@ import { drawStamp, STAMP_ANGLES } from './arrowStamp'
 import { drawCallout, getCalloutTailPoint } from './calloutStamp'
 import TextItemInput from './TextItemInput'
 import { getDistanceToSegment, getTextBounds, drawArrow, drawOrthogonalArrow, drawSelectionHandles, createRoundedRectPath } from './canvasDrawHelpers'
-import { copyTextToClipboard, loadImageFromFile } from './fileHelpers'
+import { loadImageFromFile } from './fileHelpers'
+import { copyTextToClipboard } from '@/lib/utils'
 import { getItemEdgeBounds, shiftItemX, shiftItemY, offsetItemForCrop, isItemWithinCropBounds } from './itemGeometry'
 
 // wYYMMDD 형태의 기본 타이틀을 생성하는 헬퍼 함수

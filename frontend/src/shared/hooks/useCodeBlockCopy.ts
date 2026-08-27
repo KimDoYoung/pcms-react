@@ -15,6 +15,7 @@ import { useEffect, type RefObject } from 'react'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Check } from 'lucide-react'
+import { copyTextToClipboard } from '@/lib/utils'
 
 const CHECK_ICON_SVG = renderToStaticMarkup(createElement(Check, { className: 'code-copy-icon' }))
 
@@ -31,7 +32,7 @@ export function useCodeBlockCopy(containerRef: RefObject<HTMLElement | null>): v
       const text = code?.textContent ?? ''
       if (!text) return
 
-      navigator.clipboard.writeText(text).then(() => {
+      copyTextToClipboard(text).then(() => {
         btn.dataset.copying = '1'
         const original = btn.innerHTML
         btn.innerHTML = CHECK_ICON_SVG

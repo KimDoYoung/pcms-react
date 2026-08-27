@@ -6,7 +6,7 @@ import Toolbar from '@/shared/layout/Toolbar'
 import AttachmentsView from '@/shared/components/AttachmentsView'
 import ButtonsOfView from '@/shared/components/ButtonsOfView'
 import type { BoardDto, PostDto } from '@/domain/board/types/board'
-import { formatDate } from '@/lib/utils'
+import { formatDate, copyTextToClipboard } from '@/lib/utils'
 import MarkdownViewer from '@/domain/board/components/MarkdownViewer'
 import { useMessage } from '@/shared/hooks/useMessage'
 import { Button } from '@/shared/components/ui/button'
@@ -50,7 +50,7 @@ export default function PostViewPage() {
     const origin = window.location.origin + (import.meta.env.PROD ? '/pcms' : '')
     const url = `${origin}/posts/${contentType}/${post.id}`
     try {
-      await navigator.clipboard.writeText(url)
+      await copyTextToClipboard(url)
       showMessage('게시글 URL이 복사되었습니다.', 'success')
     } catch {
       showMessage('URL 복사에 실패했습니다.', 'error')

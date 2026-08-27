@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.4",
+    "date": "2026-08-26",
+    "revisions": [
+      "http에 따른 clipboard 복사 오류 수정"
+    ]
+  },
+  {
     "version": "0.2.3",
     "date": "2026-08-14",
     "revisions": [

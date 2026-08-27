@@ -147,6 +147,40 @@ export function formatCost(cost: number | null | undefined, defaultValue = '0'):
 }
 
 /**
+ * HTTP/HTTPS 환경 모두에서 동작하는 클립보드 텍스트 복사 유틸리티.
+ * navigator.clipboard는 보안 컨텍스트(HTTPS 또는 localhost)에서만 동작하므로,
+ * 배포 환경이 HTTP(예: http://jskn.iptime.org)인 경우를 위해 execCommand fallback을 둔다.
+ * @param text 클립보드에 복사할 문자열
+ */
+export async function copyTextToClipboard(text: string): Promise<void> {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return
+    } catch (err) {
+      console.warn('navigator.clipboard 실패, fallback 사용:', err)
+    }
+  }
+
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  textArea.style.position = 'fixed'
+  textArea.style.left = '-999999px'
+  textArea.style.top = '-999999px'
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+  try {
+    const successful = document.execCommand('copy')
+    textArea.remove()
+    if (!successful) throw new Error('execCommand 복사 실패')
+  } catch (err) {
+    textArea.remove()
+    throw new Error('클립보드 복사 최종 실패: ' + err)
+  }
+}
+
+/**
  * 날짜를 "n분 전" 같은 상대 시간 문자열로 포맷팅합니다. 7일 이상 지나면 로케일 날짜로 표시합니다.
  * @param dateString 날짜 문자열 또는 Date
  */
