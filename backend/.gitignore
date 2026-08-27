@@ -2,3 +2,4 @@
 .gradle/
 build/
 application-jskn.properties
+application-development.properties
