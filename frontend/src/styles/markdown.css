@@ -79,12 +79,14 @@
   border-radius: 0.5rem;
   overflow-x: auto;
   margin: 0.75rem 0;
+  line-height: 1.4;
 }
 .markdown-body pre code {
   background: transparent;
   padding: 0;
   color: inherit;
   font-size: 0.875rem;
+  line-height: inherit;
 }
 .markdown-body .code-block {
   position: relative;
