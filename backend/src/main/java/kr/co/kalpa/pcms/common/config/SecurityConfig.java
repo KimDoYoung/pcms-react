@@ -82,6 +82,7 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/files/*/download/**"),
                     new AntPathRequestMatcher("/files/pdf-convert"),
                     new AntPathRequestMatcher("/files/pdf-convert/**"),
+                    new AntPathRequestMatcher("/utility/**"),
                     new AntPathRequestMatcher("/practice/**")
                 ).permitAll()
                 .anyRequest().authenticated()

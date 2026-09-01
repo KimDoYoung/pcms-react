@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import HanjaSearchModal from '@/shared/components/editor/HanjaSearchModal'
 import AssetPickerPopup from '@/shared/components/editor/AssetPickerPopup'
+import EmojiSearchModal from '@/shared/components/editor/EmojiSearchModal'
 import MediaSelectorModal, { type MediaSelectPayload } from '@/shared/components/editor/MediaSelectorModal'
 import { ROTATE_TEXT_COLORS, ROTATE_BG_COLORS, getNextColor } from '@/shared/components/editor/editorColors'
 import type { AssetType } from '@/domain/asset/types/asset'
@@ -81,6 +82,7 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
   const [hanjaOpen, setHanjaOpen] = useState(false)
   const [selectedWord, setSelectedWord] = useState('')
   const [mediaOpen, setMediaOpen] = useState(false)
+  const [emojiModalOpen, setEmojiModalOpen] = useState(false)
   const selectionRef = useRef<{ from: number; to: number } | null>(null)
 
   const handleHanjaClick = useCallback(() => {
@@ -350,6 +352,10 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
           position={assetPopup.position}
           onSelect={handleAssetSelect}
           onClose={() => setAssetPopup(null)}
+          onOpenSearchModal={() => {
+            setAssetPopup(null)
+            setEmojiModalOpen(true)
+          }}
         />
       )}
 
@@ -535,6 +541,12 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
         onClose={() => setHanjaOpen(false)}
         onSelect={handleHanjaSelect}
       />
+      <EmojiSearchModal
+        open={emojiModalOpen}
+        onClose={() => setEmojiModalOpen(false)}
+        onInsert={(emoji) => editor?.chain().focus().insertContent(emoji).run()}
+      />
     </div>
   )
 }
+

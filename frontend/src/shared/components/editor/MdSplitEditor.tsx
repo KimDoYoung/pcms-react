@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from 'react'
 import MdTextarea, { type MdTextareaHandle } from '@/shared/components/editor/MdTextarea'
 import MdEditorToolbar from '@/shared/components/editor/MdEditorToolbar'
 import AssetPickerPopup from '@/shared/components/editor/AssetPickerPopup'
+import EmojiSearchModal from '@/shared/components/editor/EmojiSearchModal'
 import MediaSelectorModal, { type MediaSelectPayload } from '@/shared/components/editor/MediaSelectorModal'
 import { renderMarkdown } from '@/lib/markdownRenderer'
 import { measureLineTops } from '@/lib/textareaLinePositions'
@@ -39,6 +40,7 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
   const [resizingPreview, setResizingPreview] = useState(false)
   const [mediaOpen, setMediaOpen] = useState(false)
   const [assetPopup, setAssetPopup] = useState<AssetPopupState | null>(null)
+  const [emojiModalOpen, setEmojiModalOpen] = useState(false)
 
   const editorRef = useRef<MdTextareaHandle>(null)
   const textareaDomRef = useRef<HTMLTextAreaElement>(null)
@@ -269,8 +271,18 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
           position={assetPopup.position}
           onSelect={handleAssetSelect}
           onClose={() => setAssetPopup(null)}
+          onOpenSearchModal={() => {
+            setAssetPopup(null)
+            setEmojiModalOpen(true)
+          }}
         />
       )}
+
+      <EmojiSearchModal
+        open={emojiModalOpen}
+        onClose={() => setEmojiModalOpen(false)}
+        onInsert={(emoji) => editorRef.current?.insertText(emoji)}
+      />
 
       <MediaSelectorModal
         open={mediaOpen}
@@ -285,3 +297,4 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
     </div>
   )
 }
+
