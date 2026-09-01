@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTabParams } from '@/shared/layout/useTabParams'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -11,6 +12,7 @@ import MarkdownViewer from '@/domain/board/components/MarkdownViewer'
 import { useMessage } from '@/shared/hooks/useMessage'
 import { Button } from '@/shared/components/ui/button'
 import { Link2 } from 'lucide-react'
+import { exportPostToPdf } from '@/lib/pdfExporter'
 
 export default function PostViewPage() {
   const { id } = useTabParams<{ id: string }>()
@@ -18,6 +20,7 @@ export default function PostViewPage() {
   const location = useLocation()
   const queryClient = useQueryClient()
   const { showMessage } = useMessage()
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
 
   // boardId는 list → view 내비게이션 state 또는 query param에서 읽음
   const stateboardId = (location.state as { boardId?: number } | null)?.boardId
@@ -54,6 +57,20 @@ export default function PostViewPage() {
       showMessage('게시글 URL이 복사되었습니다.', 'success')
     } catch {
       showMessage('URL 복사에 실패했습니다.', 'error')
+    }
+  }
+
+  async function handleExportPdf() {
+    if (!post) return
+    setIsExportingPdf(true)
+    try {
+      await exportPostToPdf(post, board?.boardNameKor, board?.contentType)
+      showMessage('PDF 저장이 완료되었습니다.', 'success')
+    } catch (err) {
+      console.error('PDF 저장 오류:', err)
+      showMessage('PDF 저장 중 오류가 발생했습니다.', 'error')
+    } finally {
+      setIsExportingPdf(false)
     }
   }
 
@@ -115,6 +132,8 @@ export default function PostViewPage() {
               <Link2 className="w-3.5 h-3.5 mr-1" /> 링크 복사
             </Button>
             <ButtonsOfView
+              onPdf={handleExportPdf}
+              pdfLoading={isExportingPdf}
               onEdit={() => navigate(`/posts/${post.id}/edit`, { state: { boardId } })}
               onDelete={handleDelete}
               onList={() => navigate(`/posts?boardId=${boardId}`)}
@@ -136,6 +155,8 @@ export default function PostViewPage() {
         {/* 첨부파일 */}
         <AttachmentsView attachments={post.attachments ?? []} className="mb-6" />
         <ButtonsOfView
+          onPdf={handleExportPdf}
+          pdfLoading={isExportingPdf}
           onEdit={() => navigate(`/posts/${post.id}/edit`, { state: { boardId } })}
           onDelete={handleDelete}
           onList={() => navigate(`/posts?boardId=${boardId}`)}

@@ -4,6 +4,7 @@ import kr.co.kalpa.pcms.common.config.FileProperties;
 import kr.co.kalpa.pcms.domain.file.entity.CmsFile;
 import kr.co.kalpa.pcms.domain.file.service.FileMapper;
 import kr.co.kalpa.pcms.domain.file.service.FileUploadService;
+import kr.co.kalpa.pcms.domain.file.service.PdfService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
@@ -50,6 +51,8 @@ public class FileController {
     private final FileUploadService fileUploadService;
     private final FileMapper fileMapper;
     private final FileProperties fileProperties;
+    private final PdfService pdfService;
+
 
     @PostMapping(value = "/editor-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> uploadEditorImage(@RequestParam("file") MultipartFile file) {
@@ -293,6 +296,68 @@ public class FileController {
             deleteDirectory(tempDir);
         }
     }
+
+    // HTML to PDF 변환 (Gotenberg 연동)
+    @PostMapping("/pdf-convert")
+    public ResponseEntity<?> convertToPdf(@RequestBody Map<String, String> body) {
+        String html = body.get("html");
+        String filename = body.getOrDefault("filename", "document.pdf");
+
+        if (html == null || html.isBlank()) {
+            return ResponseEntity.badRequest().body("HTML 내용이 비어있습니다.");
+        }
+
+        if (!filename.toLowerCase().endsWith(".pdf")) {
+            filename += ".pdf";
+        }
+
+        try {
+            byte[] pdfBytes = pdfService.convertHtmlToPdf(html);
+            String encodedName = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedName)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            log.error("PDF 변환 요청 실패: filename={}, error={}", filename, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("PDF 변환 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    // 파일 업로드 기반 PDF 변환 (Office, HTML, Markdown, Text, Image 등)
+    @PostMapping(value = "/pdf-convert/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> convertUploadedFileToPdf(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "landscape", defaultValue = "false") boolean landscape) {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body("업로드된 파일이 비어있습니다.");
+        }
+
+        String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "document";
+        String baseName = originalName;
+        int dotIdx = originalName.lastIndexOf('.');
+        if (dotIdx > 0) {
+            baseName = originalName.substring(0, dotIdx);
+        }
+        String targetPdfName = baseName + ".pdf";
+
+        try {
+            byte[] pdfBytes = pdfService.convertFileToPdf(file, landscape);
+            String encodedName = URLEncoder.encode(targetPdfName, StandardCharsets.UTF_8).replace("+", "%20");
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedName)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            log.error("파일 PDF 변환 요청 실패: filename={}, error={}", originalName, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("파일 PDF 변환 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+
 
     private void unzipFile(File zipFile, File destDir) throws IOException {
         try (java.util.zip.ZipFile zf = new java.util.zip.ZipFile(zipFile)) {

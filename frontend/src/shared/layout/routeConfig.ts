@@ -35,6 +35,7 @@ import Practice01Flex from '@/practice/Practice01Flex'
 import Practice02Hooks from '@/practice/Practice02Hooks'
 import Practice03Hanja from '@/practice/Practice03Hanja'
 import ComponentTest1 from '@/practice/PracticeComponentTest1'
+import PdfConverterPage from '@/domain/utility/PdfConverterPage'
 
 export interface AppRoute {
   path: string
@@ -61,6 +62,9 @@ export const APP_ROUTES: AppRoute[] = [
   { path: '/snote/register', label: '🔐 S-Note 등록', Component: SNoteRegisterPage, tabGroup: 'snote' },
   { path: '/posts', label: '📋 게시글', Component: PostsPage, tabGroup: 'posts' },
   { path: '/posts/new', label: '📝 새게시글', Component: PostRegisterPage, tabGroup: 'posts' },
+
+  // 유틸리티
+  { path: '/utility/pdf-converter', label: '📑 PDF 변환', Component: PdfConverterPage, menuGroup: '🛠️ 유틸리티', tabGroup: 'utility-pdf' },
 
   // 취미
   { path: '/jangbi', label: '🖥️ 장비', Component: JangbiPage, menuGroup: '🔧 취미', tabGroup: 'jangbi' },

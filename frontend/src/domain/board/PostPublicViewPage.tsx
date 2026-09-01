@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
@@ -5,6 +6,10 @@ import AttachmentsView from '@/shared/components/AttachmentsView'
 import type { BoardDto, PostDto } from '@/domain/board/types/board'
 import { formatDate } from '@/lib/utils'
 import MarkdownViewer from '@/domain/board/components/MarkdownViewer'
+import { Button } from '@/shared/components/ui/button'
+import { FileDown, Loader2 } from 'lucide-react'
+import { exportPostToPdf } from '@/lib/pdfExporter'
+import { useMessage } from '@/shared/hooks/useMessage'
 
 /**
  * post url 공유(카톡 등)로 접근하는 인증 없는 게시글 단독 뷰 페이지.
@@ -13,6 +18,8 @@ import MarkdownViewer from '@/domain/board/components/MarkdownViewer'
  */
 export default function PostPublicViewPage() {
   const { id } = useParams<{ id: string }>()
+  const { showMessage } = useMessage()
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
 
   const { data: post, isLoading, isError } = useQuery<PostDto>({
     queryKey: ['public-post', id],
@@ -28,6 +35,20 @@ export default function PostPublicViewPage() {
     queryFn: () => apiClient.get<BoardDto>(`/boards/${boardId}`),
     enabled: !!boardId,
   })
+
+  async function handleExportPdf() {
+    if (!post) return
+    setIsExportingPdf(true)
+    try {
+      await exportPostToPdf(post, board?.boardNameKor, board?.contentType)
+      showMessage('PDF 저장이 완료되었습니다.', 'success')
+    } catch (err) {
+      console.error('PDF 저장 오류:', err)
+      showMessage('PDF 저장 중 오류가 발생했습니다.', 'error')
+    } finally {
+      setIsExportingPdf(false)
+    }
+  }
 
   if (isLoading) {
     return <p className="text-center py-20 text-gray-400">불러오는 중...</p>
@@ -54,6 +75,22 @@ export default function PostPublicViewPage() {
             <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full">
               👁️ {post.viewCount}
             </span>
+
+            <div className="flex-1" />
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPdf}
+              disabled={isExportingPdf}
+            >
+              {isExportingPdf ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+              ) : (
+                <FileDown className="w-3.5 h-3.5 mr-1" />
+              )}
+              PDF 저장
+            </Button>
           </div>
         </div>
 
