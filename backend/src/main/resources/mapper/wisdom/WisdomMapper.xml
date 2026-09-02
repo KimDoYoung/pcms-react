@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.kalpa.pcms.domain.wisdom.service.WisdomMapper">
+
+    <resultMap id="wisdomMap" type="kr.co.kalpa.pcms.domain.wisdom.entity.Wisdom">
+        <id property="id" column="id"/>
+        <result property="domain" column="domain"/>
+        <result property="document" column="document"/>
+        <result property="category" column="category"/>
+        <result property="authorSource" column="author_source"/>
+        <result property="keywords" column="keywords" typeHandler="kr.co.kalpa.pcms.common.typehandler.StringListTypeHandler"/>
+        <result property="contextTrigger" column="context_trigger"/>
+        <result property="lastModifiedAt" column="last_modified_at"/>
+    </resultMap>
+
+    <sql id="search">
+        <where>
+            <if test="domain != null and domain != ''">
+                AND domain = #{domain}
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            <if test="authorSource != null and authorSource != ''">
+                AND author_source ILIKE CONCAT('%', #{authorSource}, '%')
+            </if>
+            <if test="contextTrigger != null and contextTrigger != ''">
+                AND context_trigger ILIKE CONCAT('%', #{contextTrigger}, '%')
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    document ILIKE CONCAT('%', #{keyword}, '%')
+                    OR author_source ILIKE CONCAT('%', #{keyword}, '%')
+                    OR array_to_string(keywords, ',') ILIKE CONCAT('%', #{keyword}, '%')
+                    OR context_trigger ILIKE CONCAT('%', #{keyword}, '%')
+                    OR id ILIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+    </sql>
+
+    <insert id="insertWisdom">
+        INSERT INTO cms.wisdoms (
+            id, domain, document, category, author_source, keywords, context_trigger
+        )
+        VALUES (
+            #{id},
+            #{domain},
+            #{document},
+            #{category},
+            #{authorSource},
+            #{keywords, typeHandler=kr.co.kalpa.pcms.common.typehandler.StringListTypeHandler},
+            #{contextTrigger}
+        )
+    </insert>
+
+    <update id="updateWisdom">
+        UPDATE cms.wisdoms
+        SET domain          = #{domain},
+            document        = #{document},
+            category        = #{category},
+            author_source   = #{authorSource},
+            keywords        = #{keywords, typeHandler=kr.co.kalpa.pcms.common.typehandler.StringListTypeHandler},
+            context_trigger = #{contextTrigger}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteWisdom">
+        DELETE FROM cms.wisdoms
+        WHERE id = #{id}
+    </delete>
+
+    <select id="selectWisdomById" resultMap="wisdomMap">
+        SELECT id, domain, document, category, author_source, keywords, context_trigger, last_modified_at
+        FROM cms.wisdoms
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectWisdomList" resultMap="wisdomMap">
+        SELECT id, domain, document, category, author_source, keywords, context_trigger, last_modified_at
+        FROM cms.wisdoms
+        <include refid="search"/>
+        ORDER BY last_modified_at DESC, id DESC
+        LIMIT #{size} OFFSET #{skip}
+    </select>
+
+    <select id="selectWisdomCount" resultType="int">
+        SELECT count(*)
+        FROM cms.wisdoms
+        <include refid="search"/>
+    </select>
+
+    <select id="selectDomains" resultType="string">
+        SELECT DISTINCT domain
+        FROM cms.wisdoms
+        WHERE domain IS NOT NULL AND domain != ''
+        ORDER BY domain
+    </select>
+
+    <select id="selectCategories" resultType="string">
+        SELECT DISTINCT category
+        FROM cms.wisdoms
+        <where>
+            <if test="domain != null and domain != ''">
+                domain = #{domain}
+            </if>
+        </where>
+        ORDER BY category
+    </select>
+
+    <select id="existsById" resultType="int">
+        SELECT count(*)
+        FROM cms.wisdoms
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectRandomWisdom" resultMap="wisdomMap">
+        SELECT id, domain, document, category, author_source, keywords, context_trigger, last_modified_at
+        FROM cms.wisdoms
+        <where>
+            <if test="domain != null and domain != ''">
+                AND domain = #{domain}
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            <if test="contextTrigger != null and contextTrigger != ''">
+                AND context_trigger ILIKE CONCAT('%', #{contextTrigger}, '%')
+            </if>
+        </where>
+        ORDER BY RANDOM()
+        LIMIT 1
+    </select>
+
+</mapper>

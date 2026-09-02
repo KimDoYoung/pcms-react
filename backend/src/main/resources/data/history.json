@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.6",
+    "date": "2026-09-02",
+    "revisions": [
+      "격언 wisdoms 테이블 생성 및 관련 페이지 작성"
+    ]
+  },
+  {
     "version": "0.2.5",
     "date": "2026-09-01",
     "revisions": [

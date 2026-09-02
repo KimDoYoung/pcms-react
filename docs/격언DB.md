@@ -1,22 +1,171 @@
-CREATE TABLE cms.quotes (
-    id SERIAL PRIMARY KEY,
-    quote TEXT NOT NULL,           -- 격언 본문
-    author VARCHAR(200),           -- 저자
-    source VARCHAR(200),           -- 출처 (책/연설 등)
-    category TEXT[],               -- 태그 배열 (예: {'희망', '용기', '인생'})
-    keywords TEXT[],               -- 핵심 키워드
-    embedding VECTOR(768),         -- pgvector 사용 시
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+CREATE TABLE cms.wisdoms (
+    id VARCHAR(50) PRIMARY KEY,              -- 'quote_001', 'prv_001'
+    domain VARCHAR(30) NOT NULL,             -- 'STOCK', 'LIFE'
+    document TEXT NOT NULL,                  -- 본문
+    category VARCHAR(50) NOT NULL,          -- 카테고리
+    author_source VARCHAR(100),             -- 출처/작성자
+    keywords TEXT[],                         -- 키워드 배열
+    context_trigger VARCHAR(100),           -- 상황/감정 트리거
+    last_modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP -- 최종변경시각 (단일 관리)
 );
 
--- 인덱스
-CREATE INDEX idx_quotes_category ON cms.quotes USING GIN(category);
-CREATE INDEX idx_quotes_keywords ON cms.quotes USING GIN(keywords);
-CREATE INDEX idx_quotes_author ON cms.quotes(author);
+-- 수정 시 last_modified_at 자동 갱신 트리거
+CREATE OR REPLACE FUNCTION update_last_modified_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.last_modified_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
 
--- pgvector 인덱스 (cosine similarity)
-CREATE INDEX idx_quotes_embedding ON cms.quotes USING ivfflat (embedding vector_cosine_ops);
+CREATE TRIGGER trg_wisdoms_modified
+    BEFORE UPDATE ON cms.wisdoms
+    FOR EACH ROW
+    EXECUTE FUNCTION update_last_modified_column();
+#----
+INSERT INTO cms.wisdoms (
+    id, domain, document, 
+    category, author_source, keywords, context_trigger
+) VALUES (
+    'prv_003',
+    'STOCK',
+    '사고 판 뒤에는 반드시 쉬어라. 쉬는 것도 투자다. 약세장에서는 쉬는 것이 최상이다.',
+    'MINDSET',                                   -- category (투자 심리/멘탈)
+    '한국 증시 격언',                             -- author_source
+    ARRAY['뇌동매매방지', '관망', '현금보유', '약세장'], -- keywords
+    'overtrading,bear_market,loss_streak'        -- context_trigger (잦은 매매, 약세장, 연속 손실)
+);
+
+제시해주신 컬럼 4개(`category`, `author_source`, `keywords`, `context_trigger`)는 주식 격언(STOCK)과 **인생 명언/지혜(LIFE)** 도메인에서 각각 다음과 같이 구체적인 값들로 매핑되어 저장됩니다.
+
+실제 데이터베이스에 들어가는 대표적인 예시 레코드들입니다.
+
+---
+
+### 1. 인생/인문 명언 (LIFE) 예시
+
+#### 예시 1: 말조심 / 구화지문
+
+```sql
+INSERT INTO wisdom_quotes (
+    id, domain, document, 
+    category, author_source, keywords, context_trigger
+) VALUES (
+    'quote_001',
+    'LIFE',
+    '질병은 입을 좇아 들어가고 화근은 입을 좇아 나온다.',
+    'COMMUNICATION',                             -- category (소통/대화)
+    '태평어람',                                  -- author_source (출처 문헌)
+    ARRAY['구화지문', '말조심', '언행', '침묵'],   -- keywords (키워드 배열)
+    'anger,conflict,gossip'                      -- context_trigger (분노, 말실수, 갈등 상황)
+);
+
+```
+
+#### 예시 2: 행복 / 이타심
+
+```sql
+INSERT INTO wisdom_quotes (
+    id, domain, document, 
+    category, author_source, keywords, context_trigger
+) VALUES (
+    'quote_002',
+    'LIFE',
+    '행복이란 타인을 행복하게 해주려는 노력의 부산물이다.',
+    'HAPPINESS',                                 -- category (행복/삶의태도)
+    'Gretta Brooker Palmer',                     -- author_source (인물)
+    ARRAY['행복', '이타심', '인간관계', '보람'],   -- keywords
+    'loneliness,relationship,gratitude'          -- context_trigger (외로움, 관계 고민, 감사)
+);
+
+```
+
+#### 예시 3: 창작 / 동기부여 (무기력 극복)
+
+```sql
+INSERT INTO wisdom_quotes (
+    id, domain, document, 
+    category, author_source, keywords, context_trigger
+) VALUES (
+    'quote_004',
+    'LIFE',
+    '인간은 의욕하는 것, 그리고 창조하는 것에 의해서만이 행복하다.',
+    'MOTIVATION',                                -- category (동기부여/성취)
+    '존 러스킨',                                 -- author_source
+    ARRAY['창작', '자아실현', '의욕', '몰입'],     -- keywords
+    'burnout,lethargy,procrastination'           -- context_trigger (번아웃, 무기력, 미루기)
+);
+
+```
+
+---
+
+### 2. 주식 매매 격언 (STOCK) 예시
+
+#### 예시 1: 신용잔고 및 과열 경고 (리스크 관리)
+
+```sql
+INSERT INTO wisdom_quotes (
+    id, domain, document, 
+    category, author_source, keywords, context_trigger
+) VALUES (
+    'prv_006',
+    'STOCK',
+    '신용이 많이 걸린 주식은 사지 말라. 신용한도가 가득 찬 주식은 천장 직전이다.',
+    'RISK',                                      -- category (리스크 관리)
+    '월가 격언',                                 -- author_source (출처)
+    ARRAY['신용잔고', '과열', '천장', '반대매매'], -- keywords
+    'credit_ratio_high,overheated_market'        -- context_trigger (신용잔고율 급증, 시장 과열)
+);
+
+```
+
+#### 예시 2: 분할 매도 및 수익 보전 (타이밍)
+
+```sql
+INSERT INTO wisdom_quotes (
+    id, domain, document, 
+    category, author_source, keywords, context_trigger
+) VALUES (
+    'prv_008',
+    'STOCK',
+    '상승폭의 60%만 먹어라. 꼬리와 머리는 남에게 주어라. 이익은 독수리처럼 지켜라.',
+    'TIMING',                                    -- category (매매 타이밍)
+    '앙드레 코스톨라니 등',                       -- author_source
+    ARRAY['익절', '분할매도', '욕심제어', '수익보전'], -- keywords
+    'profit_target_reached,greed_control'        -- context_trigger (목표수익 도달, 탐욕 제어)
+);
+
+```
+
+#### 예시 3: 잦은 매매 방지 및 관망 (투자 심리)
+
+```sql
+INSERT INTO wisdom_quotes (
+    id, domain, document, 
+    category, author_source, keywords, context_trigger
+) VALUES (
+    'prv_003',
+    'STOCK',
+    '사고 판 뒤에는 반드시 쉬어라. 쉬는 것도 투자다. 약세장에서는 쉬는 것이 최상이다.',
+    'MINDSET',                                   -- category (투자 심리/멘탈)
+    '한국 증시 격언',                             -- author_source
+    ARRAY['뇌동매매방지', '관망', '현금보유', '약세장'], -- keywords
+    'overtrading,bear_market,loss_streak'        -- context_trigger (잦은 매매, 약세장, 연속 손실)
+);
+
+```
+
+---
+
+### 3. 컬럼별 값 요약 가이드
+
+| 컬럼명 | 허용/권장 값 (예시) | 용도 및 역할 |
+| --- | --- | --- |
+| **`category`** | `COMMUNICATION`, `HAPPINESS`, `MOTIVATION`, `RISK`, `TIMING`, `PORTFOLIO`, `VOLUME`, `MINDSET` | 대분류 필터링 및 통계/관리용 |
+| **`author_source`** | `태평어람`, `속담`, `월가 격언`, `앙드레 코스톨라니`, `피터 린치`, `미상` | 답변 인용 시 신뢰도 및 출처 명시용 |
+| **`keywords`** | `ARRAY['신용잔고', '과열']`, `ARRAY['경청', '침묵']` | PostgreSQL GIN 인덱스 기반 고속 태그 검색용 |
+| **`context_trigger`** | `burnout`, `anger`, `overtrading`, `credit_ratio_high`, `bear_market` | kiwi8 지표나 챗봇 감정 분석기에서 매칭할 조건 키워드 |
 
 ----
 1. 삶이 있는 한 희망은 있다 -키케로

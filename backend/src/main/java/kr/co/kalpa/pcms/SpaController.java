@@ -31,6 +31,8 @@ public class SpaController {
         "/posts/**",
         "/apnode",
         "/apnode/**",
+        "/wisdom",
+        "/wisdom/**",
         "/practice/**",
     }, produces = MediaType.TEXT_HTML_VALUE)
     public String forward() {

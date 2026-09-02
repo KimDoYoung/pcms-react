@@ -78,6 +78,8 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/boards/*/posts/*", "GET"),
                     new AntPathRequestMatcher("/apnode"),
                     new AntPathRequestMatcher("/apnode/**"),
+                    new AntPathRequestMatcher("/wisdom"),
+                    new AntPathRequestMatcher("/wisdom/**"),
                     new AntPathRequestMatcher("/files/*/download"),
                     new AntPathRequestMatcher("/files/*/download/**"),
                     new AntPathRequestMatcher("/files/pdf-convert"),

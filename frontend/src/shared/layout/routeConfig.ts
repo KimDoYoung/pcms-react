@@ -13,6 +13,9 @@ import BoardsPage from '@/domain/board/BoardsPage'
 import SNoteListPage from '@/domain/snote/SNoteListPage'
 import SNoteRegisterPage from '@/domain/snote/SNoteRegisterPage'
 import SNoteEditPage from '@/domain/snote/SNoteEditPage'
+import WisdomListPage from '@/domain/wisdom/WisdomListPage'
+import WisdomRegisterPage from '@/domain/wisdom/WisdomRegisterPage'
+import WisdomEditPage from '@/domain/wisdom/WisdomEditPage'
 import PostsPage from '@/domain/board/PostsPage'
 import PostRegisterPage from '@/domain/board/PostRegisterPage'
 import PostViewPage from '@/domain/board/PostViewPage'
@@ -60,6 +63,8 @@ export const APP_ROUTES: AppRoute[] = [
   { path: '/boards', label: '✍️ 게시판관리', Component: BoardsPage, menuGroup: '📝 게시판', tabGroup: 'boards' },
   { path: '/snote', label: '🔐 S-Note', Component: SNoteListPage, menuGroup: '📝 게시판', tabGroup: 'snote' },
   { path: '/snote/register', label: '🔐 S-Note 등록', Component: SNoteRegisterPage, tabGroup: 'snote' },
+  { path: '/wisdom', label: '💡 격언', Component: WisdomListPage, menuGroup: '📝 게시판', tabGroup: 'wisdom' },
+  { path: '/wisdom/register', label: '💡 격언 등록', Component: WisdomRegisterPage, tabGroup: 'wisdom' },
   { path: '/posts', label: '📋 게시글', Component: PostsPage, tabGroup: 'posts' },
   { path: '/posts/new', label: '📝 새게시글', Component: PostRegisterPage, tabGroup: 'posts' },
 
@@ -102,6 +107,7 @@ export const APP_ROUTES: AppRoute[] = [
   { path: '/jangbi/:id', label: '🖥️ 장비상세', Component: JangbiViewPage, isDynamic: true, tabGroup: 'jangbi' },
   { path: '/posts/:id/edit', label: '📝 게시글수정', Component: PostEditPage, isDynamic: true, tabGroup: 'posts' },
   { path: '/snote/:id/edit', label: '🔐 S-Note 수정', Component: SNoteEditPage, isDynamic: true, tabGroup: 'snote' },
+  { path: '/wisdom/:id/edit', label: '💡 격언 수정', Component: WisdomEditPage, isDynamic: true, tabGroup: 'wisdom' },
   { path: '/posts/:id', label: '📝 게시글', Component: PostViewPage, isDynamic: true, tabGroup: 'posts' },
   { path: '/movie/review/:id/edit', label: '🎬 영화감상평 수정', Component: MovieReviewFormPage, isDynamic: true, tabGroup: 'movie-review' },
   { path: '/movie/review/:id/view', label: '🎬 영화감상평 보기', Component: MovieReviewViewPage, isDynamic: true, tabGroup: 'movie-review' },
