@@ -1,8 +1,9 @@
 /**
  * 1. 목적(용도):
  *    새로운 격언(Wisdom) 데이터를 등록하는 페이지.
- *    ID 직접입력 및 자동채번, 도메인/카테고리 선택 및 직접입력,
- *    키워드 태그 관리 및 상황 트리거 설정을 지원함.
+ *    격언 ID는 도메인 기반으로 항상 자동 채번되며,
+ *    키워드는 콤마(,) 구분 텍스트로 편리하게 입력받고,
+ *    상황/감정 트리거는 체크박스 및 직접 타이핑 양방향 동기화로 입력 가능함.
  *
  * 2. 사용법:
  *    React Router에 라우트로 연결하여 사용:
@@ -15,23 +16,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
-import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Textarea } from '@/shared/components/ui/textarea'
-import {
-  Quote,
-  Sparkles,
-  CheckCircle2,
-  XCircle,
-  Tag,
-  X,
-  Plus,
-} from 'lucide-react'
+import { Quote, Tag, Zap, Check } from 'lucide-react'
 import { useMessage } from '@/shared/hooks/useMessage'
 import ButtonsOfEdit from '@/shared/components/ButtonsOfEdit'
 import {
   DEFAULT_DOMAINS,
   DEFAULT_CATEGORIES,
+  CONTEXT_TRIGGER_PRESETS,
 } from '@/domain/wisdom/types/wisdom'
 
 export default function WisdomRegisterPage() {
@@ -40,7 +33,6 @@ export default function WisdomRegisterPage() {
 
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
-    id: '',
     domain: 'LIFE',
     document: '',
     category: 'MOTIVATION',
@@ -48,13 +40,8 @@ export default function WisdomRegisterPage() {
     contextTrigger: '',
   })
 
-  const [keywords, setKeywords] = useState<string[]>([])
-  const [keywordInput, setKeywordInput] = useState('')
-
-  // ID 중복확인 상태
-  const [idCheckStatus, setIdCheckStatus] = useState<
-    'idle' | 'checking' | 'available' | 'duplicated'
-  >('idle')
+  // 키워드 문자열 (콤마로 구분하여 입력)
+  const [keywordText, setKeywordText] = useState('')
 
   // 도메인 변경 시 카테고리 기본값 세팅
   function handleDomainChange(newDomain: string) {
@@ -66,59 +53,30 @@ export default function WisdomRegisterPage() {
     }))
   }
 
-  // ID 자동생성
-  function handleGenerateId() {
-    let prefix = 'quote_'
-    if (form.domain === 'STOCK') prefix = 'prv_'
-    else if (form.domain && form.domain !== 'LIFE')
-      prefix = form.domain.toLowerCase() + '_'
+  // 키워드 문자열을 분해/trim하여 배열로 반환
+  const parsedKeywords = keywordText
+    .split(',')
+    .map((k) => k.trim().replace(/^#/, ''))
+    .filter(Boolean)
 
-    const randomSuffix = Math.random().toString(36).substring(2, 7)
-    const newId = `${prefix}${randomSuffix}`
-    setForm((f) => ({ ...f, id: newId }))
-    setIdCheckStatus('available')
-  }
+  // 현재 입력된 contextTrigger 문자열을 분해/trim하여 배열로 반환
+  const currentTriggers = form.contextTrigger
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean)
 
-  // ID 중복확인
-  async function handleCheckId() {
-    if (!form.id.trim()) {
-      showMessage('ID를 입력해주세요.', 'error')
-      return
+  // 트리거 체크박스 토글 (체크 시 추가, 해제 시 제거 및 문자열 재조립)
+  function handleTriggerToggle(triggerValue: string) {
+    let nextTriggers: string[]
+    if (currentTriggers.includes(triggerValue)) {
+      nextTriggers = currentTriggers.filter((t) => t !== triggerValue)
+    } else {
+      nextTriggers = [...currentTriggers, triggerValue]
     }
-    setIdCheckStatus('checking')
-    try {
-      const res = await apiClient.get<{ exists: boolean }>(
-        `/wisdom/check-id/${encodeURIComponent(form.id.trim())}`
-      )
-      if (res.exists) {
-        setIdCheckStatus('duplicated')
-        showMessage('이미 사용 중인 ID입니다.', 'error')
-      } else {
-        setIdCheckStatus('available')
-        showMessage('사용 가능한 ID입니다.', 'info')
-      }
-    } catch {
-      setIdCheckStatus('idle')
-      showMessage('ID 중복 확인 중 오류가 발생했습니다.', 'error')
-    }
-  }
-
-  // 키워드 태그 추가
-  function handleAddKeyword() {
-    const trimmed = keywordInput.trim().replace(/^#/, '')
-    if (!trimmed) return
-    if (keywords.includes(trimmed)) {
-      showMessage('이미 추가된 키워드입니다.', 'warning')
-      setKeywordInput('')
-      return
-    }
-    setKeywords([...keywords, trimmed])
-    setKeywordInput('')
-  }
-
-  // 키워드 태그 제거
-  function handleRemoveKeyword(index: number) {
-    setKeywords(keywords.filter((_, i) => i !== index))
+    setForm((f) => ({
+      ...f,
+      contextTrigger: nextTriggers.join(', '),
+    }))
   }
 
   // 등록 저장
@@ -139,13 +97,12 @@ export default function WisdomRegisterPage() {
     setSaving(true)
     try {
       await apiClient.post('/wisdom', {
-        id: form.id.trim() || undefined,
         domain: form.domain.trim(),
         category: form.category.trim(),
         document: form.document.trim(),
         authorSource: form.authorSource.trim() || null,
         contextTrigger: form.contextTrigger.trim() || null,
-        keywords: keywords.length > 0 ? keywords : null,
+        keywords: parsedKeywords.length > 0 ? parsedKeywords : null,
       })
       showMessage('격언이 성공적으로 등록되었습니다.', 'info')
       navigate('/wisdom')
@@ -157,6 +114,9 @@ export default function WisdomRegisterPage() {
   }
 
   const categoryPresets = DEFAULT_CATEGORIES[form.domain] || []
+  const triggerPresets = CONTEXT_TRIGGER_PRESETS.filter(
+    (t) => t.group === form.domain.toUpperCase()
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -170,7 +130,7 @@ export default function WisdomRegisterPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">새 격언 등록</h1>
             <p className="text-xs text-gray-500">
-              KimsWeb 및 시스템에서 활용될 명언/격언 데이터를 등록합니다.
+              KimsWeb 및 시스템에서 활용될 명언/격언 데이터를 등록합니다. (ID는 자동 채번됩니다)
             </p>
           </div>
         </div>
@@ -237,60 +197,7 @@ export default function WisdomRegisterPage() {
             />
           </div>
 
-          {/* 3. 격언 ID */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-sm font-semibold text-gray-700">
-                격언 고유 ID
-                <span className="text-xs text-gray-400 font-normal ml-2">
-                  (비워둘 경우 자동 생성)
-                </span>
-              </label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleGenerateId}
-                className="h-7 text-xs text-indigo-600 border-indigo-200"
-              >
-                <Sparkles className="w-3.5 h-3.5 mr-1" />
-                자동 채번
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="예: quote_001, prv_001"
-                value={form.id}
-                onChange={(e) => {
-                  setForm((f) => ({ ...f, id: e.target.value }))
-                  setIdCheckStatus('idle')
-                }}
-                className="font-mono text-sm"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleCheckId}
-                disabled={!form.id.trim() || idCheckStatus === 'checking'}
-                className="shrink-0"
-              >
-                중복확인
-              </Button>
-            </div>
-            {idCheckStatus === 'available' && (
-              <p className="text-xs text-emerald-600 flex items-center gap-1 mt-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> 사용 가능한 ID입니다.
-              </p>
-            )}
-            {idCheckStatus === 'duplicated' && (
-              <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                <XCircle className="w-3.5 h-3.5" /> 이미 사용 중인 ID입니다.
-              </p>
-            )}
-          </div>
-
-          {/* 4. 본문 (Document) */}
+          {/* 3. 본문 (Document) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               격언 / 명언 본문 <span className="text-red-500">*</span>
@@ -304,7 +211,7 @@ export default function WisdomRegisterPage() {
             />
           </div>
 
-          {/* 5. 출처 / 작성자 (Author Source) */}
+          {/* 4. 출처 / 작성자 (Author Source) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               출처 / 작성자 / 인물
@@ -319,13 +226,57 @@ export default function WisdomRegisterPage() {
             />
           </div>
 
-          {/* 6. 상황 / 감정 트리거 (Context Trigger) */}
+          {/* 5. 상황 / 감정 트리거 (Context Trigger) - 체크박스 + 타이핑 */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              상황 / 감정 트리거 (Context Trigger)
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700">
+                상황 / 감정 트리거 (Context Trigger)
+              </label>
+              <span className="text-xs text-gray-400">
+                체크박스 선택 또는 직접 입력
+              </span>
+            </div>
+
+            {/* 도메인에 해당하는 추천 트리거 체크박스 목록 */}
+            {triggerPresets.length > 0 && (
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 mb-2">
+                <div className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1">
+                  <Zap className="w-3.5 h-3.5 text-amber-500" />
+                  {form.domain} 추천 트리거 태그 (클릭 시 토글):
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {triggerPresets.map((t) => {
+                    const isChecked = currentTriggers.includes(t.value)
+                    return (
+                      <button
+                        type="button"
+                        key={t.value}
+                        onClick={() => handleTriggerToggle(t.value)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                          isChecked
+                            ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
+                        {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                        <span>{t.label}</span>
+                        <span
+                          className={`text-[10px] font-mono ${
+                            isChecked ? 'text-amber-100' : 'text-gray-400'
+                          }`}
+                        >
+                          ({t.value})
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 트리거 직접 입력창 */}
             <Input
-              placeholder="예: burnout, lethargy, overtrading, bear_market (쉼표로 구분)"
+              placeholder="예: burnout, lethargy, overtrading (콤마로 구분)"
               value={form.contextTrigger}
               onChange={(e) =>
                 setForm((f) => ({ ...f, contextTrigger: e.target.value }))
@@ -337,54 +288,33 @@ export default function WisdomRegisterPage() {
             </p>
           </div>
 
-          {/* 7. 키워드 태그 (Keywords) */}
+          {/* 6. 키워드 태그 (Keywords) - 콤마(,) 구분 입력 */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               키워드 태그 (Keywords)
             </label>
-            <div className="flex gap-2 mb-2">
-              <div className="relative flex-1">
-                <Tag className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
-                <Input
-                  placeholder="키워드 입력 후 Enter 또는 추가 버튼 클릭"
-                  value={keywordInput}
-                  onChange={(e) => setKeywordInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      handleAddKeyword()
-                    }
-                  }}
-                  className="pl-9 text-sm"
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddKeyword}
-                className="shrink-0"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                추가
-              </Button>
+            <div className="relative mb-2">
+              <Tag className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+              <Input
+                placeholder="콤마(,)로 구분하여 입력 (예: 말조심, 근신, 구화지문, 침묵)"
+                value={keywordText}
+                onChange={(e) => setKeywordText(e.target.value)}
+                className="pl-9 text-sm"
+              />
             </div>
 
-            {keywords.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                {keywords.map((kw, idx) => (
+            {/* 분해된 태그 실시간 미리보기 */}
+            {parsedKeywords.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 p-2.5 bg-gray-50 rounded-lg border border-gray-200">
+                <span className="text-xs text-gray-400 mr-1 self-center">
+                  등록될 태그:
+                </span>
+                {parsedKeywords.map((kw, idx) => (
                   <span
                     key={idx}
-                    className="inline-flex items-center gap-1 bg-white px-2.5 py-1 rounded-md text-xs font-medium text-gray-700 border border-gray-300 shadow-2xs"
+                    className="inline-flex items-center bg-white px-2 py-0.5 rounded text-xs font-medium text-gray-700 border border-gray-300 shadow-2xs"
                   >
                     #{kw}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveKeyword(idx)}
-                      className="text-gray-400 hover:text-red-500"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
                   </span>
                 ))}
               </div>
@@ -400,8 +330,7 @@ export default function WisdomRegisterPage() {
               saving ||
               !form.domain.trim() ||
               !form.category.trim() ||
-              !form.document.trim() ||
-              idCheckStatus === 'duplicated'
+              !form.document.trim()
             }
           />
         </div>

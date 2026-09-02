@@ -134,4 +134,12 @@
         LIMIT 1
     </select>
 
+    <select id="selectMaxIdByPrefix" resultType="string">
+        SELECT id
+        FROM cms.wisdoms
+        WHERE id LIKE CONCAT(#{prefix}, '%')
+        ORDER BY length(id) DESC, id DESC
+        LIMIT 1
+    </select>
+
 </mapper>

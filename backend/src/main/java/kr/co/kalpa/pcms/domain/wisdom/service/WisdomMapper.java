@@ -34,4 +34,6 @@ public interface WisdomMapper {
             @Param("category") String category,
             @Param("contextTrigger") String contextTrigger
     );
+
+    String selectMaxIdByPrefix(@Param("prefix") String prefix);
 }

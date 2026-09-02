@@ -1,6 +1,8 @@
 /**
  * 1. 목적(용도):
  *    기존 격언(Wisdom) 데이터를 조회하여 내용을 수정하거나 삭제하는 페이지.
+ *    useTabParams로 탭 라우팅 파라미터를 안전하게 읽고,
+ *    키워드 콤마(,) 구분 입력 및 상황 트리거 체크박스 양방향 동기화를 지원함.
  *
  * 2. 사용법:
  *    React Router에 라우트로 연결하여 사용:
@@ -10,25 +12,27 @@
  *    없음 (페이지 컴포넌트)
  */
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTabParams } from '@/shared/layout/useTabParams'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { Quote, Tag, X, Plus, Clock } from 'lucide-react'
+import { Quote, Tag, Zap, Check, Clock } from 'lucide-react'
 import { useMessage } from '@/shared/hooks/useMessage'
 import ButtonsOfEdit from '@/shared/components/ButtonsOfEdit'
 import { formatDate } from '@/lib/utils'
 import {
   DEFAULT_DOMAINS,
   DEFAULT_CATEGORIES,
+  CONTEXT_TRIGGER_PRESETS,
   type Wisdom,
 } from '@/domain/wisdom/types/wisdom'
 
 export default function WisdomEditPage() {
-  const { id } = useParams<{ id: string }>()
+  const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showMessage } = useMessage()
@@ -42,8 +46,8 @@ export default function WisdomEditPage() {
     contextTrigger: '',
   })
 
-  const [keywords, setKeywords] = useState<string[]>([])
-  const [keywordInput, setKeywordInput] = useState('')
+  // 키워드 콤마 구분 문자열
+  const [keywordText, setKeywordText] = useState('')
 
   // 데이터 조회
   const { data, isLoading, isError } = useQuery<Wisdom>({
@@ -62,26 +66,34 @@ export default function WisdomEditPage() {
         authorSource: data.authorSource || '',
         contextTrigger: data.contextTrigger || '',
       })
-      setKeywords(data.keywords || [])
+      setKeywordText(data.keywords && data.keywords.length > 0 ? data.keywords.join(', ') : '')
     }
   }, [data])
 
-  // 키워드 태그 추가
-  function handleAddKeyword() {
-    const trimmed = keywordInput.trim().replace(/^#/, '')
-    if (!trimmed) return
-    if (keywords.includes(trimmed)) {
-      showMessage('이미 추가된 키워드입니다.', 'warning')
-      setKeywordInput('')
-      return
-    }
-    setKeywords([...keywords, trimmed])
-    setKeywordInput('')
-  }
+  // 키워드 문자열을 분해/trim하여 배열로 반환
+  const parsedKeywords = keywordText
+    .split(',')
+    .map((k) => k.trim().replace(/^#/, ''))
+    .filter(Boolean)
 
-  // 키워드 태그 삭제
-  function handleRemoveKeyword(index: number) {
-    setKeywords(keywords.filter((_, i) => i !== index))
+  // 현재 입력된 contextTrigger 문자열을 분해/trim하여 배열로 반환
+  const currentTriggers = form.contextTrigger
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean)
+
+  // 트리거 체크박스 토글 (체크 시 추가, 해제 시 제거 및 문자열 재조립)
+  function handleTriggerToggle(triggerValue: string) {
+    let nextTriggers: string[]
+    if (currentTriggers.includes(triggerValue)) {
+      nextTriggers = currentTriggers.filter((t) => t !== triggerValue)
+    } else {
+      nextTriggers = [...currentTriggers, triggerValue]
+    }
+    setForm((f) => ({
+      ...f,
+      contextTrigger: nextTriggers.join(', '),
+    }))
   }
 
   // 수정 저장
@@ -109,7 +121,7 @@ export default function WisdomEditPage() {
         document: form.document.trim(),
         authorSource: form.authorSource.trim() || null,
         contextTrigger: form.contextTrigger.trim() || null,
-        keywords: keywords.length > 0 ? keywords : null,
+        keywords: parsedKeywords.length > 0 ? parsedKeywords : null,
       })
       showMessage('격언이 성공적으로 수정되었습니다.', 'info')
       queryClient.invalidateQueries({ queryKey: ['wisdom-list'] })
@@ -152,7 +164,7 @@ export default function WisdomEditPage() {
       <div className="min-h-screen bg-gray-50">
         <Toolbar />
         <main className="container mx-auto px-4 py-6 text-center text-red-500">
-          격언 정보를 찾을 수 없습니다.
+          격언 정보를 찾을 수 없습니다. (ID: {id ?? '없음'})
           <div className="mt-4">
             <Button variant="outline" onClick={() => navigate('/wisdom')}>
               목록으로 돌아가기
@@ -164,6 +176,9 @@ export default function WisdomEditPage() {
   }
 
   const categoryPresets = DEFAULT_CATEGORIES[form.domain] || []
+  const triggerPresets = CONTEXT_TRIGGER_PRESETS.filter(
+    (t) => t.group === form.domain.toUpperCase()
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -287,13 +302,57 @@ export default function WisdomEditPage() {
             />
           </div>
 
-          {/* 5. 상황 / 감정 트리거 (Context Trigger) */}
+          {/* 5. 상황 / 감정 트리거 (Context Trigger) - 체크박스 + 타이핑 */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              상황 / 감정 트리거 (Context Trigger)
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700">
+                상황 / 감정 트리거 (Context Trigger)
+              </label>
+              <span className="text-xs text-gray-400">
+                체크박스 선택 또는 직접 입력
+              </span>
+            </div>
+
+            {/* 도메인에 해당하는 추천 트리거 체크박스 목록 */}
+            {triggerPresets.length > 0 && (
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 mb-2">
+                <div className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1">
+                  <Zap className="w-3.5 h-3.5 text-amber-500" />
+                  {form.domain} 추천 트리거 태그 (클릭 시 토글):
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {triggerPresets.map((t) => {
+                    const isChecked = currentTriggers.includes(t.value)
+                    return (
+                      <button
+                        type="button"
+                        key={t.value}
+                        onClick={() => handleTriggerToggle(t.value)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                          isChecked
+                            ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
+                        {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                        <span>{t.label}</span>
+                        <span
+                          className={`text-[10px] font-mono ${
+                            isChecked ? 'text-amber-100' : 'text-gray-400'
+                          }`}
+                        >
+                          ({t.value})
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 트리거 직접 입력창 */}
             <Input
-              placeholder="예: burnout, lethargy, overtrading, bear_market (쉼표로 구분)"
+              placeholder="예: burnout, lethargy, overtrading (콤마로 구분)"
               value={form.contextTrigger}
               onChange={(e) =>
                 setForm((f) => ({ ...f, contextTrigger: e.target.value }))
@@ -305,54 +364,33 @@ export default function WisdomEditPage() {
             </p>
           </div>
 
-          {/* 6. 키워드 태그 (Keywords) */}
+          {/* 6. 키워드 태그 (Keywords) - 콤마(,) 구분 입력 */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               키워드 태그 (Keywords)
             </label>
-            <div className="flex gap-2 mb-2">
-              <div className="relative flex-1">
-                <Tag className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
-                <Input
-                  placeholder="키워드 입력 후 Enter 또는 추가 버튼 클릭"
-                  value={keywordInput}
-                  onChange={(e) => setKeywordInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      handleAddKeyword()
-                    }
-                  }}
-                  className="pl-9 text-sm"
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddKeyword}
-                className="shrink-0"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                추가
-              </Button>
+            <div className="relative mb-2">
+              <Tag className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+              <Input
+                placeholder="콤마(,)로 구분하여 입력 (예: 말조심, 근신, 구화지문, 침묵)"
+                value={keywordText}
+                onChange={(e) => setKeywordText(e.target.value)}
+                className="pl-9 text-sm"
+              />
             </div>
 
-            {keywords.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                {keywords.map((kw, idx) => (
+            {/* 분해된 태그 실시간 미리보기 */}
+            {parsedKeywords.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 p-2.5 bg-gray-50 rounded-lg border border-gray-200">
+                <span className="text-xs text-gray-400 mr-1 self-center">
+                  등록될 태그:
+                </span>
+                {parsedKeywords.map((kw, idx) => (
                   <span
                     key={idx}
-                    className="inline-flex items-center gap-1 bg-white px-2.5 py-1 rounded-md text-xs font-medium text-gray-700 border border-gray-300 shadow-2xs"
+                    className="inline-flex items-center bg-white px-2 py-0.5 rounded text-xs font-medium text-gray-700 border border-gray-300 shadow-2xs"
                   >
                     #{kw}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveKeyword(idx)}
-                      className="text-gray-400 hover:text-red-500"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
                   </span>
                 ))}
               </div>

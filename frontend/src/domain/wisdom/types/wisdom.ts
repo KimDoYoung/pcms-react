@@ -66,3 +66,24 @@ export const DEFAULT_CATEGORIES: Record<string, { value: string; label: string }
     { value: 'VOLUME', label: '거래량/수급 (VOLUME)' },
   ],
 }
+
+export const CONTEXT_TRIGGER_PRESETS = [
+  // LIFE (인생/인문)
+  { value: 'burnout', label: '번아웃', group: 'LIFE' },
+  { value: 'lethargy', label: '무기력', group: 'LIFE' },
+  { value: 'procrastination', label: '미루기/나태', group: 'LIFE' },
+  { value: 'anger', label: '분노/화', group: 'LIFE' },
+  { value: 'conflict', label: '갈등/대립', group: 'LIFE' },
+  { value: 'gossip', label: '말실수/소문', group: 'LIFE' },
+  { value: 'loneliness', label: '외로움/고독', group: 'LIFE' },
+  { value: 'relationship', label: '인간관계 고민', group: 'LIFE' },
+  { value: 'gratitude', label: '감사/겸손', group: 'LIFE' },
+  // STOCK (주식/투자)
+  { value: 'overtrading', label: '잦은매매/뇌동매매', group: 'STOCK' },
+  { value: 'bear_market', label: '약세장/하락장', group: 'STOCK' },
+  { value: 'loss_streak', label: '연속 손실', group: 'STOCK' },
+  { value: 'credit_ratio_high', label: '신용과열/레버리지', group: 'STOCK' },
+  { value: 'overheated_market', label: '시장 과열', group: 'STOCK' },
+  { value: 'profit_target_reached', label: '목표수익 도달', group: 'STOCK' },
+  { value: 'greed_control', label: '탐욕 제어/익절', group: 'STOCK' },
+] as const

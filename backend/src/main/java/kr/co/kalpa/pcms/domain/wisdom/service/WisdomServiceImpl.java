@@ -139,7 +139,30 @@ public class WisdomServiceImpl implements WisdomService {
         } else {
             prefix = "wsd_";
         }
-        return prefix + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+
+        String maxId = wisdomMapper.selectMaxIdByPrefix(prefix);
+        if (maxId != null && maxId.startsWith(prefix)) {
+            String numPart = maxId.substring(prefix.length());
+            try {
+                int nextSeq = Integer.parseInt(numPart) + 1;
+                String generated = prefix + String.format("%03d", nextSeq);
+                if (wisdomMapper.existsById(generated) == 0) {
+                    return generated;
+                }
+            } catch (NumberFormatException ignored) {
+                // 숫자가 아니면 아래 random fallback으로 진행
+            }
+        }
+
+        // 초기 번호 quote_001 또는 prv_001 시도
+        String firstId = prefix + "001";
+        if (wisdomMapper.existsById(firstId) == 0) {
+            return firstId;
+        }
+
+        // fallback: 중복 방지 난수
+        String uuidSuffix = UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+        return prefix + uuidSuffix;
     }
 
     private WisdomDto toDto(Wisdom wisdom) {

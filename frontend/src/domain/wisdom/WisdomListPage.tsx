@@ -166,6 +166,31 @@ export default function WisdomListPage() {
     }
   }
 
+  function getCardColorClass(category: string, domain: string): string {
+    const cat = category?.toUpperCase() || ''
+    switch (cat) {
+      case 'MINDSET':
+      case 'MOTIVATION':
+        return 'bg-sky-50/70 border-sky-200/80 hover:border-sky-300'
+      case 'HAPPINESS':
+      case 'RELATIONSHIP':
+        return 'bg-rose-50/70 border-rose-200/80 hover:border-rose-300'
+      case 'RISK':
+      case 'COMMUNICATION':
+        return 'bg-amber-50/70 border-amber-200/80 hover:border-amber-300'
+      case 'TIMING':
+      case 'HABIT':
+        return 'bg-emerald-50/70 border-emerald-200/80 hover:border-emerald-300'
+      case 'PORTFOLIO':
+      case 'VOLUME':
+        return 'bg-purple-50/70 border-purple-200/80 hover:border-purple-300'
+      default:
+        return domain?.toUpperCase() === 'STOCK'
+          ? 'bg-blue-50/60 border-blue-200/70 hover:border-blue-300'
+          : 'bg-teal-50/60 border-teal-200/70 hover:border-teal-300'
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Toolbar />
@@ -182,15 +207,6 @@ export default function WisdomListPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleFetchRandom}
-              className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
-            >
-              <Sparkles className="w-4 h-4 mr-1.5" />
-              랜덤 격언
-            </Button>
             <Button
               variant="action"
               size="sm"
@@ -331,31 +347,26 @@ export default function WisdomListPage() {
             {data.dtoList.map((item) => (
               <div
                 key={item.id}
-                className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col justify-between"
+                className={`group rounded-xl border shadow-2xs hover:shadow-md transition-all p-5 flex flex-col justify-between ${getCardColorClass(
+                  item.category,
+                  item.domain
+                )}`}
               >
-                {/* 상단 뱃지 & ID & 액션 */}
+                {/* 상단 뱃지 & Hover 시 나타나는 액션 버튼 */}
                 <div>
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-semibold border ${getDomainBadgeColor(
-                          item.domain
-                        )}`}
-                      >
-                        {item.domain}
-                      </span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-medium">
-                        {item.category}
-                      </span>
-                      <span className="text-xs font-mono text-gray-400">
-                        #{item.id}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${getDomainBadgeColor(
+                        item.domain
+                      )}`}
+                    >
+                      {item.domain}
+                    </span>
+                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <button
                         title="복사"
                         onClick={() => handleCopy(item)}
-                        className="p-1 text-gray-400 hover:text-indigo-600 rounded transition-colors"
+                        className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-white/80 rounded-md transition-colors"
                       >
                         {copiedId === item.id ? (
                           <Check className="w-4 h-4 text-emerald-600" />
@@ -368,14 +379,14 @@ export default function WisdomListPage() {
                         onClick={() =>
                           navigate(`/wisdom/${encodeURIComponent(item.id)}/edit`)
                         }
-                        className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors"
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-white/80 rounded-md transition-colors"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         title="삭제"
                         onClick={() => handleDelete(item.id)}
-                        className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors"
+                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-white/80 rounded-md transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -391,24 +402,14 @@ export default function WisdomListPage() {
 
                   {/* 출처 / 작성자 */}
                   {item.authorSource && (
-                    <p className="text-xs text-gray-500 font-medium text-right mb-3">
+                    <p className="text-xs text-gray-600 font-medium text-right mb-3">
                       — {item.authorSource}
                     </p>
                   )}
                 </div>
 
-                {/* 하단 메타정보: 트리거, 키워드, 수정일 */}
-                <div className="pt-3 border-t border-gray-100 space-y-2 text-xs">
-                  {/* 트리거 */}
-                  {item.contextTrigger && (
-                    <div className="flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-1 rounded">
-                      <Zap className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate font-mono">
-                        {item.contextTrigger}
-                      </span>
-                    </div>
-                  )}
-
+                {/* 하단 메타정보: 키워드, 수정일 */}
+                <div className="pt-3 border-t border-black/5 space-y-2 text-xs">
                   {/* 키워드 태그들 */}
                   {item.keywords && item.keywords.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1">
@@ -416,7 +417,7 @@ export default function WisdomListPage() {
                       {item.keywords.map((kw, idx) => (
                         <span
                           key={idx}
-                          className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[11px]"
+                          className="bg-white/70 text-gray-700 px-1.5 py-0.5 rounded text-[11px] border border-black/5"
                         >
                           #{kw}
                         </span>
