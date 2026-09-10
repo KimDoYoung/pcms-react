@@ -10,6 +10,7 @@ import { formatCount, formatDate, formatYmd } from '@/lib/utils'
 import { format } from 'date-fns'
 import type { DiaryListDto, DiaryPageResponse } from '@/domain/diary/types/diary'
 import {  DateRangeSetter } from '@/shared/components/DateRangeSetter'
+import { MyDatePicker } from '@/shared/components/MyDatePicker'
 
 const PAGE_SIZE = 10
 
@@ -154,22 +155,22 @@ export default function DiaryPage() {
           <div className="grid grid-cols-2 sm:flex sm:items-center gap-3">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <label className="text-xs text-gray-500 shrink-0">시작일</label>
-              <Input
-                type="date"
+              <MyDatePicker
                 value={form.startYmd}
-                onChange={(e) => setForm((f) => ({ ...f, startYmd: e.target.value }))}
+                onChange={(val) => setForm((f) => ({ ...f, startYmd: val }))}
                 onKeyDown={handleKeyDown}
-                className="text-sm"
+                className="text-sm w-full sm:w-36"
+                placeholder="시작일"
               />
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <label className="text-xs text-gray-500 shrink-0">종료일</label>
-              <Input
-                type="date"
+              <MyDatePicker
                 value={form.endYmd}
-                onChange={(e) => setForm((f) => ({ ...f, endYmd: e.target.value }))}
+                onChange={(val) => setForm((f) => ({ ...f, endYmd: val }))}
                 onKeyDown={handleKeyDown}
-                className="text-sm"
+                className="text-sm w-full sm:w-36"
+                placeholder="종료일"
               />
             </div>
           </div>
