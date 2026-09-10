@@ -15,7 +15,7 @@
  *   - value: string - 현재 마크다운 내용
  *   - onChange: (value: string) => void - 내용 변경 콜백
  *   - onSave?: () => void - Ctrl+S 저장 콜백
- *   - onOpenMedia?: () => void - Ctrl+Shift+V 비디오/오디오/유튜브 모달 열기
+ *   - onOpenMedia?: () => void - Ctrl+Shift+V 비디오/오디오/유튜브/스티커 모달 열기
  *   - onOpenAssetPicker?: (atype, position) => void - Ctrl+1~4 에셋 팝업 열기
  *   - textareaRef?: 외부에서 textarea DOM 접근용 ref (스크롤 동기화 등)
  *

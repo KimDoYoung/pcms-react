@@ -100,6 +100,25 @@ public class FileController {
         }
     }
 
+    @PostMapping(value = "/stickers", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadStickers(
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam(value = "tag", required = false) String tag) {
+        try {
+            List<CmsFile> savedList = fileUploadService.uploadStickers(files, tag);
+            return ResponseEntity.ok(savedList.stream().map(saved -> Map.of(
+                "fileId", saved.getFileId(),
+                "orgFileName", saved.getOrgFileName(),
+                "mimeType", saved.getMimeType() != null ? saved.getMimeType() : "",
+                "fileSize", saved.getFileSize(),
+                "tag", saved.getTag() != null ? saved.getTag() : "",
+                "fileCategory", saved.getFileCategory() != null ? saved.getFileCategory() : "STICKER"
+            )).toList());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
     @GetMapping("/stickers")
     public ResponseEntity<List<CmsFile>> getStickers(
             @RequestParam(value = "keyword", required = false) String keyword) {

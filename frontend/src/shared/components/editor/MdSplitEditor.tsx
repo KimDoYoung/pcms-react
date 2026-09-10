@@ -324,7 +324,10 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
         open={mediaOpen}
         onClose={() => setMediaOpen(false)}
         onSelect={(payload: MediaSelectPayload) => {
-          const url = payload.type === 'youtube' ? `https://www.youtube.com/watch?v=${payload.ytId}` : payload.url
+          let url = payload.type === 'youtube' ? `https://www.youtube.com/watch?v=${payload.ytId}` : payload.url
+          if (payload.wrap && payload.wrap !== 'none') {
+            url += `#wrap-${payload.wrap}`
+          }
           const markdown = `![${payload.label}](${url})\n`
           editorRef.current?.insertText(markdown, markdown.length, 0)
           setMediaOpen(false)

@@ -1,6 +1,7 @@
 /**
  * 목적: 마크다운 에디터 및 본문에서 사용할 수 있는 작은 이미지(PNG, SVG, 주식 짤, 스티커 등)를
- *       업로드/삭제/조회하고 태그 및 파일명을 변경하며 마크다운 삽입 태그를 복사하는 관리 패널.
+ *       다중 업로드(multi file upload, 드래그 앤 드롭 지원)/삭제/조회하고 태그 및 파일명을 변경하며
+ *       마크다운 삽입 태그를 복사하는 관리 패널.
  *       갤러리 카드 뷰와 AG Grid 테이블 뷰를 모두 지원하여 시각적 확인과 데이터 관리를 동시에 제공한다.
  *
  * 사용법:
@@ -50,6 +51,7 @@ function getExt(filename: string): string {
 export default function StickerManagePanel() {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
   const [uploading, setUploading] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
   const [uploadTag, setUploadTag] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
@@ -82,37 +84,29 @@ export default function StickerManagePanel() {
     ? items.filter((item) => item.tag && item.tag.toLowerCase().includes(selectedTag.toLowerCase()))
     : items
 
-  async function handleUpload(files: FileList | null) {
+  async function handleUpload(files: FileList | File[] | null) {
     if (!files || files.length === 0) return
     setUploading(true)
-    let successCount = 0
-    let failCount = 0
-
+    const formData = new FormData()
     for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      const formData = new FormData()
-      formData.append('file', file)
-      if (uploadTag.trim()) {
-        formData.append('tag', uploadTag.trim())
-      }
-      try {
-        await apiClient.post('/files/sticker', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-        successCount++
-      } catch {
-        failCount++
-      }
+      formData.append('files', files[i])
+    }
+    if (uploadTag.trim()) {
+      formData.append('tag', uploadTag.trim())
     }
 
-    queryClient.invalidateQueries({ queryKey: ['stickers'] })
-    queryClient.invalidateQueries({ queryKey: ['sticker-tags'] })
-    setUploading(false)
-
-    if (failCount === 0) {
-      showMessage(`${successCount}개 파일이 업로드되었습니다.`, 'success')
-    } else {
-      showMessage(`${successCount}개 업로드 완료, ${failCount}개 실패 (PNG, SVG, WEBP, GIF, JPG 지원)`, 'error')
+    try {
+      await apiClient.post('/files/stickers', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      queryClient.invalidateQueries({ queryKey: ['stickers'] })
+      queryClient.invalidateQueries({ queryKey: ['sticker-tags'] })
+      showMessage(`${files.length}개 파일이 업로드되었습니다.`, 'success')
+      setUploadTag('')
+    } catch {
+      showMessage('업로드 중 오류가 발생했습니다. (PNG, SVG, WEBP, GIF, JPG 다중 지원)', 'error')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -340,18 +334,34 @@ export default function StickerManagePanel() {
         </div>
       </div>
 
-      {/* 업로드 존 */}
-      <div className="p-4 border-2 border-dashed border-amber-300 rounded-lg bg-amber-50/50 flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* 업로드 존 (드래그 앤 드롭 및 다중 파일 지원) */}
+      <div
+        onDragOver={(e) => {
+          e.preventDefault()
+          setIsDragging(true)
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault()
+          setIsDragging(false)
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleUpload(e.dataTransfer.files)
+          }
+        }}
+        className={`p-4 border-2 border-dashed rounded-lg transition-colors flex flex-col md:flex-row items-center justify-between gap-4 ${
+          isDragging ? 'border-amber-500 bg-amber-100/70' : 'border-amber-300 bg-amber-50/50'
+        }`}
+      >
         <div className="flex items-center gap-3">
           <div className="p-3 bg-amber-100 rounded-full text-amber-600">
             <Upload className="w-5 h-5" />
           </div>
           <div>
             <p className="text-sm font-medium text-gray-800">
-              새 스티커/짤 업로드 (PNG, SVG, WEBP, GIF, JPG 다중 지원)
+              새 스티커/짤 업로드 (드래그 앤 드롭 & 다중 파일 지원)
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
-              투명 배경의 SVG나 작은 PNG 파일도 선명하게 보관됩니다.
+              PNG, SVG, WEBP, GIF, JPG 파일을 여러 개 드래그하여 놓거나 선택해 일괄 업로드할 수 있습니다.
             </p>
           </div>
         </div>
@@ -378,7 +388,9 @@ export default function StickerManagePanel() {
             accept="image/png,image/svg+xml,image/webp,image/gif,image/jpeg"
             className="hidden"
             onChange={(e) => {
-              handleUpload(e.target.files)
+              if (e.target.files && e.target.files.length > 0) {
+                handleUpload(e.target.files)
+              }
               e.target.value = ''
             }}
           />

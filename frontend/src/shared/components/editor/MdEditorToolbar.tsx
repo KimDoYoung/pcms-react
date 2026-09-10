@@ -18,7 +18,7 @@
  * props:
  *   - editorRef: MdTextarea의 forwardRef 핸들(MdTextareaHandle) - 서식 액션/텍스트 삽입에 사용
  *   - previewOpen / setPreviewOpen: 미리보기 패널 토글 상태
- *   - onOpenMedia: 비디오/오디오/유튜브 삽입 모달을 여는 콜백(모달 자체는 MdSplitEditor가 소유)
+ *   - onOpenMedia: 비디오/오디오/유튜브/스티커 삽입 모달을 여는 콜백(모달 자체는 MdSplitEditor가 소유)
  *   - onOpenAssetPicker: (atype, e) → MdSplitEditor가 picker 팝업 위치/상태를 관리
  *   - value: 현재 마크다운 내용 (복사/ZIP 내보내기에 사용)
  *   - onImportContent: ZIP 가져오기 후 에디터 내용 교체 콜백
@@ -34,7 +34,7 @@ import { format } from 'date-fns'
 import {
   Bold, Italic, Strikethrough, Heading, List, ListOrdered, Quote, Link2,
   Baseline, Highlighter, Image as ImageIcon, Video, Eye, EyeOff, HelpCircle, X,
-  FileText, Layout, Copy, Download, Upload, FileCode, Sparkles,
+  FileText, Layout, Copy, Download, Upload, FileCode, Sparkles, WrapText,
 } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { ROTATE_TEXT_COLORS, ROTATE_BG_COLORS } from '@/shared/components/editor/editorColors'
@@ -458,8 +458,11 @@ ${CODE_COPY_SCRIPT}
         </button>
       )}
 
-      {/* 비디오/오디오/유튜브 삽입 */}
-      {btn(<Video className="w-4 h-4" />, onOpenMedia, '비디오·오디오·유튜브 삽입 (Ctrl+Shift+V)')}
+      {/* 비디오/오디오/유튜브/스티커 삽입 */}
+      {btn(<Video className="w-4 h-4" />, onOpenMedia, '미디어·스티커 삽입 (Ctrl+Shift+V)')}
+
+      {/* 텍스트 감싸기 해제 */}
+      {btn(<WrapText className="w-4 h-4" />, () => editorRef.current?.insertText('\n<div class="clear-wrap"></div>\n'), '텍스트 감싸기 해제 (새 줄 시작)')}
 
       <span className="w-px self-stretch bg-gray-200 mx-0.5" />
 
@@ -552,7 +555,7 @@ ${CODE_COPY_SCRIPT}
                     ['글자색 순환', 'Ctrl+.'],
                     ['배경색 순환', 'Ctrl+/'],
                     ['줄 바꿈(<br/>)', 'Ctrl+Enter'],
-                    ['비디오/오디오/유튜브 삽입', 'Ctrl+Shift+V'],
+                    ['미디어/스티커 삽입', 'Ctrl+Shift+V'],
                     ['kbd 태그 감싸기', 'Ctrl+Shift+K'],
                     ['불여넣기(&nbsp;)', 'Ctrl+Space'],
                     ['들여쓰기', 'Tab'],

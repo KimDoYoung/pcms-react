@@ -1,21 +1,23 @@
 /**
- * 목적: 인라인으로 배치 가능한 리사이징 이미지 TipTap 확장
+ * 목적: 인라인 배치 및 텍스트 감싸기(좌측/우측), 리사이징을 지원하는 TipTap 이미지 확장
  *
  * 사용법:
  *   ResizableInlineImage.configure({ allowBase64: true })
- *   editor.chain().focus().setImage({ src }).run()
+ *   editor.chain().focus().setImage({ src, wrap: 'left' }).run()
  *
  * props (node attributes):
  *   - src: 이미지 URL 또는 base64
  *   - alt: 대체 텍스트
  *   - title: 제목
  *   - width: 이미지 너비(px 숫자). null이면 원본 크기.
+ *   - wrap: 텍스트 감싸기 모드 ('none' | 'left' | 'right', 기본 'none')
  *
  * 특징:
- *   - NodeView 루트를 <span>(인라인 요소)으로 렌더링 → 같은 단락 내 이미지들이 나란히 배치됨
+ *   - NodeView 루트를 <span>으로 렌더링하며, wrap 속성에 따라 float: left / float: right / inline-block 적용
+ *   - 이미지 클릭 또는 호버 시 상단에 미니 플로팅 툴바(좌측 감싸기, 기본, 우측 감싸기, 삭제) 표시
  *   - 우측 하단 핸들을 드래그해 너비 조절 가능
- *   - 리사이징 중 stopEvent로 ProseMirror 이벤트 간섭 차단
- *   - width/height 없이 viewBox만 있는 SVG가 크기 0으로 사라지는 크로미움 버그 보정(로드 후 0이면 자연 크기로 명시 폭 지정)
+ *   - 리사이징 및 툴바 조작 중 stopEvent로 ProseMirror 이벤트 간섭 차단
+ *   - width/height 없이 viewBox만 있는 SVG가 크기 0으로 사라지는 크로미움 버그 보정
  */
 import Image from '@tiptap/extension-image'
 import { mergeAttributes } from '@tiptap/core'
@@ -35,6 +37,22 @@ const ResizableInlineImage = Image.extend({
         renderHTML: (attrs) =>
           attrs.width ? { width: attrs.width, style: `width: ${attrs.width}px` } : {},
       },
+      wrap: {
+        default: 'none',
+        parseHTML: (el) =>
+          el.getAttribute('data-wrap') || (el.style.float === 'left' ? 'left' : el.style.float === 'right' ? 'right' : 'none'),
+        renderHTML: (attrs) => {
+          if (!attrs.wrap || attrs.wrap === 'none') return {}
+          return {
+            'data-wrap': attrs.wrap,
+            style: attrs.wrap === 'left'
+              ? 'float: left; margin: 0.25rem 1rem 0.5rem 0;'
+              : attrs.wrap === 'right'
+              ? 'float: right; margin: 0.25rem 0 0.5rem 1rem;'
+              : '',
+          }
+        },
+      },
     }
   },
 
@@ -44,10 +62,19 @@ const ResizableInlineImage = Image.extend({
 
   addNodeView() {
     return ({ node, getPos, view }) => {
-      // <span>을 루트로 사용 → 인라인 요소이므로 같은 <p> 안에서 나란히 배치됨
+      const wrapMode = node.attrs.wrap || 'none'
       const wrapper = document.createElement('span')
-      wrapper.style.cssText =
-        'display: inline-block; position: relative; vertical-align: bottom; line-height: 0; cursor: default;'
+
+      const applyWrapperStyles = (currentWrap: string) => {
+        let baseStyle = 'display: inline-block; position: relative; vertical-align: bottom; line-height: 0; cursor: default;'
+        if (currentWrap === 'left') {
+          baseStyle = 'display: block; float: left; margin: 0.25rem 1rem 0.5rem 0; position: relative; line-height: 0; cursor: default; clear: left;'
+        } else if (currentWrap === 'right') {
+          baseStyle = 'display: block; float: right; margin: 0.25rem 0 0.5rem 1rem; position: relative; line-height: 0; cursor: default; clear: right;'
+        }
+        wrapper.style.cssText = baseStyle
+      }
+      applyWrapperStyles(wrapMode)
 
       const img = document.createElement('img')
       if (node.attrs.alt) img.alt = node.attrs.alt
@@ -60,10 +87,7 @@ const ResizableInlineImage = Image.extend({
       ]
         .filter(Boolean)
         .join('; ')
-      // width/height 속성 없이 viewBox만 있는 SVG는 절대 크기가 없어서, inline-block 래퍼 안에서
-      // max-width:100%만으로는 크기가 0으로 붕괴되는 크로미움 레이아웃 버그가 있음(래퍼의 shrink-to-fit
-      // 너비가 아직 안 정해진 상태라 퍼센트 max-width가 순환 참조가 됨). 로드 후 실제로 0이면
-      // 자연 크기로 명시 폭을 줘서 복구한다 — 절대 크기가 있는 PNG/JPG 등은 애초에 붕괴가 안 나므로 영향 없음.
+
       img.onload = () => {
         if (!node.attrs.width && img.offsetWidth === 0 && img.naturalWidth > 0) {
           img.style.width = `${img.naturalWidth}px`
@@ -81,30 +105,102 @@ const ResizableInlineImage = Image.extend({
         'cursor: nwse-resize; display: none; z-index: 10;'
       wrapper.appendChild(handle)
 
+      // 감싸기/삭제 미니 플로팅 툴바
+      const toolbar = document.createElement('div')
+      toolbar.style.cssText =
+        'position: absolute; top: -28px; left: 50%; transform: translateX(-50%);' +
+        'display: none; align-items: center; gap: 2px; background: rgba(17, 24, 39, 0.92);' +
+        'padding: 2px 4px; border-radius: 4px; z-index: 30; box-shadow: 0 2px 8px rgba(0,0,0,0.25);' +
+        'white-space: nowrap; user-select: none;'
+
+      const createBtn = (text: string, title: string, active: boolean, onClick: () => void) => {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.textContent = text
+        btn.title = title
+        btn.style.cssText =
+          `padding: 2px 6px; font-size: 11px; font-family: sans-serif; border: none; border-radius: 3px; cursor: pointer; ` +
+          (active
+            ? 'background: #4f46e5; color: white; font-weight: bold;'
+            : 'background: transparent; color: #d1d5db;')
+        btn.onmouseenter = () => { if (!active) btn.style.color = 'white' }
+        btn.onmouseleave = () => { if (!active) btn.style.color = '#d1d5db' }
+        btn.onclick = (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          onClick()
+        }
+        return btn
+      }
+
+      const renderToolbar = (currentWrap: string) => {
+        toolbar.innerHTML = ''
+        toolbar.appendChild(createBtn('👈 좌측', '텍스트 좌측 감싸기', currentWrap === 'left', () => setWrap('left')))
+        toolbar.appendChild(createBtn('⏹ 기본', '기본 (인라인)', currentWrap === 'none', () => setWrap('none')))
+        toolbar.appendChild(createBtn('👉 우측', '텍스트 우측 감싸기', currentWrap === 'right', () => setWrap('right')))
+        toolbar.appendChild(createBtn('🗑️', '이미지 삭제', false, () => removeNode()))
+      }
+
+      const setWrap = (newWrap: 'none' | 'left' | 'right') => {
+        if (typeof getPos === 'function') {
+          const pos = getPos()
+          if (pos !== undefined) {
+            view.dispatch(
+              view.state.tr.setNodeMarkup(pos, null, {
+                ...node.attrs,
+                wrap: newWrap,
+              }),
+            )
+          }
+        }
+      }
+
+      const removeNode = () => {
+        if (typeof getPos === 'function') {
+          const pos = getPos()
+          if (pos !== undefined) {
+            view.dispatch(view.state.tr.delete(pos, pos + node.nodeSize))
+          }
+        }
+      }
+
+      renderToolbar(node.attrs.wrap || 'none')
+      wrapper.appendChild(toolbar)
+
       let isResizing = false
       let startX = 0
       let startWidth = 0
 
-      const showHandle = () => {
+      const showUI = () => {
         handle.style.display = 'block'
+        renderToolbar(node.attrs.wrap || 'none')
+        toolbar.style.display = 'flex'
       }
-      const hideHandle = () => {
-        if (!isResizing) handle.style.display = 'none'
+      const hideUI = () => {
+        if (!isResizing) {
+          handle.style.display = 'none'
+          toolbar.style.display = 'none'
+        }
       }
 
-      wrapper.addEventListener('mouseenter', showHandle)
-      wrapper.addEventListener('mouseleave', hideHandle)
+      wrapper.addEventListener('mouseenter', showUI)
+      wrapper.addEventListener('mouseleave', hideUI)
+      img.addEventListener('click', (e) => {
+        e.stopPropagation()
+        showUI()
+      })
 
       handle.addEventListener('mousedown', (e) => {
         e.preventDefault()
         e.stopPropagation()
+
         isResizing = true
         startX = e.clientX
         startWidth = img.offsetWidth
 
-        const onMouseMove = (e: MouseEvent) => {
+        const onMouseMove = (moveEvent: MouseEvent) => {
           if (!isResizing) return
-          const newWidth = Math.max(40, startWidth + (e.clientX - startX))
+          const newWidth = Math.max(40, startWidth + (moveEvent.clientX - startX))
           img.style.width = `${newWidth}px`
         }
 
@@ -112,6 +208,7 @@ const ResizableInlineImage = Image.extend({
           if (!isResizing) return
           isResizing = false
           handle.style.display = 'none'
+          toolbar.style.display = 'none'
 
           if (typeof getPos === 'function') {
             const pos = getPos()
@@ -135,9 +232,8 @@ const ResizableInlineImage = Image.extend({
 
       return {
         dom: wrapper,
-        // 리사이징 핸들에서 발생한 이벤트만 ProseMirror에서 차단
         stopEvent(event) {
-          return handle.contains(event.target as Node)
+          return handle.contains(event.target as Node) || toolbar.contains(event.target as Node)
         },
       }
     }

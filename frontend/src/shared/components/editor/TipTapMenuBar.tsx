@@ -11,7 +11,7 @@
  *
  * 단축키: Ctrl+1(이모지) / Ctrl+2(특수문자) / Ctrl+.(글자색 순환) / Ctrl+/(배경색 순환)
  *         Ctrl+L(링크) / Ctrl+=,Ctrl+-(글자크기) / Ctrl+0(글자크기·글자색·배경색 초기화) / Ctrl+Shift+H(한자 변환)
- *         Ctrl+Shift+V(비디오·오디오·유튜브 삽입)
+ *         Ctrl+Shift+V(미디어·스티커 삽입)
  */
 import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react'
 import { useEditor } from '@tiptap/react'
@@ -495,12 +495,12 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
         <Sparkles className="w-4 h-4" />
       </button>
 
-      {/* 비디오/오디오/유튜브 삽입 */}
+      {/* 비디오/오디오/스티커/유튜브 삽입 */}
       <button
         type="button"
         onClick={() => setMediaOpen(true)}
         className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
-        title="비디오·오디오·유튜브 삽입 (Ctrl+Shift+V)"
+        title="미디어·스티커 삽입 (Ctrl+Shift+V)"
       >
         <Video className="w-4 h-4" />
       </button>
@@ -508,10 +508,21 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
         open={mediaOpen}
         onClose={() => setMediaOpen(false)}
         onSelect={(payload: MediaSelectPayload) => {
-          editor.chain().focus().insertContent({
-            type: 'mediaEmbed',
-            attrs: { mediaType: payload.type, src: payload.url, ytId: payload.ytId, label: payload.label },
-          }).run()
+          if (payload.type === 'sticker') {
+            editor.chain().focus().insertContent({
+              type: 'image',
+              attrs: {
+                src: payload.url,
+                alt: payload.label,
+                wrap: payload.wrap || 'none',
+              },
+            }).run()
+          } else {
+            editor.chain().focus().insertContent({
+              type: 'mediaEmbed',
+              attrs: { mediaType: payload.type, src: payload.url, ytId: payload.ytId, label: payload.label },
+            }).run()
+          }
           setMediaOpen(false)
         }}
       />

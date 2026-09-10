@@ -234,3 +234,35 @@
   height: 0.8rem;
   flex-shrink: 0;
 }
+
+/* 이미지/스티커 텍스트 감싸기 (Text Wrap) */
+.markdown-body img.img-wrap-left,
+.markdown-body [data-wrap="left"] {
+  float: left !important;
+  margin: 0.25rem 1rem 0.5rem 0 !important;
+  max-width: 48%;
+  clear: left;
+}
+
+.markdown-body img.img-wrap-right,
+.markdown-body [data-wrap="right"] {
+  float: right !important;
+  margin: 0.25rem 0 0.5rem 1rem !important;
+  max-width: 48%;
+  clear: right;
+}
+
+/* 텍스트 감싸기 해제 (Clearfix) */
+.markdown-body .clear-wrap {
+  clear: both !important;
+  display: block !important;
+  width: 100%;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.markdown-body hr {
+  clear: both;
+}

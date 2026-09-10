@@ -10,6 +10,7 @@
  *
  * 지원 확장 문법:
  *   - `![라벨](url)` 에서 url이 비디오/오디오 파일 확장자거나 유튜브 링크면 이미지 대신 토글형 미디어 카드로 렌더링.
+ *   - `![라벨](url#wrap-left)`, `![라벨](url#wrap-right)` 형태로 이미지 텍스트 감싸기(float left/right) 지원.
  *   - `` `색상코드:lucide아이콘명:텍스트` `` 형태의 인라인 코드는 색상 아이콘 뱃지로 렌더링 (3파트 아니면 일반 <code>).
  *   - 각 블록(h1~h3, 문단, 인용구, 목록, 표, 코드블록)에 data-source-line 속성을 심어 에디터-미리보기 줄 단위 스크롤 동기화에 사용.
  *
@@ -66,7 +67,7 @@ md.renderer.rules.fence = (tokens, idx, options, env, self) => (
   `</div>`
 )
 
-// --- 이미지 문법을 비디오/오디오/유튜브 카드로 확장 ---
+// --- 이미지 문법을 비디오/오디오/유튜브 카드 및 텍스트 감싸기(#wrap-left, #wrap-right)로 확장 ---
 const defaultImageRule = md.renderer.rules.image as RenderRule
 md.renderer.rules.image = (tokens, idx, options, env, self) => {
   const token = tokens[idx]
@@ -74,6 +75,19 @@ md.renderer.rules.image = (tokens, idx, options, env, self) => {
   const isYt = isYouTubeUrl(src)
   const isMedia = isYt || isVideoSource(src) || isAudioSource(src)
   if (!isMedia || !src) {
+    if (src) {
+      const hashIdx = src.indexOf('#')
+      if (hashIdx !== -1) {
+        const hash = src.slice(hashIdx + 1)
+        if (hash.includes('wrap-left')) {
+          const currentClass = token.attrGet('class') || ''
+          token.attrSet('class', (currentClass + ' img-wrap-left').trim())
+        } else if (hash.includes('wrap-right')) {
+          const currentClass = token.attrGet('class') || ''
+          token.attrSet('class', (currentClass + ' img-wrap-right').trim())
+        }
+      }
+    }
     return defaultImageRule(tokens, idx, options, env, self)
   }
 

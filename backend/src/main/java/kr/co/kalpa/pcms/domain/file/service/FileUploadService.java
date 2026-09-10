@@ -44,6 +44,11 @@ public interface FileUploadService {
     kr.co.kalpa.pcms.domain.file.entity.CmsFile uploadSticker(MultipartFile file, String tag);
 
     /**
+     * 여러 개의 스티커/작은 이미지를 일괄 저장한다.
+     */
+    List<kr.co.kalpa.pcms.domain.file.entity.CmsFile> uploadStickers(List<MultipartFile> files, String tag);
+
+    /**
      * 스티커 목록을 조회한다 (키워드/태그 검색 지원).
      */
     List<kr.co.kalpa.pcms.domain.file.entity.CmsFile> getStickers(String keyword);

@@ -227,6 +227,20 @@ public class FileUploadServiceImpl implements FileUploadService {
     }
 
     @Override
+    public List<CmsFile> uploadStickers(List<MultipartFile> files, String tag) {
+        if (files == null || files.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<CmsFile> savedList = new ArrayList<>();
+        for (MultipartFile file : files) {
+            if (file != null && !file.isEmpty()) {
+                savedList.add(uploadSticker(file, tag));
+            }
+        }
+        return savedList;
+    }
+
+    @Override
     public List<CmsFile> getStickers(String keyword) {
         return fileMapper.selectStickers(keyword);
     }
