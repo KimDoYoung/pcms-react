@@ -81,6 +81,45 @@ public class FileController {
         return ResponseEntity.ok(fileUploadService.getMediaFiles(prefix));
     }
 
+    @PostMapping(value = "/sticker", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadSticker(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "tag", required = false) String tag) {
+        try {
+            CmsFile saved = fileUploadService.uploadSticker(file, tag);
+            return ResponseEntity.ok(Map.of(
+                "fileId", saved.getFileId(),
+                "orgFileName", saved.getOrgFileName(),
+                "mimeType", saved.getMimeType() != null ? saved.getMimeType() : "",
+                "fileSize", saved.getFileSize(),
+                "tag", saved.getTag() != null ? saved.getTag() : "",
+                "fileCategory", saved.getFileCategory() != null ? saved.getFileCategory() : "STICKER"
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/stickers")
+    public ResponseEntity<List<CmsFile>> getStickers(
+            @RequestParam(value = "keyword", required = false) String keyword) {
+        return ResponseEntity.ok(fileUploadService.getStickers(keyword));
+    }
+
+    @GetMapping("/sticker-tags")
+    public ResponseEntity<List<String>> getStickerTags() {
+        return ResponseEntity.ok(fileUploadService.getStickerTags());
+    }
+
+    @PatchMapping("/{fileId}/tag")
+    public ResponseEntity<Map<String, Object>> updateStickerTag(
+            @PathVariable Long fileId,
+            @RequestBody Map<String, String> body) {
+        String newTag = body.getOrDefault("tag", "");
+        fileUploadService.updateStickerTag(fileId, newTag);
+        return ResponseEntity.ok(Map.of("fileId", fileId, "tag", newTag));
+    }
+
     @DeleteMapping("/{fileId}")
     public ResponseEntity<Void> deleteFile(@PathVariable Long fileId) {
         fileUploadService.deleteAttachments(List.of(fileId));

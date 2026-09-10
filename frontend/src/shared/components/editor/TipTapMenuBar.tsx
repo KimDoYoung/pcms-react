@@ -19,9 +19,11 @@ import {
   Bold, Italic, Strikethrough, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Baseline, Highlighter, Link2,
   Image as ImageIcon, Video, Table2, Columns2, Columns, Rows2, Rows, Trash2, RotateCcw,
+  Sparkles,
 } from 'lucide-react'
 import HanjaSearchModal from '@/shared/components/editor/HanjaSearchModal'
 import AssetPickerPopup from '@/shared/components/editor/AssetPickerPopup'
+import StickerPickerPopup from '@/shared/components/editor/StickerPickerPopup'
 import EmojiSearchModal from '@/shared/components/editor/EmojiSearchModal'
 import MediaSelectorModal, { type MediaSelectPayload } from '@/shared/components/editor/MediaSelectorModal'
 import { ROTATE_TEXT_COLORS, ROTATE_BG_COLORS, getNextColor } from '@/shared/components/editor/editorColors'
@@ -76,6 +78,7 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
   const [showColors, setShowColors] = useState(false)
   const [showBgColors, setShowBgColors] = useState(false)
   const [assetPopup, setAssetPopup] = useState<AssetPopupState | null>(null)
+  const [stickerPopup, setStickerPopup] = useState<{ position: { x: number; y: number } } | null>(null)
   const [showLinkPopover, setShowLinkPopover] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -101,6 +104,13 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
     const { from } = editor.state.selection
     const coords = editor.view.coordsAtPos(from)
     setAssetPopup({ atype, position: { x: coords.left, y: coords.bottom + 4 } })
+  }, [editor])
+
+  const openStickerPickerAtCaret = useCallback(() => {
+    if (!editor) return
+    const { from } = editor.state.selection
+    const coords = editor.view.coordsAtPos(from)
+    setStickerPopup({ position: { x: coords.left, y: coords.bottom + 4 } })
   }, [editor])
 
   const cycleTextColor = useCallback(() => {
@@ -155,6 +165,7 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
       if (!e.ctrlKey || e.shiftKey) return
       if (e.key === '1') { e.preventDefault(); openAssetPickerAtCaret('EMOJI') }
       else if (e.key === '2') { e.preventDefault(); openAssetPickerAtCaret('SYMBOL') }
+      else if (e.key === '5') { e.preventDefault(); openStickerPickerAtCaret() }
       else if (e.key === '.') { e.preventDefault(); e.stopPropagation(); cycleTextColor() }
       else if (e.key === '/') { e.preventDefault(); cycleBgColor() }
       else if (e.key.toLowerCase() === 'l') { e.preventDefault(); openLinkPopover() }
@@ -164,7 +175,7 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
     }
     document.addEventListener('keydown', onKeyDown, { capture: true })
     return () => document.removeEventListener('keydown', onKeyDown, { capture: true })
-  }, [editor, handleHanjaClick, openAssetPickerAtCaret, cycleTextColor, cycleBgColor, openLinkPopover, changeFontSize, resetFontSize])
+  }, [editor, handleHanjaClick, openAssetPickerAtCaret, openStickerPickerAtCaret, cycleTextColor, cycleBgColor, openLinkPopover, changeFontSize, resetFontSize])
 
   if (!editor) return null
 
@@ -178,6 +189,16 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
   function handleAssetSelect(value: string) {
     editor?.chain().focus().insertContent(value).run()
     setAssetPopup(null)
+  }
+
+  function handleStickerSelect(snippet: string) {
+    const match = snippet.match(/!\[(.*?)\]\((.*?)\)/)
+    if (match && match[2]) {
+      editor?.chain().focus().setImage({ src: match[2], alt: match[1] }).run()
+    } else {
+      editor?.chain().focus().insertContent(snippet).run()
+    }
+    setStickerPopup(null)
   }
 
   function openAssetPickerAt(atype: AssetType, e: React.MouseEvent<HTMLButtonElement>) {
@@ -358,6 +379,13 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
           }}
         />
       )}
+      {stickerPopup && (
+        <StickerPickerPopup
+          position={stickerPopup.position}
+          onSelect={handleStickerSelect}
+          onClose={() => setStickerPopup(null)}
+        />
+      )}
 
       {/* 링크 */}
       <Popover open={showLinkPopover} onOpenChange={setShowLinkPopover}>
@@ -453,6 +481,19 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
           e.target.value = ''
         }}
       />
+
+      {/* 스티커·짤 삽입 */}
+      <button
+        type="button"
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect()
+          setStickerPopup({ position: { x: rect.left, y: rect.bottom + 4 } })
+        }}
+        className="flex items-center justify-center p-1.5 rounded text-amber-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+        title="스티커·짤 삽입 (Ctrl+5)"
+      >
+        <Sparkles className="w-4 h-4" />
+      </button>
 
       {/* 비디오/오디오/유튜브 삽입 */}
       <button

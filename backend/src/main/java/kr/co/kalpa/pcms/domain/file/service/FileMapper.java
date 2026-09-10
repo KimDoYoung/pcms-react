@@ -19,6 +19,8 @@ public interface FileMapper {
     List<CmsFile> selectFilesByIds(@Param("fileIds") List<Long> fileIds);
     CmsFile selectFileById(@Param("fileId") Long fileId);
     List<CmsFile> selectFilesByMimePrefix(@Param("mimePrefix") String mimePrefix);
+    List<CmsFile> selectStickers(@Param("keyword") String keyword);
+    List<String> selectDistinctStickerTags();
     void deleteFileMatchByTarget(
             @Param("tableName") String tableName,
             @Param("targetId") Long targetId,
@@ -27,4 +29,5 @@ public interface FileMapper {
     void deleteFileMatchByFileIds(@Param("fileIds") List<Long> fileIds);
     void deleteFilesByIds(@Param("fileIds") List<Long> fileIds);
     void updateOrgFileName(@Param("fileId") Long fileId, @Param("orgFileName") String orgFileName);
+    void updateFileTag(@Param("fileId") Long fileId, @Param("tag") String tag);
 }

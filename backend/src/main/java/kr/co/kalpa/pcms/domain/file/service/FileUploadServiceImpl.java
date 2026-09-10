@@ -100,6 +100,7 @@ public class FileUploadServiceImpl implements FileUploadService {
                     .physicalFileName(physicalFileName)
                     .fileSize(file.getSize())
                     .mimeType(mimeType)
+                    .fileCategory("EDITOR")
                     .build();
             fileMapper.insertFile(cmsFile);
             
@@ -130,6 +131,7 @@ public class FileUploadServiceImpl implements FileUploadService {
                     .physicalFileName(physicalFileName)
                     .fileSize(file.getSize())
                     .mimeType(file.getContentType())
+                    .fileCategory("ATTACHMENT")
                     .build();
             fileMapper.insertFile(cmsFile);
             log.debug("attachment saved: {}/{}", folderPath, physicalFileName);
@@ -169,6 +171,7 @@ public class FileUploadServiceImpl implements FileUploadService {
                     .physicalFileName(physicalFileName)
                     .fileSize(file.getSize())
                     .mimeType(mimeType)
+                    .fileCategory("MEDIA")
                     .build();
             fileMapper.insertFile(cmsFile);
             log.debug("media saved: {}/{}", folderPath, physicalFileName);
@@ -181,6 +184,61 @@ public class FileUploadServiceImpl implements FileUploadService {
     @Override
     public List<CmsFile> getMediaFiles(String mimePrefix) {
         return fileMapper.selectFilesByMimePrefix(mimePrefix);
+    }
+
+    private static final List<String> ALLOWED_STICKER_EXTENSIONS =
+            List.of("png", "svg", "webp", "gif", "jpg", "jpeg");
+
+    @Override
+    public CmsFile uploadSticker(MultipartFile file, String tag) {
+        String orgName = StringUtils.hasText(file.getOriginalFilename())
+                ? file.getOriginalFilename() : "sticker";
+        String ext = StringUtils.getFilenameExtension(orgName);
+        boolean allowedByExt = ext != null && ALLOWED_STICKER_EXTENSIONS.contains(ext.toLowerCase());
+        String mimeType = file.getContentType();
+        boolean allowedByMime = mimeType != null && (mimeType.startsWith("image/") || mimeType.equals("image/svg+xml"));
+        if (!allowedByExt && !allowedByMime) {
+            throw new IllegalArgumentException("지원하지 않는 스티커/이미지 형식입니다: " + orgName);
+        }
+
+        String physicalFileName = UUID.randomUUID().toString().replace("-", "") + (ext != null ? "." + ext : "");
+        String folderPath = dailyFolderPath();
+
+        try {
+            Path dir = Paths.get(fileProperties.getUpload().getAttachFilesDir(), folderPath);
+            Files.createDirectories(dir);
+            file.transferTo(dir.resolve(physicalFileName));
+
+            CmsFile cmsFile = CmsFile.builder()
+                    .savedFolder(folderPath)
+                    .orgFileName(orgName)
+                    .physicalFileName(physicalFileName)
+                    .fileSize(file.getSize())
+                    .mimeType(mimeType)
+                    .fileCategory("STICKER")
+                    .tag(StringUtils.hasText(tag) ? tag.trim() : null)
+                    .build();
+            fileMapper.insertFile(cmsFile);
+            log.debug("sticker saved: {}/{}", folderPath, physicalFileName);
+            return cmsFile;
+        } catch (IOException e) {
+            throw new UncheckedIOException("스티커 파일 저장 실패: " + orgName, e);
+        }
+    }
+
+    @Override
+    public List<CmsFile> getStickers(String keyword) {
+        return fileMapper.selectStickers(keyword);
+    }
+
+    @Override
+    public List<String> getStickerTags() {
+        return fileMapper.selectDistinctStickerTags();
+    }
+
+    @Override
+    public void updateStickerTag(Long fileId, String tag) {
+        fileMapper.updateFileTag(fileId, StringUtils.hasText(tag) ? tag.trim() : null);
     }
 
     @Override
@@ -248,6 +306,7 @@ public class FileUploadServiceImpl implements FileUploadService {
                     .physicalFileName(physicalFileName)
                     .fileSize(file.length())
                     .mimeType(mimeType)
+                    .fileCategory("EDITOR")
                     .build();
             fileMapper.insertFile(cmsFile);
             return buildImageUrl(folderPath, physicalFileName);

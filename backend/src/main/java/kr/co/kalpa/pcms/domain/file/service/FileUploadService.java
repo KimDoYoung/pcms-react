@@ -39,6 +39,26 @@ public interface FileUploadService {
     List<kr.co.kalpa.pcms.domain.file.entity.CmsFile> getMediaFiles(String mimePrefix);
 
     /**
+     * 스티커/작은 이미지(PNG, SVG, GIF, WEBP 등)를 저장한다.
+     */
+    kr.co.kalpa.pcms.domain.file.entity.CmsFile uploadSticker(MultipartFile file, String tag);
+
+    /**
+     * 스티커 목록을 조회한다 (키워드/태그 검색 지원).
+     */
+    List<kr.co.kalpa.pcms.domain.file.entity.CmsFile> getStickers(String keyword);
+
+    /**
+     * 등록된 스티커 태그 목록을 조회한다.
+     */
+    List<String> getStickerTags();
+
+    /**
+     * 스티커 태그를 수정한다.
+     */
+    void updateStickerTag(Long fileId, String tag);
+
+    /**
      * file_match 테이블에 파일 연결 정보를 기록한다.
      */
     void linkFiles(String tableName, Long targetId, List<Long> fileIds, String fileType);

@@ -14,8 +14,8 @@
     </resultMap>
 
     <insert id="insertFile" useGeneratedKeys="true" keyProperty="fileId">
-        INSERT INTO cms.files (saved_folder, org_file_name, physical_file_name, file_size, mime_type)
-        VALUES (#{savedFolder}, #{orgFileName}, #{physicalFileName}, #{fileSize}, #{mimeType})
+        INSERT INTO cms.files (saved_folder, org_file_name, physical_file_name, file_size, mime_type, file_category, tag)
+        VALUES (#{savedFolder}, #{orgFileName}, #{physicalFileName}, #{fileSize}, #{mimeType}, #{fileCategory}, #{tag})
     </insert>
 
     <insert id="insertFileMatch">
@@ -34,7 +34,8 @@
     <select id="selectFileById" resultType="kr.co.kalpa.pcms.domain.file.entity.CmsFile">
         SELECT file_id as fileId, saved_folder as savedFolder,
                org_file_name as orgFileName, physical_file_name as physicalFileName,
-               file_size as fileSize, mime_type as mimeType
+               file_size as fileSize, mime_type as mimeType,
+               file_category as fileCategory, tag as tag, created_at as createdAt
         FROM cms.files
         WHERE file_id = #{fileId}
     </select>
@@ -42,7 +43,8 @@
     <select id="selectFilesByIds" resultType="kr.co.kalpa.pcms.domain.file.entity.CmsFile">
         SELECT file_id as fileId, saved_folder as savedFolder,
                org_file_name as orgFileName, physical_file_name as physicalFileName,
-               file_size as fileSize, mime_type as mimeType
+               file_size as fileSize, mime_type as mimeType,
+               file_category as fileCategory, tag as tag, created_at as createdAt
         FROM cms.files
         WHERE file_id IN
         <foreach item="id" collection="fileIds" open="(" separator="," close=")">
@@ -53,10 +55,33 @@
     <select id="selectFilesByMimePrefix" resultType="kr.co.kalpa.pcms.domain.file.entity.CmsFile">
         SELECT file_id as fileId, saved_folder as savedFolder,
                org_file_name as orgFileName, physical_file_name as physicalFileName,
-               file_size as fileSize, mime_type as mimeType
+               file_size as fileSize, mime_type as mimeType,
+               file_category as fileCategory, tag as tag, created_at as createdAt
         FROM cms.files
         WHERE mime_type LIKE #{mimePrefix} || '%'
         ORDER BY created_at DESC
+    </select>
+
+    <select id="selectStickers" resultType="kr.co.kalpa.pcms.domain.file.entity.CmsFile">
+        SELECT file_id as fileId, saved_folder as savedFolder,
+               org_file_name as orgFileName, physical_file_name as physicalFileName,
+               file_size as fileSize, mime_type as mimeType,
+               file_category as fileCategory, tag as tag, created_at as createdAt
+        FROM cms.files
+        WHERE file_category = 'STICKER'
+        <if test="keyword != null and keyword != ''">
+            AND (org_file_name ILIKE '%' || #{keyword} || '%' OR tag ILIKE '%' || #{keyword} || '%')
+        </if>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectDistinctStickerTags" resultType="String">
+        SELECT DISTINCT tag
+        FROM cms.files
+        WHERE file_category = 'STICKER'
+          AND tag IS NOT NULL
+          AND trim(tag) != ''
+        ORDER BY tag ASC
     </select>
 
     <delete id="deleteFileMatchByTarget">
@@ -84,6 +109,10 @@
 
     <update id="updateOrgFileName">
         UPDATE cms.files SET org_file_name = #{orgFileName} WHERE file_id = #{fileId}
+    </update>
+
+    <update id="updateFileTag">
+        UPDATE cms.files SET tag = #{tag} WHERE file_id = #{fileId}
     </update>
 
 </mapper>

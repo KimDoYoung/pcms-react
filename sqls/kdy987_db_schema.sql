@@ -75,10 +75,14 @@ CREATE TABLE files (
     physical_file_name VARCHAR(255) NOT NULL,
     file_size BIGINT NOT NULL,
     mime_type VARCHAR(100),
+    file_category VARCHAR(50) DEFAULT 'ATTACHMENT',
+    tag VARCHAR(200),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_files_physical_name ON files(physical_file_name);
 CREATE INDEX idx_files_org_file_name ON files(org_file_name);
+CREATE INDEX idx_files_category ON files(file_category);
+CREATE INDEX idx_files_tag ON files(tag);
 
 -- 6. 파일 매칭 (File Match)
 DROP TABLE IF EXISTS file_match CASCADE;

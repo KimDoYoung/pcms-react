@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @Builder
@@ -18,5 +18,7 @@ public class CmsFile {
     private String physicalFileName;
     private long fileSize;
     private String mimeType;
-    private LocalDateTime createdAt;
+    private String fileCategory;
+    private String tag;
+    private OffsetDateTime createdAt;
 }
