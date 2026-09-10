@@ -16,7 +16,6 @@ import MdTextarea, { type MdTextareaHandle } from '@/shared/components/editor/Md
 import MdEditorToolbar from '@/shared/components/editor/MdEditorToolbar'
 import AssetPickerPopup from '@/shared/components/editor/AssetPickerPopup'
 import EmojiSearchModal from '@/shared/components/editor/EmojiSearchModal'
-import StickerPickerPopup from '@/shared/components/editor/StickerPickerPopup'
 import MediaSelectorModal, { type MediaSelectPayload } from '@/shared/components/editor/MediaSelectorModal'
 import { renderMarkdown } from '@/lib/markdownRenderer'
 import { measureLineTops } from '@/lib/textareaLinePositions'
@@ -41,7 +40,6 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
   const [resizingPreview, setResizingPreview] = useState(false)
   const [mediaOpen, setMediaOpen] = useState(false)
   const [assetPopup, setAssetPopup] = useState<AssetPopupState | null>(null)
-  const [stickerPopup, setStickerPopup] = useState<{ position: { x: number; y: number } } | null>(null)
   const [emojiModalOpen, setEmojiModalOpen] = useState(false)
 
   const editorRef = useRef<MdTextareaHandle>(null)
@@ -63,23 +61,6 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
       }
       if (e.ctrlKey && !e.shiftKey && !e.altKey) {
         const key = e.key
-        if (key === '5') {
-          e.preventDefault()
-          const textarea = textareaDomRef.current
-          let position = { x: Math.max(8, window.innerWidth / 2 - 160), y: 120 }
-          if (textarea) {
-            const [topInTextarea] = measureLineTops(textarea, [textarea.selectionStart])
-            const rect = textarea.getBoundingClientRect()
-            const x = rect.left + 8
-            const y = rect.top + topInTextarea - textarea.scrollTop + 20
-            position = {
-              x: Math.max(8, Math.min(x, window.innerWidth - 340)),
-              y: Math.max(8, Math.min(y, window.innerHeight - 380)),
-            }
-          }
-          setStickerPopup({ position })
-          return
-        }
         const typeMap: Record<string, AssetType> = { '1': 'EMOJI', '2': 'SYMBOL', '3': 'PHRASE', '4': 'TEMPLATE' }
         if (typeMap[key]) {
           e.preventDefault()
@@ -223,11 +204,6 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
     setAssetPopup({ atype, position: { x: rect.left, y: rect.bottom + 4 } })
   }
 
-  function openStickerPicker(e: React.MouseEvent<HTMLButtonElement>) {
-    const rect = e.currentTarget.getBoundingClientRect()
-    setStickerPopup({ position: { x: rect.left, y: rect.bottom + 4 } })
-  }
-
   function handleAssetSelect(val: string) {
     editorRef.current?.insertText(val)
     setAssetPopup(null)
@@ -248,7 +224,6 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
           setPreviewOpen={setPreviewOpen}
           onOpenMedia={() => setMediaOpen(true)}
           onOpenAssetPicker={openAssetPicker}
-          onOpenSticker={openStickerPicker}
           value={value}
           onImportContent={onChange}
         />
@@ -300,17 +275,6 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
             setAssetPopup(null)
             setEmojiModalOpen(true)
           }}
-        />
-      )}
-
-      {stickerPopup && (
-        <StickerPickerPopup
-          position={stickerPopup.position}
-          onSelect={(snippet) => {
-            editorRef.current?.insertText(snippet + '\n')
-            setStickerPopup(null)
-          }}
-          onClose={() => setStickerPopup(null)}
         />
       )}
 

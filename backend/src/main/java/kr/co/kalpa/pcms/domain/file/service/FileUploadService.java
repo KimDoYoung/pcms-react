@@ -64,6 +64,11 @@ public interface FileUploadService {
     void updateStickerTag(Long fileId, String tag);
 
     /**
+     * 여러 스티커의 태그를 일괄 수정한다.
+     */
+    void updateStickerTags(List<Long> fileIds, String tag);
+
+    /**
      * file_match 테이블에 파일 연결 정보를 기록한다.
      */
     void linkFiles(String tableName, Long targetId, List<Long> fileIds, String fileType);

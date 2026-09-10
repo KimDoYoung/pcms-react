@@ -139,6 +139,29 @@ public class FileController {
         return ResponseEntity.ok(Map.of("fileId", fileId, "tag", newTag));
     }
 
+    @PatchMapping("/stickers/batch-tag")
+    public ResponseEntity<Void> updateStickerTagsBatch(@RequestBody Map<String, Object> body) {
+        @SuppressWarnings("unchecked")
+        List<Object> rawIds = (List<Object>) body.get("fileIds");
+        String newTag = (String) body.getOrDefault("tag", "");
+        if (rawIds != null && !rawIds.isEmpty()) {
+            List<Long> fileIds = rawIds.stream()
+                    .map(id -> Long.valueOf(id.toString()))
+                    .toList();
+            fileUploadService.updateStickerTags(fileIds, newTag);
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/batch-delete")
+    public ResponseEntity<Void> deleteFilesBatch(@RequestBody Map<String, List<Long>> body) {
+        List<Long> fileIds = body.get("fileIds");
+        if (fileIds != null && !fileIds.isEmpty()) {
+            fileUploadService.deleteAttachments(fileIds);
+        }
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{fileId}")
     public ResponseEntity<Void> deleteFile(@PathVariable Long fileId) {
         fileUploadService.deleteAttachments(List.of(fileId));

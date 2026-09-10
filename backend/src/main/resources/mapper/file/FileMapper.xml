@@ -115,4 +115,12 @@
         UPDATE cms.files SET tag = #{tag} WHERE file_id = #{fileId}
     </update>
 
+    <update id="updateFilesTag">
+        UPDATE cms.files SET tag = #{tag}
+        WHERE file_id IN
+        <foreach item="id" collection="fileIds" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
 </mapper>

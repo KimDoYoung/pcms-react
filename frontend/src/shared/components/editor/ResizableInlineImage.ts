@@ -14,9 +14,11 @@
  *
  * 특징:
  *   - NodeView 루트를 <span>으로 렌더링하며, wrap 속성에 따라 float: left / float: right / inline-block 적용
- *   - 이미지 클릭 또는 호버 시 상단에 미니 플로팅 툴바(좌측 감싸기, 기본, 우측 감싸기, 삭제) 표시
+ *   - 이미지 클릭 시 선택 상태(isSelected)가 유지되어 상단 플로팅 툴바가 마우스 이동 시 사라지지 않음
+ *   - 툴바와 이미지 사이에 투명 브릿지를 배치하여 호버 시에도 부드럽게 툴바로 마우스 이동 가능
+ *   - 툴바 버튼 크기 및 가독성 확대 (좌측, 인라인, 우측, 삭제)
  *   - 우측 하단 핸들을 드래그해 너비 조절 가능
- *   - 리사이징 및 툴바 조작 중 stopEvent로 ProseMirror 이벤트 간섭 차단
+ *   - NodeView update 및 destroy 생명주기 완비 (문서 외부 클릭 리스너 정리)
  *   - width/height 없이 viewBox만 있는 SVG가 크기 0으로 사라지는 크로미움 버그 보정
  */
 import Image from '@tiptap/extension-image'
@@ -62,7 +64,8 @@ const ResizableInlineImage = Image.extend({
 
   addNodeView() {
     return ({ node, getPos, view }) => {
-      const wrapMode = node.attrs.wrap || 'none'
+      let currentNode = node
+      const wrapMode = currentNode.attrs.wrap || 'none'
       const wrapper = document.createElement('span')
 
       const applyWrapperStyles = (currentWrap: string) => {
@@ -77,54 +80,79 @@ const ResizableInlineImage = Image.extend({
       applyWrapperStyles(wrapMode)
 
       const img = document.createElement('img')
-      if (node.attrs.alt) img.alt = node.attrs.alt
-      if (node.attrs.title) img.title = node.attrs.title
+      if (currentNode.attrs.alt) img.alt = currentNode.attrs.alt
+      if (currentNode.attrs.title) img.title = currentNode.attrs.title
       img.style.cssText = [
         'display: block',
         'max-width: 100%',
         'border-radius: 0.375rem',
-        node.attrs.width ? `width: ${node.attrs.width}px` : '',
+        'transition: outline 0.15s ease',
+        currentNode.attrs.width ? `width: ${currentNode.attrs.width}px` : '',
       ]
         .filter(Boolean)
         .join('; ')
 
       img.onload = () => {
-        if (!node.attrs.width && img.offsetWidth === 0 && img.naturalWidth > 0) {
+        if (!currentNode.attrs.width && img.offsetWidth === 0 && img.naturalWidth > 0) {
           img.style.width = `${img.naturalWidth}px`
         }
       }
-      img.src = node.attrs.src || ''
+      img.src = currentNode.attrs.src || ''
 
       wrapper.appendChild(img)
 
       // 리사이징 핸들 (우측 하단)
       const handle = document.createElement('span')
       handle.style.cssText =
-        'position: absolute; bottom: 3px; right: 3px; width: 12px; height: 12px;' +
-        'background: white; border: 2px solid #6b7280; border-radius: 50%;' +
-        'cursor: nwse-resize; display: none; z-index: 10;'
+        'position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px;' +
+        'background: #ffffff; border: 2px solid #4f46e5; border-radius: 50%;' +
+        'cursor: nwse-resize; display: none; z-index: 40; box-shadow: 0 1px 4px rgba(0,0,0,0.35);'
       wrapper.appendChild(handle)
 
       // 감싸기/삭제 미니 플로팅 툴바
       const toolbar = document.createElement('div')
       toolbar.style.cssText =
-        'position: absolute; top: -28px; left: 50%; transform: translateX(-50%);' +
-        'display: none; align-items: center; gap: 2px; background: rgba(17, 24, 39, 0.92);' +
-        'padding: 2px 4px; border-radius: 4px; z-index: 30; box-shadow: 0 2px 8px rgba(0,0,0,0.25);' +
+        'position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);' +
+        'display: none; align-items: center; gap: 4px; background: rgba(15, 23, 42, 0.95);' +
+        'backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.18);' +
+        'padding: 4px 6px; border-radius: 6px; z-index: 50; box-shadow: 0 4px 14px rgba(0,0,0,0.35);' +
         'white-space: nowrap; user-select: none;'
 
-      const createBtn = (text: string, title: string, active: boolean, onClick: () => void) => {
+      // 툴바와 이미지 사이의 마우스 이탈 방지 투명 브릿지 영역
+      const bridge = document.createElement('div')
+      bridge.style.cssText = 'position: absolute; top: 100%; left: 0; right: 0; height: 10px;'
+      toolbar.appendChild(bridge)
+
+      const createBtn = (
+        text: string,
+        title: string,
+        active: boolean,
+        onClick: () => void,
+        isDanger = false,
+      ) => {
         const btn = document.createElement('button')
         btn.type = 'button'
         btn.textContent = text
         btn.title = title
+        const baseColor = isDanger ? '#f87171' : active ? '#ffffff' : '#cbd5e1'
+        const bg = active ? '#4f46e5' : 'transparent'
         btn.style.cssText =
-          `padding: 2px 6px; font-size: 11px; font-family: sans-serif; border: none; border-radius: 3px; cursor: pointer; ` +
-          (active
-            ? 'background: #4f46e5; color: white; font-weight: bold;'
-            : 'background: transparent; color: #d1d5db;')
-        btn.onmouseenter = () => { if (!active) btn.style.color = 'white' }
-        btn.onmouseleave = () => { if (!active) btn.style.color = '#d1d5db' }
+          `padding: 4px 8px; font-size: 12px; font-weight: 500; font-family: inherit; ` +
+          `border: none; border-radius: 4px; cursor: pointer; transition: all 0.15s ease; ` +
+          `display: inline-flex; align-items: center; ` +
+          `background: ${bg}; color: ${baseColor};`
+        btn.onmouseenter = () => {
+          if (!active) {
+            btn.style.background = isDanger ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.15)'
+            btn.style.color = '#ffffff'
+          }
+        }
+        btn.onmouseleave = () => {
+          if (!active) {
+            btn.style.background = 'transparent'
+            btn.style.color = baseColor
+          }
+        }
         btn.onclick = (e) => {
           e.preventDefault()
           e.stopPropagation()
@@ -135,10 +163,11 @@ const ResizableInlineImage = Image.extend({
 
       const renderToolbar = (currentWrap: string) => {
         toolbar.innerHTML = ''
+        toolbar.appendChild(bridge)
         toolbar.appendChild(createBtn('👈 좌측', '텍스트 좌측 감싸기', currentWrap === 'left', () => setWrap('left')))
-        toolbar.appendChild(createBtn('⏹ 기본', '기본 (인라인)', currentWrap === 'none', () => setWrap('none')))
+        toolbar.appendChild(createBtn('⏹ 인라인', '기본 (인라인)', currentWrap === 'none', () => setWrap('none')))
         toolbar.appendChild(createBtn('👉 우측', '텍스트 우측 감싸기', currentWrap === 'right', () => setWrap('right')))
-        toolbar.appendChild(createBtn('🗑️', '이미지 삭제', false, () => removeNode()))
+        toolbar.appendChild(createBtn('🗑️ 삭제', '이미지 삭제', false, () => removeNode(), true))
       }
 
       const setWrap = (newWrap: 'none' | 'left' | 'right') => {
@@ -147,7 +176,7 @@ const ResizableInlineImage = Image.extend({
           if (pos !== undefined) {
             view.dispatch(
               view.state.tr.setNodeMarkup(pos, null, {
-                ...node.attrs,
+                ...currentNode.attrs,
                 wrap: newWrap,
               }),
             )
@@ -159,36 +188,69 @@ const ResizableInlineImage = Image.extend({
         if (typeof getPos === 'function') {
           const pos = getPos()
           if (pos !== undefined) {
-            view.dispatch(view.state.tr.delete(pos, pos + node.nodeSize))
+            view.dispatch(view.state.tr.delete(pos, pos + currentNode.nodeSize))
           }
         }
       }
 
-      renderToolbar(node.attrs.wrap || 'none')
+      renderToolbar(currentNode.attrs.wrap || 'none')
       wrapper.appendChild(toolbar)
 
+      let isSelected = false
+      let isHovered = false
       let isResizing = false
       let startX = 0
       let startWidth = 0
 
       const showUI = () => {
         handle.style.display = 'block'
-        renderToolbar(node.attrs.wrap || 'none')
+        renderToolbar(currentNode.attrs.wrap || 'none')
         toolbar.style.display = 'flex'
       }
+
       const hideUI = () => {
-        if (!isResizing) {
-          handle.style.display = 'none'
-          toolbar.style.display = 'none'
+        if (isSelected || isResizing) return
+        handle.style.display = 'none'
+        toolbar.style.display = 'none'
+      }
+
+      const selectImage = () => {
+        isSelected = true
+        img.style.outline = '2px solid #6366f1'
+        img.style.outlineOffset = '2px'
+        showUI()
+      }
+
+      const deselectImage = () => {
+        isSelected = false
+        img.style.outline = 'none'
+        img.style.outlineOffset = '0px'
+        if (!isHovered) {
+          hideUI()
         }
       }
 
-      wrapper.addEventListener('mouseenter', showUI)
-      wrapper.addEventListener('mouseleave', hideUI)
-      img.addEventListener('click', (e) => {
-        e.stopPropagation()
+      wrapper.addEventListener('mouseenter', () => {
+        isHovered = true
         showUI()
       })
+      wrapper.addEventListener('mouseleave', () => {
+        isHovered = false
+        hideUI()
+      })
+
+      img.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        selectImage()
+      })
+
+      const onDocPointerDown = (e: MouseEvent) => {
+        if (!wrapper.contains(e.target as Node)) {
+          deselectImage()
+        }
+      }
+      document.addEventListener('pointerdown', onDocPointerDown)
 
       handle.addEventListener('mousedown', (e) => {
         e.preventDefault()
@@ -207,15 +269,18 @@ const ResizableInlineImage = Image.extend({
         const onMouseUp = () => {
           if (!isResizing) return
           isResizing = false
-          handle.style.display = 'none'
-          toolbar.style.display = 'none'
+
+          if (!isSelected && !isHovered) {
+            handle.style.display = 'none'
+            toolbar.style.display = 'none'
+          }
 
           if (typeof getPos === 'function') {
             const pos = getPos()
             if (pos !== undefined) {
               view.dispatch(
                 view.state.tr.setNodeMarkup(pos, null, {
-                  ...node.attrs,
+                  ...currentNode.attrs,
                   width: img.offsetWidth,
                 }),
               )
@@ -232,6 +297,25 @@ const ResizableInlineImage = Image.extend({
 
       return {
         dom: wrapper,
+        update(updatedNode) {
+          if (updatedNode.type !== node.type) return false
+          currentNode = updatedNode
+          applyWrapperStyles(currentNode.attrs.wrap || 'none')
+          if (currentNode.attrs.width) {
+            img.style.width = `${currentNode.attrs.width}px`
+          }
+          renderToolbar(currentNode.attrs.wrap || 'none')
+          return true
+        },
+        selectNode() {
+          selectImage()
+        },
+        deselectNode() {
+          deselectImage()
+        },
+        destroy() {
+          document.removeEventListener('pointerdown', onDocPointerDown)
+        },
         stopEvent(event) {
           return handle.contains(event.target as Node) || toolbar.contains(event.target as Node)
         },
@@ -241,3 +325,4 @@ const ResizableInlineImage = Image.extend({
 })
 
 export default ResizableInlineImage
+

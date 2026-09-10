@@ -30,4 +30,5 @@ public interface FileMapper {
     void deleteFilesByIds(@Param("fileIds") List<Long> fileIds);
     void updateOrgFileName(@Param("fileId") Long fileId, @Param("orgFileName") String orgFileName);
     void updateFileTag(@Param("fileId") Long fileId, @Param("tag") String tag);
+    void updateFilesTag(@Param("fileIds") List<Long> fileIds, @Param("tag") String tag);
 }

@@ -256,6 +256,12 @@ public class FileUploadServiceImpl implements FileUploadService {
     }
 
     @Override
+    public void updateStickerTags(List<Long> fileIds, String tag) {
+        if (fileIds == null || fileIds.isEmpty()) return;
+        fileMapper.updateFilesTag(fileIds, StringUtils.hasText(tag) ? tag.trim() : null);
+    }
+
+    @Override
     public void linkFiles(String tableName, Long targetId, List<Long> fileIds, String fileType) {
         for (Long fileId : fileIds) {
             fileMapper.insertFileMatch(FileMatch.builder()

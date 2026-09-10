@@ -25,8 +25,8 @@
  *
  * 단축키: Ctrl+B(굵게) / Ctrl+I(기울임) / Ctrl+Shift+S(취소선) / Ctrl+L(링크)
  *         Ctrl+0(글머리) / Ctrl+9(번호) / Ctrl+8(인용) / Ctrl+,(표)
- *         Ctrl+.(글자색 순환) / Ctrl+/(배경색 순환) / Ctrl+Shift+V(kbd 태그)
- *         Ctrl+1(이모지) / Ctrl+2(특수문자) / Ctrl+3(상용구) / Ctrl+4(템플릿) / Ctrl+5(스티커)
+ *         Ctrl+.(글자색 순환) / Ctrl+/(배경색 순환) / Ctrl+Shift+V(미디어·스티커 모달)
+ *         Ctrl+1(이모지) / Ctrl+2(특수문자) / Ctrl+3(상용구) / Ctrl+4(템플릿)
  *         Alt+Z(현재 줄 중앙 스크롤)
  */
 import { useRef, useState, type RefObject } from 'react'
@@ -34,7 +34,7 @@ import { format } from 'date-fns'
 import {
   Bold, Italic, Strikethrough, Heading, List, ListOrdered, Quote, Link2,
   Baseline, Highlighter, Image as ImageIcon, Video, Eye, EyeOff, HelpCircle, X,
-  FileText, Layout, Copy, Download, Upload, FileCode, Sparkles, WrapText,
+  FileText, Layout, Copy, Download, Upload, FileCode, WrapText,
 } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { ROTATE_TEXT_COLORS, ROTATE_BG_COLORS } from '@/shared/components/editor/editorColors'
@@ -126,7 +126,6 @@ interface Props {
   setPreviewOpen: (open: boolean) => void
   onOpenMedia: () => void
   onOpenAssetPicker: (atype: AssetType, e: React.MouseEvent<HTMLButtonElement>) => void
-  onOpenSticker?: (e: React.MouseEvent<HTMLButtonElement>) => void
   value: string
   onImportContent: (content: string) => void
 }
@@ -135,7 +134,7 @@ const HEADING_LEVELS = [1, 2, 3] as const
 
 export default function MdEditorToolbar({
   editorRef, previewOpen, setPreviewOpen, onOpenMedia,
-  onOpenAssetPicker, onOpenSticker, value, onImportContent,
+  onOpenAssetPicker, value, onImportContent,
 }: Props) {
   const [showHeadings, setShowHeadings] = useState(false)
   const [showColors, setShowColors] = useState(false)
@@ -446,18 +445,6 @@ ${CODE_COPY_SCRIPT}
         }}
       />
 
-      {/* 스티커·짤 삽입 */}
-      {onOpenSticker && (
-        <button
-          type="button"
-          onClick={(e) => onOpenSticker(e)}
-          className="flex items-center justify-center p-1 rounded text-amber-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
-          title="스티커·짤 삽입 (Ctrl+5)"
-        >
-          <Sparkles className="w-4 h-4" />
-        </button>
-      )}
-
       {/* 비디오/오디오/유튜브/스티커 삽입 */}
       {btn(<Video className="w-4 h-4" />, onOpenMedia, '미디어·스티커 삽입 (Ctrl+Shift+V)')}
 
@@ -564,7 +551,6 @@ ${CODE_COPY_SCRIPT}
                     ['특수문자 팝업', 'Ctrl+2'],
                     ['상용구 팝업', 'Ctrl+3'],
                     ['템플릿 팝업', 'Ctrl+4'],
-                    ['스티커·짤 팝업', 'Ctrl+5'],
                     ['현재 줄 중앙 스크롤', 'Alt+Z'],
                     ['미리보기 토글', 'F9'],
                   ].map(([name, key]) => (
