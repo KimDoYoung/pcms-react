@@ -15,6 +15,8 @@
  * 특징:
  *   - NodeView 루트를 <span>으로 렌더링하며, wrap 속성에 따라 float: left / float: right / inline-block 적용
  *   - 이미지 클릭 시 선택 상태(isSelected)가 유지되어 상단 플로팅 툴바가 마우스 이동 시 사라지지 않음
+ *   - 스마트 클램핑(Smart Clamping): 이미지가 에디터 좌/우측 가장자리에 있어도 툴바가 에디터 밖으로 잘리지 않고 안쪽으로 자동 보정
+ *   - 상단 공간 부족 시 이미지 아래로 자동 반전(Flip)
  *   - 툴바와 이미지 사이에 투명 브릿지를 배치하여 호버 시에도 부드럽게 툴바로 마우스 이동 가능
  *   - 툴바 버튼 크기 및 가독성 확대 (좌측, 인라인, 우측, 삭제)
  *   - 우측 하단 핸들을 드래그해 너비 조절 가능
@@ -112,7 +114,7 @@ const ResizableInlineImage = Image.extend({
       // 감싸기/삭제 미니 플로팅 툴바
       const toolbar = document.createElement('div')
       toolbar.style.cssText =
-        'position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);' +
+        'position: absolute; bottom: calc(100% + 6px); left: 0;' +
         'display: none; align-items: center; gap: 4px; background: rgba(15, 23, 42, 0.95);' +
         'backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.18);' +
         'padding: 4px 6px; border-radius: 6px; z-index: 50; box-shadow: 0 4px 14px rgba(0,0,0,0.35);' +
@@ -170,6 +172,46 @@ const ResizableInlineImage = Image.extend({
         toolbar.appendChild(createBtn('🗑️ 삭제', '이미지 삭제', false, () => removeNode(), true))
       }
 
+      const updateToolbarPosition = () => {
+        if (toolbar.style.display === 'none') return
+
+        const editorEl = view.dom
+        const editorRect = editorEl.getBoundingClientRect()
+        const wrapperRect = wrapper.getBoundingClientRect()
+        const toolbarWidth = toolbar.offsetWidth || 250
+        const toolbarHeight = toolbar.offsetHeight || 32
+
+        // 중앙 배치 기준 leftPx
+        let leftPx = (wrapperRect.width - toolbarWidth) / 2
+
+        // 에디터 좌측 및 우측 경계 여백(8px) 기준 클램핑 (좌우 잘림 완벽 방지)
+        const minLeftPx = editorRect.left + 8 - wrapperRect.left
+        const maxLeftPx = editorRect.right - 8 - wrapperRect.left - toolbarWidth
+
+        if (leftPx < minLeftPx) {
+          leftPx = minLeftPx
+        }
+        if (leftPx > maxLeftPx) {
+          leftPx = maxLeftPx
+        }
+
+        toolbar.style.left = `${Math.round(leftPx)}px`
+        toolbar.style.transform = 'none'
+
+        // 상단 공간 검사 (상단이 에디터 영역 밖으로 나가면 이미지 아래로 플립)
+        if (wrapperRect.top - toolbarHeight - 6 < editorRect.top) {
+          toolbar.style.bottom = 'auto'
+          toolbar.style.top = 'calc(100% + 6px)'
+          bridge.style.top = 'auto'
+          bridge.style.bottom = '100%'
+        } else {
+          toolbar.style.top = 'auto'
+          toolbar.style.bottom = 'calc(100% + 6px)'
+          bridge.style.bottom = 'auto'
+          bridge.style.top = '100%'
+        }
+      }
+
       const setWrap = (newWrap: 'none' | 'left' | 'right') => {
         if (typeof getPos === 'function') {
           const pos = getPos()
@@ -206,6 +248,7 @@ const ResizableInlineImage = Image.extend({
         handle.style.display = 'block'
         renderToolbar(currentNode.attrs.wrap || 'none')
         toolbar.style.display = 'flex'
+        requestAnimationFrame(updateToolbarPosition)
       }
 
       const hideUI = () => {
@@ -264,6 +307,7 @@ const ResizableInlineImage = Image.extend({
           if (!isResizing) return
           const newWidth = Math.max(40, startWidth + (moveEvent.clientX - startX))
           img.style.width = `${newWidth}px`
+          updateToolbarPosition()
         }
 
         const onMouseUp = () => {
@@ -273,6 +317,8 @@ const ResizableInlineImage = Image.extend({
           if (!isSelected && !isHovered) {
             handle.style.display = 'none'
             toolbar.style.display = 'none'
+          } else {
+            updateToolbarPosition()
           }
 
           if (typeof getPos === 'function') {
@@ -305,6 +351,9 @@ const ResizableInlineImage = Image.extend({
             img.style.width = `${currentNode.attrs.width}px`
           }
           renderToolbar(currentNode.attrs.wrap || 'none')
+          if (toolbar.style.display !== 'none') {
+            requestAnimationFrame(updateToolbarPosition)
+          }
           return true
         },
         selectNode() {

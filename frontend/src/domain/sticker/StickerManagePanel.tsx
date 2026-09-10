@@ -3,7 +3,7 @@
  *       다중 업로드(multi file upload, 드래그 앤 드롭 지원)/삭제/조회하고 태그 및 파일명을 변경하며
  *       마크다운 삽입 태그를 복사하는 관리 패널.
  *       갤러리 카드 뷰와 AG Grid 테이블 뷰를 모두 지원하며, 썸네일 멀티 선택을 통한 일괄 태그 수정/삭제 및
- *       호버/선택 단축키(c: 복사, r: 이름수정, t: 태그수정, d: 다운로드, x: 삭제)를 지원한다.
+ *       호버/선택 단축키(c: 복사, r: 이름수정, t: 태그수정, d: 다운로드, x: 삭제, Space: 선택/해제 토글)를 지원한다.
  *
  * 사용법:
  *   <StickerManagePanel />
@@ -35,7 +35,6 @@ import {
   Sparkles,
   CheckSquare,
   Square,
-  Keyboard,
   X,
 } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
@@ -61,6 +60,7 @@ function getExt(filename: string): string {
 
 export default function StickerManagePanel() {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
+  const [showUploadZone, setShowUploadZone] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [uploadTag, setUploadTag] = useState('')
@@ -83,8 +83,20 @@ export default function StickerManagePanel() {
   const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const renameInputRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
   const { showMessage } = useMessage()
+
+  // 파일명 수정 모달 열림 시 인풋 텍스트 즉시 전체 선택
+  useEffect(() => {
+    if (renameItem) {
+      const timer = setTimeout(() => {
+        renameInputRef.current?.focus()
+        renameInputRef.current?.select()
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [renameItem])
 
   const { data: items = [], isLoading } = useQuery<StickerFile[]>({
     queryKey: ['stickers', searchKeyword],
@@ -105,7 +117,7 @@ export default function StickerManagePanel() {
     : items
 
   // 멀티 선택 핸들러
-  const toggleSelect = (fileId: number) => {
+  const toggleSelect = useCallback((fileId: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(fileId)) {
@@ -115,7 +127,7 @@ export default function StickerManagePanel() {
       }
       return next
     })
-  }
+  }, [])
 
   const selectAll = () => {
     setSelectedIds(new Set(filteredItems.map((i) => i.fileId)))
@@ -316,6 +328,15 @@ export default function StickerManagePanel() {
         return
       }
 
+      // 스페이스바: 마우스 호버된 썸네일의 선택/해제 토글
+      if (e.key === ' ' || e.code === 'Space') {
+        if (hoveredItem) {
+          e.preventDefault()
+          toggleSelect(hoveredItem.fileId)
+        }
+        return
+      }
+
       // 대상 아이템 결정: 마우스 hover된 아이템 1순위, 또는 선택된 아이템이 1개일 때
       const target =
         hoveredItem ||
@@ -358,6 +379,7 @@ export default function StickerManagePanel() {
     singleDeleteItem,
     handleCopyTag,
     handleDownload,
+    toggleSelect,
   ])
 
   const columnDefs: ColDef<StickerFile>[] = [
@@ -493,6 +515,15 @@ export default function StickerManagePanel() {
         </div>
         <div className="flex items-center gap-2">
           <Button
+            variant={showUploadZone ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowUploadZone((prev) => !prev)}
+            className="flex items-center gap-1.5"
+          >
+            <Upload className="w-4 h-4" />
+            업로드
+          </Button>
+          <Button
             variant={viewMode === 'grid' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('grid')}
@@ -513,70 +544,72 @@ export default function StickerManagePanel() {
         </div>
       </div>
 
-      {/* 업로드 존 (드래그 앤 드롭 및 다중 파일 지원) */}
-      <div
-        onDragOver={(e) => {
-          e.preventDefault()
-          setIsDragging(true)
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault()
-          setIsDragging(false)
-          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            handleUpload(e.dataTransfer.files)
-          }
-        }}
-        className={`p-4 border-2 border-dashed rounded-lg transition-colors flex flex-col md:flex-row items-center justify-between gap-4 ${
-          isDragging ? 'border-amber-500 bg-amber-100/70' : 'border-amber-300 bg-amber-50/50'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-amber-100 rounded-full text-amber-600">
-            <Upload className="w-5 h-5" />
+      {/* 업로드 존 (드래그 앤 드롭 및 다중 파일 지원, '업로드' 버튼 클릭 시 토글) */}
+      {showUploadZone && (
+        <div
+          onDragOver={(e) => {
+            e.preventDefault()
+            setIsDragging(true)
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault()
+            setIsDragging(false)
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+              handleUpload(e.dataTransfer.files)
+            }
+          }}
+          className={`p-4 border-2 border-dashed rounded-lg transition-colors flex flex-col md:flex-row items-center justify-between gap-4 ${
+            isDragging ? 'border-amber-500 bg-amber-100/70' : 'border-amber-300 bg-amber-50/50'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-amber-100 rounded-full text-amber-600">
+              <Upload className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-800">
+                새 스티커/짤 업로드 (드래그 앤 드롭 & 다중 파일 지원)
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                PNG, SVG, WEBP, GIF, JPG 파일을 여러 개 드래그하여 놓거나 선택해 일괄 업로드할 수 있습니다.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-gray-800">
-              새 스티커/짤 업로드 (드래그 앤 드롭 & 다중 파일 지원)
-            </p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              PNG, SVG, WEBP, GIF, JPG 파일을 여러 개 드래그하여 놓거나 선택해 일괄 업로드할 수 있습니다.
-            </p>
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <Input
+              placeholder="업로드 태그 (예: 주식, 떡상)"
+              value={uploadTag}
+              onChange={(e) => setUploadTag(e.target.value)}
+              className="w-48 h-9 text-sm bg-white"
+            />
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              size="sm"
+              className="whitespace-nowrap bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {uploading ? '업로드 중...' : '파일 선택'}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/png,image/svg+xml,image/webp,image/gif,image/jpeg"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  handleUpload(e.target.files)
+                }
+                e.target.value = ''
+              }}
+            />
           </div>
         </div>
+      )}
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <Input
-            placeholder="업로드 태그 (예: 주식, 떡상)"
-            value={uploadTag}
-            onChange={(e) => setUploadTag(e.target.value)}
-            className="w-48 h-9 text-sm bg-white"
-          />
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            size="sm"
-            className="whitespace-nowrap bg-amber-600 hover:bg-amber-700 text-white"
-          >
-            {uploading ? '업로드 중...' : '파일 선택'}
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/png,image/svg+xml,image/webp,image/gif,image/jpeg"
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files && e.target.files.length > 0) {
-                handleUpload(e.target.files)
-              }
-              e.target.value = ''
-            }}
-          />
-        </div>
-      </div>
-
-      {/* 검색, 태그 필터 및 단축키 가이드 영역 */}
+      {/* 검색 & 태그 필터 영역 */}
       <div className="space-y-3 bg-white p-4 rounded-lg border">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-1">
@@ -613,17 +646,6 @@ export default function StickerManagePanel() {
               <RotateCcw className="w-3.5 h-3.5 mr-1" />
               초기화
             </Button>
-          </div>
-
-          {/* 단축키 안내 뱃지 */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-600">
-            <Keyboard className="w-3.5 h-3.5 text-amber-600" />
-            <span className="font-semibold text-slate-700">단축키(Hover/1개선택):</span>
-            <span className="font-mono bg-white px-1.5 py-0.5 border rounded shadow-xs">c</span> 복사
-            <span className="font-mono bg-white px-1.5 py-0.5 border rounded shadow-xs">r</span> 이름
-            <span className="font-mono bg-white px-1.5 py-0.5 border rounded shadow-xs">t</span> 태그
-            <span className="font-mono bg-white px-1.5 py-0.5 border rounded shadow-xs">d</span> 다운로드
-            <span className="font-mono bg-white px-1.5 py-0.5 border rounded shadow-xs text-red-600">x</span> 삭제
           </div>
         </div>
 
@@ -888,7 +910,14 @@ export default function StickerManagePanel() {
 
       {/* 이름 변경 다이얼로그 */}
       <Dialog open={!!renameItem} onOpenChange={(open) => !open && setRenameItem(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent
+          className="sm:max-w-md"
+          onOpenAutoFocus={(e) => {
+            e.preventDefault()
+            renameInputRef.current?.focus()
+            renameInputRef.current?.select()
+          }}
+        >
           <DialogHeader>
             <DialogTitle>파일명 수정</DialogTitle>
           </DialogHeader>
@@ -896,8 +925,10 @@ export default function StickerManagePanel() {
             <p className="text-xs text-gray-500">확장자는 자동으로 유지됩니다.</p>
             <div className="flex items-center gap-1">
               <Input
+                ref={renameInputRef}
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
+                onFocus={(e) => e.target.select()}
                 onKeyDown={(e) => e.key === 'Enter' && handleRename()}
                 className="flex-1"
                 autoFocus
