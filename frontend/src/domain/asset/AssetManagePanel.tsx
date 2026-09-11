@@ -115,7 +115,7 @@ export default function AssetManagePanel() {
           <h3 className="text-lg font-semibold text-gray-800">자산 관리</h3>
           <p className="text-sm text-gray-500">에디터에서 삽입할 이모지·특수문자·상용구·템플릿 목록을 관리합니다.</p>
         </div>
-        <Button size="sm" onClick={openCreate}>
+        <Button size="sm" onClick={openCreate}  variant="navy">
           <Plus className="w-4 h-4 mr-1" /> 등록
         </Button>
       </div>

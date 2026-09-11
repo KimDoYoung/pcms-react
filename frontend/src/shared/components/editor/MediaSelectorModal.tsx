@@ -171,8 +171,8 @@ export default function MediaSelectorModal({ open, onClose, onSelect }: Props) {
           {([
             { key: 'video' as const, label: '비디오', icon: Video },
             { key: 'audio' as const, label: '오디오', icon: Music },
-            { key: 'sticker' as const, label: '스티커', icon: Sparkles },
             { key: 'youtube' as const, label: 'YouTube', icon: Youtube },
+            { key: 'sticker' as const, label: '스티커', icon: Sparkles },
           ]).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
