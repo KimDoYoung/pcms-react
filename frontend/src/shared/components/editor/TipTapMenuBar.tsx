@@ -2,29 +2,35 @@
  * ContentEditor 전용 TipTap 툴바.
  *
  * 사용법:
- *   <TipTapMenuBar editor={editor} headingLevels={[1,2,3]} />
+ *   <TipTapMenuBar ref={menuBarRef} editor={editor} headingLevels={[1,2,3]} />
  *   ContentEditor.tsx 안에서만 사용된다 (독립 사용 비권장, editor 인스턴스에 강하게 결합).
+ *   ref로 넘긴 TipTapMenuBarHandle을 통해 ContentEditor의 우클릭 컨텍스트 메뉴에서
+ *   이모지/미디어/이미지삽입/한자 팝업을 동일하게 열 수 있다.
  *
  * props:
  *   - editor : useEditor()로 생성된 TipTap 에디터 인스턴스
  *   - headingLevels : 노출할 헤딩 레벨 목록 (기본 [1,2,3])
  *
- * 단축키: Ctrl+1(이모지) / Ctrl+2(특수문자) / Ctrl+.(글자색 순환) / Ctrl+/(배경색 순환)
+ * 단축키: Ctrl+1(이모지, Ctrl+'+' 5회 크기로 확대 삽입) / Ctrl+2(특수문자) / Ctrl+3(상용구) / Ctrl+4(템플릿)
+ *         Ctrl+5(이미지 삽입) / Ctrl+.(글자색 순환) / Ctrl+/(배경색 순환)
  *         Ctrl+L(링크) / Ctrl+=,Ctrl+-(글자크기) / Ctrl+0(글자크기·글자색·배경색 초기화) / Ctrl+Shift+H(한자 변환)
- *         Ctrl+Shift+V(미디어·스티커 삽입)
+ *         Ctrl+Shift+V(미디어·스티커 삽입) / F4(오늘 날짜 yyyy-MM-dd (요일) 삽입, 별도 아이콘/메뉴 없음)
  */
-import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react'
+import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, type ReactNode } from 'react'
 import { useEditor } from '@tiptap/react'
 import {
   Bold, Italic, Strikethrough, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Baseline, Highlighter, Link2,
   Image as ImageIcon, Video, Table2, Columns2, Columns, Rows2, Rows, Trash2, RotateCcw,
+  FileText, Layout,
 } from 'lucide-react'
 import HanjaSearchModal from '@/shared/components/editor/HanjaSearchModal'
 import AssetPickerPopup from '@/shared/components/editor/AssetPickerPopup'
 import EmojiSearchModal from '@/shared/components/editor/EmojiSearchModal'
 import MediaSelectorModal, { type MediaSelectPayload } from '@/shared/components/editor/MediaSelectorModal'
 import { ROTATE_TEXT_COLORS, ROTATE_BG_COLORS, getNextColor } from '@/shared/components/editor/editorColors'
+import { FONT_SIZE_MIN, FONT_SIZE_MAX, FONT_SIZE_DEFAULT, FONT_SIZE_STEP, EMOJI_FONT_SIZE } from '@/shared/components/editor/editorFontSize'
+import { formatDate } from '@/lib/utils'
 import type { AssetType } from '@/domain/asset/types/asset'
 import {
   Popover,
@@ -57,11 +63,6 @@ const BG_COLORS = [
   { label: '회색', value: '#e5e7eb' },
 ]
 
-const FONT_SIZE_MIN = 10
-const FONT_SIZE_MAX = 40
-const FONT_SIZE_DEFAULT = 16
-const FONT_SIZE_STEP = 2
-
 interface TipTapMenuBarProps {
   editor: ReturnType<typeof useEditor>
   headingLevels?: (1 | 2 | 3)[]
@@ -72,7 +73,14 @@ interface AssetPopupState {
   position: { x: number; y: number }
 }
 
-export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: TipTapMenuBarProps) {
+export interface TipTapMenuBarHandle {
+  openAssetPicker: (atype: AssetType) => void
+  openMedia: () => void
+  openImageFilePicker: () => void
+  openHanja: () => void
+}
+
+const TipTapMenuBar = forwardRef<TipTapMenuBarHandle, TipTapMenuBarProps>(function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }, ref) {
   const [showColors, setShowColors] = useState(false)
   const [showBgColors, setShowBgColors] = useState(false)
   const [assetPopup, setAssetPopup] = useState<AssetPopupState | null>(null)
@@ -138,10 +146,21 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
     editor.chain().focus().unsetFontSize().unsetColor().unsetHighlight().run()
   }, [editor])
 
+  // F4: 오늘 날짜(yyyy-MM-dd (요일))를 커서 위치에 삽입. 별도 아이콘/메뉴 항목 없이 단축키로만 제공.
+  const insertToday = useCallback(() => {
+    if (!editor) return
+    editor.chain().focus().insertContent(formatDate(new Date())).run()
+  }, [editor])
+
   useEffect(() => {
     if (!editor) return
 
     function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'F4') {
+        e.preventDefault()
+        insertToday()
+        return
+      }
       if (e.ctrlKey && e.shiftKey && e.key === 'H') {
         e.preventDefault()
         handleHanjaClick()
@@ -155,6 +174,9 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
       if (!e.ctrlKey || e.shiftKey) return
       if (e.key === '1') { e.preventDefault(); openAssetPickerAtCaret('EMOJI') }
       else if (e.key === '2') { e.preventDefault(); openAssetPickerAtCaret('SYMBOL') }
+      else if (e.key === '3') { e.preventDefault(); openAssetPickerAtCaret('PHRASE') }
+      else if (e.key === '4') { e.preventDefault(); openAssetPickerAtCaret('TEMPLATE') }
+      else if (e.key === '5') { e.preventDefault(); fileInputRef.current?.click() }
       else if (e.key === '.') { e.preventDefault(); e.stopPropagation(); cycleTextColor() }
       else if (e.key === '/') { e.preventDefault(); cycleBgColor() }
       else if (e.key.toLowerCase() === 'l') { e.preventDefault(); openLinkPopover() }
@@ -164,7 +186,14 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
     }
     document.addEventListener('keydown', onKeyDown, { capture: true })
     return () => document.removeEventListener('keydown', onKeyDown, { capture: true })
-  }, [editor, handleHanjaClick, openAssetPickerAtCaret, cycleTextColor, cycleBgColor, openLinkPopover, changeFontSize, resetFontSize])
+  }, [editor, handleHanjaClick, openAssetPickerAtCaret, cycleTextColor, cycleBgColor, openLinkPopover, changeFontSize, resetFontSize, insertToday])
+
+  useImperativeHandle(ref, () => ({
+    openAssetPicker: openAssetPickerAtCaret,
+    openMedia: () => setMediaOpen(true),
+    openImageFilePicker: () => fileInputRef.current?.click(),
+    openHanja: handleHanjaClick,
+  }), [openAssetPickerAtCaret, handleHanjaClick])
 
   if (!editor) return null
 
@@ -176,7 +205,16 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
   }
 
   function handleAssetSelect(value: string) {
-    editor?.chain().focus().insertContent(value).run()
+    if (!editor) return
+    // 이모지는 Ctrl+'+' 5회 크기와 동일하게 확대해 삽입한다.
+    if (assetPopup?.atype === 'EMOJI') {
+      const { from } = editor.state.selection
+      editor.chain().focus().insertContent(value).run()
+      const to = from + value.length
+      editor.chain().setTextSelection({ from, to }).setFontSize(`${EMOJI_FONT_SIZE}px`).setTextSelection(to).run()
+    } else {
+      editor.chain().focus().insertContent(value).run()
+    }
     setAssetPopup(null)
   }
 
@@ -346,6 +384,22 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
       >
         ※
       </button>
+      <button
+        type="button"
+        onClick={(e) => openAssetPickerAt('PHRASE', e)}
+        className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+        title="상용구 삽입 (Ctrl+3)"
+      >
+        <FileText className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={(e) => openAssetPickerAt('TEMPLATE', e)}
+        className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+        title="템플릿 삽입 (Ctrl+4)"
+      >
+        <Layout className="w-4 h-4" />
+      </button>
       {assetPopup && (
         <AssetPickerPopup
           atype={assetPopup.atype}
@@ -438,7 +492,7 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
         type="button"
         onClick={() => fileInputRef.current?.click()}
         className="flex items-center justify-center p-1.5 rounded text-gray-600 hover:bg-gray-100 transition-colors"
-        title="이미지 삽입"
+        title="이미지 삽입 (Ctrl+5)"
       >
         <ImageIcon className="w-4 h-4" />
       </button>
@@ -555,9 +609,16 @@ export default function TipTapMenuBar({ editor, headingLevels = [1, 2, 3] }: Tip
       <EmojiSearchModal
         open={emojiModalOpen}
         onClose={() => setEmojiModalOpen(false)}
-        onInsert={(emoji) => editor?.chain().focus().insertContent(emoji).run()}
+        onInsert={(emoji) => {
+          if (!editor) return
+          const { from } = editor.state.selection
+          editor.chain().focus().insertContent(emoji).run()
+          const to = from + emoji.length
+          editor.chain().setTextSelection({ from, to }).setFontSize(`${EMOJI_FONT_SIZE}px`).setTextSelection(to).run()
+        }}
       />
     </div>
   )
-}
+})
 
+export default TipTapMenuBar

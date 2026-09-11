@@ -1,5 +1,7 @@
 /**
- * 목적: 마크다운 본문을 편집하는 textarea. 서식 삽입/변환, 우클릭 컨텍스트 메뉴, 단축키,
+ * 목적: 마크다운 본문을 편집하는 textarea. 서식 삽입/변환, 우클릭 컨텍스트 메뉴(2열 그리드,
+ *       화면 경계 자동 보정, 이모지/상용구/이미지삽입/미디어삽입/한자변환, 모든 서식/태그 제거,
+ *       글자색·배경색 스와치 포함), 단축키,
  *       이미지 붙여넣기 업로드, 글머리기호/번호목록/인용구 Enter 자동 이어쓰기를 지원한다.
  *       상위 컴포넌트(MdSplitEditor)의 툴바가 ref를 통해 텍스트 삽입/서식 액션을 호출할 수 있다.
  *
@@ -22,12 +24,17 @@
  * 단축키: Ctrl+B/I/Shift+S(취소선) / Ctrl+L(링크) / Ctrl+0/9/8(목록/인용) / Ctrl+,(표 삽입/표↔CSV 전환)
  *         Ctrl+.(글자색) / Ctrl+/(배경색) / Ctrl+S(저장) / Ctrl+Space(&nbsp;)
  *         Ctrl+Enter(<br/>) / Ctrl+Shift+V(미디어모달) / Ctrl+Shift+K(kbd태그)
- *         Ctrl+1~4(에셋팝업) / Alt+Z(현재줄 중앙스크롤)
+ *         Ctrl+1~4(에셋팝업) / Ctrl+5(이미지 삽입) / Alt+Z(현재줄 중앙스크롤)
+ *         F4(오늘 날짜 yyyy-MM-dd (요일) 삽입, 별도 아이콘/메뉴 없음)
  *         Tab(들여쓰기+2칸) / Shift+Tab(내어쓰기) / Enter/Shift+Enter(목록 자동이어쓰기)
  */
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { apiClient } from '@/lib/apiClient';
+import { formatDate } from '@/lib/utils';
 import { ROTATE_TEXT_COLORS, ROTATE_BG_COLORS, getNextColor } from '@/shared/components/editor/editorColors';
+import EditorContextMenu, { type EditorContextMenuEntry } from '@/shared/components/editor/EditorContextMenu';
+import ColorSwatchRow from '@/shared/components/editor/ColorSwatchRow';
+import HanjaSearchModal from '@/shared/components/editor/HanjaSearchModal';
 import type { AssetType } from '@/domain/asset/types/asset';
 import { measureLineTops } from '@/lib/textareaLinePositions';
 
@@ -59,6 +66,11 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
 ) {
     const [form, setForm] = useState({ content: value });
     const [menuPos, setMenuPos] = useState<MenuPosition>({ x: 0, y: 0, visible: false });
+    const [hanjaOpen, setHanjaOpen] = useState(false);
+    const [selectedWord, setSelectedWord] = useState('');
+    const hanjaRangeRef = useRef<{ start: number; end: number } | null>(null);
+    const imageInsertRangeRef = useRef<{ start: number; end: number } | null>(null);
+    const imageFileInputRef = useRef<HTMLInputElement>(null);
     const internalRef = useRef<HTMLTextAreaElement>(null);
     const textareaRef = externalRef || internalRef;
 
@@ -135,6 +147,74 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
         updateContent(textarea, start, end, newText, 0, 0);
     };
 
+    // 이미지 파일을 업로드하고 [start,end] 위치에 마크다운 이미지 코드를 삽입 (붙여넣기/파일선택 공용)
+    const uploadImageAtRange = async (file: File, start: number, end: number) => {
+        const placeholderId = Date.now();
+        const loadingText = `![Uploading image ${placeholderId}...]()\n`;
+        const newContent = form.content.substring(0, start) + loadingText + form.content.substring(end);
+        setForm({ content: newContent });
+        onChange(newContent);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await apiClient.post<{ url: string } | string>('/files/editor-image', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            const actualUrl = typeof res === 'string' ? res : (res?.url ?? 'undefined_url_returned');
+            const markdownImage = `![image](${actualUrl})\n`;
+            const finalContent = newContent.replace(loadingText, markdownImage);
+            setForm({ content: finalContent });
+            onChange(finalContent);
+        } catch {
+            alert('이미지 업로드 중 오류가 발생했습니다.');
+            const revertedContent = newContent.replace(loadingText, '');
+            setForm({ content: revertedContent });
+            onChange(revertedContent);
+        }
+    };
+
+    // 컨텍스트 메뉴 "이미지 삽입": 현재 커서 위치를 기억해 두었다가 파일 선택창을 연다.
+    const openImageFilePicker = () => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+        imageInsertRangeRef.current = { start: textarea.selectionStart, end: textarea.selectionEnd };
+        imageFileInputRef.current?.click();
+    };
+
+    // 컨텍스트 메뉴 "한자 변환": 선택된 한글 단어를 한자 검색 모달로 전달
+    const handleHanjaClick = () => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = form.content.substring(start, end).trim();
+        if (!text) return;
+        hanjaRangeRef.current = { start, end };
+        setSelectedWord(text);
+        setHanjaOpen(true);
+    };
+
+    const handleHanjaSelect = (hanja: string) => {
+        const textarea = textareaRef.current;
+        const range = hanjaRangeRef.current;
+        if (!textarea || !range) return;
+        updateContent(textarea, range.start, range.end, hanja, 0, 0);
+        hanjaRangeRef.current = null;
+    };
+
+    // 선택 영역의 마크다운 서식 기호 및 HTML 태그를 모두 제거한 순수 텍스트로 변환
+    const removeAllTags = (text: string): string => {
+        let cleaned = text;
+        cleaned = cleaned.replace(/<[^>]*>/g, '');
+        cleaned = cleaned.replace(/(\*\*|__)(.*?)\1/g, '$2');
+        cleaned = cleaned.replace(/(\*|_)(.*?)\1/g, '$2');
+        cleaned = cleaned.replace(/~~(.*?)~~/g, '$1');
+        cleaned = cleaned.replace(/`(.*?)`/g, '$1');
+        cleaned = cleaned.split('\n').map((line) => line.replace(/^\s*>\s*/, '')).join('\n');
+        return cleaned;
+    };
+
     const handleAction = (action: string) => {
         const textarea = textareaRef.current;
         if (!textarea) return;
@@ -155,6 +235,13 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
         }
 
         switch (action) {
+            case 'clear-all-tags': {
+                if (start === end) break;
+                if (!window.confirm('선택한 영역의 모든 서식 및 HTML 태그를 제거하시겠습니까?')) break;
+                const cleaned = removeAllTags(selectedText);
+                updateContent(textarea, start, end, cleaned, 0, 0);
+                break;
+            }
             case 'bold':
                 updateContent(textarea, start, end, `**${selectedText}**`, 2, 2);
                 break;
@@ -310,7 +397,9 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
 
     const handleContextMenu = (e: React.MouseEvent) => {
         e.preventDefault();
-        setMenuPos({ x: e.pageX, y: e.pageY, visible: true });
+        // position: fixed 는 viewport 기준이므로 스크롤량이 더해지는 pageX/pageY 대신 clientX/clientY 를 써야 한다.
+        // (pageX/pageY를 쓰면 페이지가 스크롤된 상태에서 메뉴가 화면 밖으로 밀려나 보이지 않았다.)
+        setMenuPos({ x: e.clientX, y: e.clientY, visible: true });
     };
 
     const handleKeydown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -318,6 +407,14 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
         const text = form.content;
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
+
+        // F4: 오늘 날짜(yyyy-MM-dd (요일))를 커서 위치에 삽입. 별도 아이콘/메뉴 항목 없이 단축키로만 제공.
+        if (e.key === 'F4') {
+            e.preventDefault();
+            const todayStr = formatDate(new Date());
+            updateContent(textarea, start, end, todayStr, todayStr.length, 0);
+            return;
+        }
 
         // Tab / Shift+Tab: 들여쓰기 (aman 동일)
         if (e.key === 'Tab') {
@@ -499,6 +596,12 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
                 onOpenAssetPicker?.(assetMap[e.key], { x, y });
                 return;
             }
+            // Ctrl+5: 이미지 삽입 (파일 선택창)
+            if (!e.shiftKey && !e.altKey && e.key === '5') {
+                e.preventDefault();
+                openImageFilePicker();
+                return;
+            }
         }
     };
 
@@ -517,36 +620,89 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
                 if (!file) continue;
 
                 const textarea = e.currentTarget;
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-
-                const placeholderId = Date.now();
-                const loadingText = `![Uploading image ${placeholderId}...]()\n`;
-                const newContent = form.content.substring(0, start) + loadingText + form.content.substring(end);
-                setForm({ content: newContent });
-                onChange(newContent);
-
-                try {
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    const res = await apiClient.post<{ url: string } | string>('/files/editor-image', formData, {
-                        headers: { 'Content-Type': 'multipart/form-data' },
-                    });
-                    const actualUrl = typeof res === 'string' ? res : (res?.url ?? 'undefined_url_returned');
-                    const markdownImage = `![image](${actualUrl})\n`;
-                    const finalContent = newContent.replace(loadingText, markdownImage);
-                    setForm({ content: finalContent });
-                    onChange(finalContent);
-                } catch {
-                    alert('이미지 업로드 중 오류가 발생했습니다.');
-                    const revertedContent = newContent.replace(loadingText, '');
-                    setForm({ content: revertedContent });
-                    onChange(revertedContent);
-                }
+                await uploadImageAtRange(file, textarea.selectionStart, textarea.selectionEnd);
                 return;
             }
         }
     };
+
+    const contextMenuItems: EditorContextMenuEntry[] = [
+        { label: 'Bold', shortcut: 'Ctrl+B', onClick: () => handleAction('bold') },
+        { label: 'Italic', shortcut: 'Ctrl+I', onClick: () => handleAction('italic') },
+        { label: 'Strike', shortcut: 'Ctrl+Shift+S', onClick: () => handleAction('strike') },
+        { label: 'Link', shortcut: 'Ctrl+L', onClick: () => handleAction('link') },
+        { divider: true },
+        { label: 'Bullet List', shortcut: 'Ctrl+0', onClick: () => handleAction('bullet') },
+        { label: 'Number List', shortcut: 'Ctrl+9', onClick: () => handleAction('number') },
+        { label: 'Quote', shortcut: 'Ctrl+8', onClick: () => handleAction('quote') },
+        { label: 'Table', shortcut: 'Ctrl+,', onClick: () => handleAction('table') },
+        { divider: true },
+        {
+            label: '이모지',
+            shortcut: 'Ctrl+1',
+            onClick: () => {
+                onOpenAssetPicker?.('EMOJI', { x: menuPos.x, y: menuPos.y });
+                setMenuPos((prev) => ({ ...prev, visible: false }));
+            },
+        },
+        {
+            label: '상용구',
+            shortcut: 'Ctrl+3',
+            onClick: () => {
+                onOpenAssetPicker?.('PHRASE', { x: menuPos.x, y: menuPos.y });
+                setMenuPos((prev) => ({ ...prev, visible: false }));
+            },
+        },
+        {
+            label: '이미지 삽입',
+            shortcut: 'Ctrl+5',
+            onClick: () => {
+                openImageFilePicker();
+                setMenuPos((prev) => ({ ...prev, visible: false }));
+            },
+        },
+        {
+            label: '미디어 삽입',
+            shortcut: 'Ctrl+Shift+V',
+            onClick: () => {
+                onOpenMedia?.();
+                setMenuPos((prev) => ({ ...prev, visible: false }));
+            },
+        },
+        {
+            label: '한자 변환',
+            onClick: () => {
+                handleHanjaClick();
+                setMenuPos((prev) => ({ ...prev, visible: false }));
+            },
+        },
+        { label: '모든 서식/태그 제거', onClick: () => handleAction('clear-all-tags') },
+        { divider: true },
+        {
+            custom: true,
+            content: (
+                <ColorSwatchRow
+                    label="글자 색상 (Ctrl+.)"
+                    colors={ROTATE_TEXT_COLORS}
+                    mode="text"
+                    onPick={(hex) => handleAction(`color-text-set:${hex}`)}
+                    onClear={() => handleAction('color-text-set:')}
+                />
+            ),
+        },
+        {
+            custom: true,
+            content: (
+                <ColorSwatchRow
+                    label="배경 색상 (Ctrl+/)"
+                    colors={ROTATE_BG_COLORS}
+                    mode="bg"
+                    onPick={(hex) => handleAction(`color-bg-set:${hex}`)}
+                    onClear={() => handleAction('color-bg-set:')}
+                />
+            ),
+        },
+    ];
 
     return (
         <div className="relative w-full flex-1 flex flex-col">
@@ -561,36 +717,31 @@ const MdTextarea = forwardRef<MdTextareaHandle, Props>(function MdTextarea(
                 className="flex-1 w-full border border-gray-200 rounded-lg px-4 pt-3 pb-[50vh] text-sm resize-none focus:outline-none focus:border-blue-500 font-mono custom-scroll"
             />
 
-            {/* 커스텀 컨텍스트 메뉴 */}
-            {menuPos.visible && (
-                <ul
-                    className="fixed z-50 bg-white border border-gray-200 shadow-xl rounded-md py-1 text-sm w-48"
-                    style={{ top: menuPos.y, left: menuPos.x }}
-                >
-                    <ContextMenuItem label="Bold" shortcut="Ctrl+B" onClick={() => handleAction('bold')} />
-                    <ContextMenuItem label="Italic" shortcut="Ctrl+I" onClick={() => handleAction('italic')} />
-                    <ContextMenuItem label="Strike" shortcut="Ctrl+Shift+S" onClick={() => handleAction('strike')} />
-                    <ContextMenuItem label="Link" shortcut="Ctrl+L" onClick={() => handleAction('link')} />
-                    <hr className="my-1 border-gray-100" />
-                    <ContextMenuItem label="Bullet List" shortcut="Ctrl+0" onClick={() => handleAction('bullet')} />
-                    <ContextMenuItem label="Number List" shortcut="Ctrl+9" onClick={() => handleAction('number')} />
-                    <ContextMenuItem label="Quote" shortcut="Ctrl+8" onClick={() => handleAction('quote')} />
-                    <ContextMenuItem label="Table" shortcut="Ctrl+," onClick={() => handleAction('table')} />
-                </ul>
-            )}
+            {/* 커스텀 컨텍스트 메뉴 (2열 그리드) */}
+            <EditorContextMenu x={menuPos.x} y={menuPos.y} visible={menuPos.visible} items={contextMenuItems} />
+
+            {/* 컨텍스트 메뉴 "이미지 삽입" 전용 숨김 파일 입력 */}
+            <input
+                ref={imageFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    const range = imageInsertRangeRef.current;
+                    if (file && range) uploadImageAtRange(file, range.start, range.end);
+                    e.target.value = '';
+                }}
+            />
+
+            <HanjaSearchModal
+                open={hanjaOpen}
+                selectedWord={selectedWord}
+                onClose={() => setHanjaOpen(false)}
+                onSelect={handleHanjaSelect}
+            />
         </div>
     );
 });
-
-// 내부 컴포넌트: 메뉴 아이템 스타일
-const ContextMenuItem = ({ label, shortcut, onClick }: { label: string; shortcut: string; onClick: () => void }) => (
-    <li
-        className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex justify-between items-center text-gray-700"
-        onClick={(e) => { e.stopPropagation(); onClick(); }}
-    >
-        <span>{label}</span>
-        <span className="text-xs text-gray-400 font-mono">{shortcut}</span>
-    </li>
-);
 
 export default MdTextarea;

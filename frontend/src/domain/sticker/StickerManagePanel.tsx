@@ -515,7 +515,7 @@ export default function StickerManagePanel() {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant={showUploadZone ? 'default' : 'outline'}
+            variant={showUploadZone ? 'navy' : 'outline'}
             size="sm"
             onClick={() => setShowUploadZone((prev) => !prev)}
             className="flex items-center gap-1.5"
@@ -524,7 +524,7 @@ export default function StickerManagePanel() {
             업로드
           </Button>
           <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            variant={viewMode === 'grid' ? 'navy' : 'outline'}
             size="sm"
             onClick={() => setViewMode('grid')}
             className="flex items-center gap-1.5"
@@ -533,7 +533,7 @@ export default function StickerManagePanel() {
             그리드
           </Button>
           <Button
-            variant={viewMode === 'table' ? 'default' : 'outline'}
+            variant={viewMode === 'table' ? 'navy' : 'outline'}
             size="sm"
             onClick={() => setViewMode('table')}
             className="flex items-center gap-1.5"

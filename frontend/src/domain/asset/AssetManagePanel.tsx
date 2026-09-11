@@ -1,6 +1,7 @@
 /**
  * 목적: cms.assets (이모지/특수문자/상용구/템플릿) 테이블을 관리하는 CRUD 패널.
  *       에디터 툴바의 이모지/기호/상용구/템플릿 팝업이 참조하는 데이터를 여기서 등록/수정/삭제한다.
+ *       상단 '전체/이모지/특수문자/상용구/템플릿' 탭으로 타입별 필터링해 목록을 볼 수 있다.
  *
  * 사용법:
  *   <AssetManagePanel />
@@ -43,11 +44,19 @@ const TYPE_BADGE_STYLE: Record<AssetType, string> = {
 
 const EMPTY_FORM = { id: 0, atype: 'EMOJI' as AssetType, name: '', value: '' }
 
+type FilterType = AssetType | 'ALL'
+
+const FILTER_OPTIONS: { label: string; value: FilterType }[] = [
+  { label: '전체', value: 'ALL' },
+  ...ALL_TYPES.map((t) => ({ label: TYPE_LABELS[t], value: t })),
+]
+
 export default function AssetManagePanel() {
   const queryClient = useQueryClient()
   const { showMessage } = useMessage()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [filterType, setFilterType] = useState<FilterType>('ALL')
   const isEdit = form.id > 0
 
   const isTextType = form.atype === 'PHRASE' || form.atype === 'TEMPLATE'
@@ -56,6 +65,8 @@ export default function AssetManagePanel() {
     queryKey: ['assets'],
     queryFn: () => apiClient.get<AssetDto[]>('/assets'),
   })
+
+  const filteredAssets = filterType === 'ALL' ? assets : assets.filter((a) => a.atype === filterType)
 
   function openCreate() {
     setForm(EMPTY_FORM)
@@ -109,6 +120,23 @@ export default function AssetManagePanel() {
         </Button>
       </div>
 
+      <div className="flex gap-2 flex-wrap mb-4">
+        {FILTER_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setFilterType(opt.value)}
+            className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+              filterType === opt.value
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       {isLoading ? (
         <p className="text-center py-10 text-gray-400 text-sm">불러오는 중...</p>
       ) : (
@@ -123,12 +151,14 @@ export default function AssetManagePanel() {
               </tr>
             </thead>
             <tbody>
-              {assets.length === 0 && (
+              {filteredAssets.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="text-center py-10 text-gray-400">등록된 자산이 없습니다.</td>
+                  <td colSpan={4} className="text-center py-10 text-gray-400">
+                    {filterType === 'ALL' ? '등록된 자산이 없습니다.' : `등록된 ${TYPE_LABELS[filterType]}가 없습니다.`}
+                  </td>
                 </tr>
               )}
-              {assets.map((asset) => (
+              {filteredAssets.map((asset) => (
                 <tr key={asset.id} className="border-b border-gray-100 hover:bg-gray-50/60">
                   <td className="px-4 py-2 text-center">
                     <span className={`px-2 py-0.5 rounded-full text-xs ${TYPE_BADGE_STYLE[asset.atype] ?? 'bg-gray-50 text-gray-600'}`}>

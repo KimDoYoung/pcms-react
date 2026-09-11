@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Pencil, Plus, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Pencil, Plus, X } from 'lucide-react'
 import { format, parse, startOfWeek, endOfWeek, addDays } from 'date-fns'
 
 import { apiClient } from '@/lib/apiClient'
@@ -177,6 +177,9 @@ function Calendar1Page() {
     }
   }
 
+  const prevYear = () => setCurrentYear(v => v - 1)
+  const nextYear = () => setCurrentYear(v => v + 1)
+
   const goToday = () => {
     const today = new Date()
     setCurrentYear(today.getFullYear())
@@ -199,30 +202,52 @@ function Calendar1Page() {
           {/* Header - 연/월 부분 높이와 폰트 크기 확대 */}
           <div className="bg-gradient-to-r from-indigo-400 to-blue-400 p-4 text-white">
             <div className="flex justify-center items-center gap-6">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={prevMonth}
-                className="text-white hover:bg-white/20 rounded-full h-9 w-9"
-                title="이전 달"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={prevYear}
+                  className="text-white hover:bg-white/20 rounded-full h-9 w-9"
+                  title="이전 해"
+                >
+                  <ChevronsLeft className="w-6 h-6" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={prevMonth}
+                  className="text-white hover:bg-white/20 rounded-full h-9 w-9"
+                  title="이전 달"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </Button>
+              </div>
 
               <h1 className="text-2xl font-bold tracking-tight min-w-[160px] text-center">
                 {currentYear}년 {currentMonth}월
               </h1>
 
               <div className="flex items-center gap-3">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={nextMonth}
-                  className="text-white hover:bg-white/20 rounded-full h-9 w-9"
-                  title="다음 달"
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={nextMonth}
+                    className="text-white hover:bg-white/20 rounded-full h-9 w-9"
+                    title="다음 달"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={nextYear}
+                    className="text-white hover:bg-white/20 rounded-full h-9 w-9"
+                    title="다음 해"
+                  >
+                    <ChevronsRight className="w-6 h-6" />
+                  </Button>
+                </div>
 
                 <Button
                   variant="secondary"

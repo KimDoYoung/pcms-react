@@ -26,8 +26,8 @@
  * 단축키: Ctrl+B(굵게) / Ctrl+I(기울임) / Ctrl+Shift+S(취소선) / Ctrl+L(링크)
  *         Ctrl+0(글머리) / Ctrl+9(번호) / Ctrl+8(인용) / Ctrl+,(표)
  *         Ctrl+.(글자색 순환) / Ctrl+/(배경색 순환) / Ctrl+Shift+V(미디어·스티커 모달)
- *         Ctrl+1(이모지) / Ctrl+2(특수문자) / Ctrl+3(상용구) / Ctrl+4(템플릿)
- *         Alt+Z(현재 줄 중앙 스크롤)
+ *         Ctrl+1(이모지) / Ctrl+2(특수문자) / Ctrl+3(상용구) / Ctrl+4(템플릿) / Ctrl+5(이미지 삽입)
+ *         Alt+Z(현재 줄 중앙 스크롤) / F4(오늘 날짜 yyyy-MM-dd (요일) 삽입, 별도 아이콘/메뉴 없음)
  */
 import { useRef, useState, type RefObject } from 'react'
 import { format } from 'date-fns'
@@ -429,7 +429,7 @@ ${CODE_COPY_SCRIPT}
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
         className="flex items-center justify-center p-1 rounded text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
-        title="이미지 삽입 (붙여넣기 Ctrl+V도 지원)"
+        title="이미지 삽입 (Ctrl+5, 붙여넣기 Ctrl+V도 지원)"
       >
         <ImageIcon className="w-4 h-4" />
       </button>
@@ -551,6 +551,7 @@ ${CODE_COPY_SCRIPT}
                     ['특수문자 팝업', 'Ctrl+2'],
                     ['상용구 팝업', 'Ctrl+3'],
                     ['템플릿 팝업', 'Ctrl+4'],
+                    ['이미지 삽입', 'Ctrl+5'],
                     ['현재 줄 중앙 스크롤', 'Alt+Z'],
                     ['미리보기 토글', 'F9'],
                   ].map(([name, key]) => (

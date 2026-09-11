@@ -2,6 +2,7 @@
  * 목적: 마크다운 에디터의 툴바 + 편집창 + 실시간 미리보기를 한 화면에 묶은 스플릿 에디터.
  *       게시판 등 content_type=markdown 페이지에서 기존 <MdTextarea>를 대체해 사용한다.
  *       에디터를 스크롤하면 같은 원문 줄(data-source-line 기준)에 대응하는 미리보기 위치로 자동 스크롤된다.
+ *       Ctrl+1(에셋팝업)/이모지 찾기 모달로 이모지를 삽입하면 Ctrl+'+' 5회 크기(span font-size)로 확대해 넣는다.
  *
  * 사용법:
  *   <MdSplitEditor value={content} onChange={setContent} onSave={() => handleSave(true)} />
@@ -19,6 +20,7 @@ import EmojiSearchModal from '@/shared/components/editor/EmojiSearchModal'
 import MediaSelectorModal, { type MediaSelectPayload } from '@/shared/components/editor/MediaSelectorModal'
 import { renderMarkdown } from '@/lib/markdownRenderer'
 import { measureLineTops } from '@/lib/textareaLinePositions'
+import { EMOJI_FONT_SIZE } from '@/shared/components/editor/editorFontSize'
 import { useMediaCardToggle } from '@/shared/hooks/useMediaCardToggle'
 import { useCodeBlockCopy } from '@/shared/hooks/useCodeBlockCopy'
 import type { AssetType } from '@/domain/asset/types/asset'
@@ -205,7 +207,9 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
   }
 
   function handleAssetSelect(val: string) {
-    editorRef.current?.insertText(val)
+    // 이모지는 Ctrl+'+' 5회 크기와 동일하게 확대해 삽입한다.
+    const text = assetPopup?.atype === 'EMOJI' ? `<span style="font-size: ${EMOJI_FONT_SIZE}px">${val}</span>` : val
+    editorRef.current?.insertText(text)
     setAssetPopup(null)
   }
 
@@ -281,7 +285,7 @@ export default function MdSplitEditor({ value, onChange, onSave }: Props) {
       <EmojiSearchModal
         open={emojiModalOpen}
         onClose={() => setEmojiModalOpen(false)}
-        onInsert={(emoji) => editorRef.current?.insertText(emoji)}
+        onInsert={(emoji) => editorRef.current?.insertText(`<span style="font-size: ${EMOJI_FONT_SIZE}px">${emoji}</span>`)}
       />
 
       <MediaSelectorModal
