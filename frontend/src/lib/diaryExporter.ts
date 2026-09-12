@@ -45,6 +45,20 @@ export function buildDiaryExportHtml(items: DiaryListDto[], meta: DiaryExportMet
   const endDisplay   = meta.endYmd   ? formatDate(meta.endYmd)   : '전체'
   const keywordNote  = meta.keyword  ? ` | 검색어: "${escapeHtml(meta.keyword)}"` : ''
 
+  const tocHtml = `
+    <div class="toc">
+      <h2>📋 목차</h2>
+      <ol>
+        ${items.map((item, idx) => {
+          const ymd = item.ymd
+          const displayDate = `${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`
+          const dateLabel = escapeHtml(formatDate(displayDate))
+          const summary   = item.summary ? escapeHtml(item.summary) : '제목 없음'
+          return `<li><a href="#entry-${idx}"><span class="toc-date">${dateLabel}</span><span class="toc-summary">${summary}</span></a></li>`
+        }).join('\n        ')}
+      </ol>
+    </div>`
+
   const entriesHtml = items.map((item, idx) => {
     const ymd = item.ymd
     const displayDate = `${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`
@@ -204,6 +218,39 @@ export function buildDiaryExportHtml(items: DiaryListDto[], meta: DiaryExportMet
       overflow-x: auto;
     }
 
+    /* ── TOC ──────────────────────────────────────────────── */
+    .toc {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 1.2rem 1.6rem;
+      margin-bottom: 1.4rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .toc h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: .8rem;
+      padding-bottom: .4rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .toc ol {
+      padding-left: 1.4rem;
+    }
+    .toc li { font-size: .82rem; line-height: 1.7; }
+    .toc a {
+      color: #3182ce;
+      text-decoration: none;
+      display: inline-flex;
+      gap: .6rem;
+      align-items: baseline;
+    }
+    .toc a:hover { text-decoration: underline; }
+    .toc-date { flex-shrink: 0; font-weight: 600; color: #63b3ed; }
+    .toc-summary { color: #4a5568; }
+    @media print { .toc { break-after: page; } }
+
     /* ── Markdown CSS ─────────────────────────────────────── */
     ${markdownCss}
 
@@ -228,6 +275,8 @@ export function buildDiaryExportHtml(items: DiaryListDto[], meta: DiaryExportMet
         <span><strong>내보낸 시각</strong> ${timestamp}</span>
       </div>
     </div>
+
+    ${tocHtml}
 
     <div class="controls">
       <button class="btn btn-blue" onclick="expandAll()">모두 펼치기</button>
