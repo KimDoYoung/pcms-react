@@ -1,49 +1,68 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-import { Search, ChevronDown, ChevronUp, Pencil, Eye, CalendarRange, ArrowDownUp, CircleArrowRight, CircleArrowLeft, RefreshCw } from 'lucide-react'
+import { Search, ChevronDown, ChevronUp, Pencil, Eye, CalendarRange, ArrowDownUp, CircleArrowRight, CircleArrowLeft, RefreshCw, FileCode, FileDown, Loader2 } from 'lucide-react'
 import { formatCount, formatDate, formatYmd } from '@/lib/utils'
-import { format } from 'date-fns'
+import { format, subDays } from 'date-fns'
 import type { DiaryListDto, DiaryPageResponse } from '@/domain/diary/types/diary'
 import {  DateRangeSetter } from '@/shared/components/DateRangeSetter'
 import { MyDatePicker } from '@/shared/components/MyDatePicker'
+import { useMessage } from '@/shared/hooks/useMessage'
+import { exportDiaryToHtml, exportDiaryToPdf } from '@/lib/diaryExporter'
 
 const PAGE_SIZE = 10
 
-function DiaryItem({ item }: { item: DiaryListDto }) {
-  const [expanded, setExpanded] = useState(false)
+interface DiaryItemProps {
+  item: DiaryListDto
+  expanded: boolean
+  isHovered: boolean
+  onToggle: () => void
+  onMouseEnter: () => void
+  onMouseLeave: () => void
+}
+
+function DiaryItem({ item, expanded, isHovered, onToggle, onMouseEnter, onMouseLeave }: DiaryItemProps) {
   const navigate = useNavigate()
-  const ymd = item.ymd  // yyyymmdd
+  const ymd = item.ymd
   const displayDate = `${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`
 
   return (
-    <li className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden">
+    <li
+      className={`border rounded-lg bg-white shadow-sm overflow-hidden transition-colors ${isHovered ? 'border-blue-200' : 'border-gray-200'}`}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <div
         className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
-        onClick={() => setExpanded((v) => !v)}
+        onClick={onToggle}
       >
         <div className="flex items-center justify-between sm:justify-start gap-2">
-          <span className="shrink-0 text-xs font-mono text-gray-400 sm:w-36">
+          <span className="shrink-0 text-sm font-semibold text-blue-400 sm:w-36">
             {formatDate(displayDate)}
           </span>
-          <div className="flex items-center gap-1 sm:hidden">
+          <div className="flex items-center gap-0.5 sm:hidden">
             <button
               onClick={(e) => { e.stopPropagation(); navigate(`/diary/${item.id}`) }}
-              className="p-2 text-gray-400 hover:text-green-500 rounded transition-colors"
+              className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
             >
               <Eye className="w-4 h-4" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); navigate(`/diary/register?date=${displayDate}`) }}
-              className="p-2 text-gray-400 hover:text-blue-500 rounded transition-colors"
+              className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
             >
               <Pencil className="w-4 h-4" />
             </button>
-            {expanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggle() }}
+              className={`p-1.5 rounded-full transition-colors ${expanded ? 'bg-red-50 text-red-400 hover:bg-red-100' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+            >
+              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
           </div>
         </div>
         <span
@@ -52,33 +71,31 @@ function DiaryItem({ item }: { item: DiaryListDto }) {
         >
           {item.summary ?? <span className="text-gray-300 italic">제목 없음</span>}
         </span>
-        <div className="hidden sm:flex items-center gap-2 shrink-0">
+        <div className="hidden sm:flex items-center gap-1 shrink-0">
           {item.attachmentCount > 0 && (
-            <span className="text-xs text-gray-400">📎 {item.attachmentCount}</span>
+            <span className="text-xs text-gray-400 mr-1">📎 {item.attachmentCount}</span>
           )}
           <button
-            onClick={(e) => {
-              e.stopPropagation()
-              navigate(`/diary/${item.id}`)
-            }}
-            className="p-1 text-gray-400 hover:text-green-500 rounded transition-colors"
+            onClick={(e) => { e.stopPropagation(); navigate(`/diary/${item.id}`) }}
+            className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
             title="보기"
           >
             <Eye className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={(e) => {
-              e.stopPropagation()
-              navigate(`/diary/register?date=${displayDate}`)
-            }}
-            className="p-1 text-gray-400 hover:text-blue-500 rounded transition-colors"
+            onClick={(e) => { e.stopPropagation(); navigate(`/diary/register?date=${displayDate}`) }}
+            className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
             title="수정"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
-          {expanded
-            ? <ChevronUp className="w-4 h-4 text-gray-400" />
-            : <ChevronDown className="w-4 h-4 text-gray-400" />}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggle() }}
+            className={`p-1.5 rounded-full transition-colors ${expanded ? 'bg-red-50 text-red-400 hover:bg-red-100' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+            title="펼치기"
+          >
+            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
         </div>
       </div>
 
@@ -92,17 +109,54 @@ function DiaryItem({ item }: { item: DiaryListDto }) {
   )
 }
 
+const today = format(new Date(), 'yyyyMMdd')
+const defaultStartYmd = format(subDays(new Date(), 30), 'yyyyMMdd')
+
 export default function DiaryPage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const page = Number(searchParams.get('page') ?? 1)
   const keyword = searchParams.get('keyword') ?? ''
-  const startYmd = searchParams.get('startYmd') ?? ''
-  const endYmd = searchParams.get('endYmd') ?? ''
-  const sort = (searchParams.get('sort') ?? 'desc') as 'asc' | 'desc'
+  const startYmd = searchParams.get('startYmd') ?? defaultStartYmd
+  const endYmd = searchParams.get('endYmd') ?? today
+  const sort = (searchParams.get('sort') ?? 'asc') as 'asc' | 'desc'
 
   const [form, setForm] = useState({ startYmd, endYmd, keyword, sort })
   const [showPicker, setShowPicker] = useState(false)
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
+  const [hoveredId, setHoveredId] = useState<number | null>(null)
+  const [isExportingHtml, setIsExportingHtml] = useState(false)
+  const [isExportingPdf, setIsExportingPdf]   = useState(false)
+  const { showMessage } = useMessage()
+  const hoveredIdRef = useRef<number | null>(null)
+  hoveredIdRef.current = hoveredId
+
+  function toggleExpanded(id: number) {
+    setExpandedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.code !== 'Space' || hoveredIdRef.current === null) return
+      const tag = (e.target as HTMLElement).tagName
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return
+      e.preventDefault()
+      setExpandedIds(prev => {
+        const next = new Set(prev)
+        const id = hoveredIdRef.current!
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        return next
+      })
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   const { data, isLoading } = useQuery<DiaryPageResponse>({
     queryKey: ['diary-list', { keyword, startYmd, endYmd, sort, page }],
@@ -136,8 +190,42 @@ export default function DiaryPage() {
   }
 
   function handleReset() {
-    setForm({ startYmd: '', endYmd: '', keyword: '', sort: 'desc' })
+    setForm({ startYmd: defaultStartYmd, endYmd: today, keyword: '', sort: 'asc' })
     setSearchParams({})
+  }
+
+  async function handleExportHtml() {
+    setIsExportingHtml(true)
+    try {
+      const params: Record<string, string | number> = { size: 100, page: 1, sort }
+      if (startYmd) params.startYmd = formatYmd(startYmd)
+      if (endYmd)   params.endYmd   = formatYmd(endYmd)
+      if (keyword)  params.keyword  = keyword
+      const res = await apiClient.get<DiaryPageResponse>('/diary', { params })
+      await exportDiaryToHtml(res.dtoList, { startYmd, endYmd, keyword, total: res.total })
+      showMessage('HTML 저장이 완료되었습니다.', 'success')
+    } catch {
+      showMessage('HTML 저장 중 오류가 발생했습니다.', 'error')
+    } finally {
+      setIsExportingHtml(false)
+    }
+  }
+
+  async function handleExportPdf() {
+    setIsExportingPdf(true)
+    try {
+      const params: Record<string, string | number> = { size: 100, page: 1, sort }
+      if (startYmd) params.startYmd = formatYmd(startYmd)
+      if (endYmd)   params.endYmd   = formatYmd(endYmd)
+      if (keyword)  params.keyword  = keyword
+      const res = await apiClient.get<DiaryPageResponse>('/diary', { params })
+      await exportDiaryToPdf(res.dtoList, { startYmd, endYmd, keyword, total: res.total })
+      showMessage('PDF 저장이 완료되었습니다.', 'success')
+    } catch {
+      showMessage('PDF 저장 중 오류가 발생했습니다.', 'error')
+    } finally {
+      setIsExportingPdf(false)
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -229,6 +317,18 @@ export default function DiaryPage() {
               <RefreshCw />
               초기화
             </Button>
+            {data?.total != null && data.total > 0 && data.total <= 100 && (
+              <>
+                <Button variant="outline" size="pill" onClick={handleExportHtml} disabled={isExportingHtml} title="전체 결과를 HTML 파일로 저장">
+                  {isExportingHtml ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileCode className="w-3.5 h-3.5" />}
+                  HTML저장
+                </Button>
+                <Button variant="outline" size="pill" onClick={handleExportPdf} disabled={isExportingPdf} title="전체 결과를 PDF 파일로 저장">
+                  {isExportingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+                  PDF저장
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -245,7 +345,15 @@ export default function DiaryPage() {
                 <li className="text-sm text-gray-400 text-center py-10">검색 결과가 없습니다.</li>
               )}
               {data?.dtoList?.map((item) => (
-                <DiaryItem key={item.id} item={item} />
+                <DiaryItem
+                  key={item.id}
+                  item={item}
+                  expanded={expandedIds.has(item.id)}
+                  isHovered={hoveredId === item.id}
+                  onToggle={() => toggleExpanded(item.id)}
+                  onMouseEnter={() => setHoveredId(item.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                />
               ))}
             </ul>
 
