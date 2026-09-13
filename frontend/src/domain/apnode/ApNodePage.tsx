@@ -231,8 +231,11 @@ export default function ApNodePage() {
       if (currentFolderId) fd.append('parentId', currentFolderId)
       try {
         await apiClient.post('/apnode/files', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-      } catch {
-        showMessage(`"${file.name}" 업로드 실패`, 'error')
+      } catch (e: unknown) {
+        const status = (e as { response?: { status?: number; data?: unknown } })?.response?.status
+        const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+        console.error(`[upload] "${file.name}" 실패 status=${status ?? 'N/A'}`, e)
+        showMessage(`"${file.name}" 업로드 실패${status ? ` (${status}${detail ? ': ' + detail : ''})` : ''}`, 'error')
       }
     }
     invalidate()
