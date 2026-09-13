@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
@@ -16,6 +16,7 @@ const PAGE_SIZE = 10
 
 export default function JangbiPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const { showMessage } = useMessage()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -162,7 +163,7 @@ export default function JangbiPage() {
                       <td className="hidden md:table-cell px-4 py-3 text-gray-500 font-mono text-xs">{formatDate(j.ymd)}</td>
                       <td className="px-4 py-3 font-medium">
                         <button
-                          onClick={() => navigate(`/jangbi/${j.id}`)}
+                          onClick={() => navigate(`/jangbi/${j.id}`, { state: { backSearch: location.search } })}
                           className="text-blue-600 hover:underline text-left"
                         >
                           {j.item}

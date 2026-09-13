@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTabParams } from '@/shared/layout/useTabParams'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
@@ -13,6 +13,8 @@ import { useMessage } from '@/shared/hooks/useMessage'
 export default function JangbiViewPage() {
   const { id } = useTabParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
+  const backSearch = (location.state as { backSearch?: string } | null)?.backSearch ?? ''
   const queryClient = useQueryClient()
   const { showMessage } = useMessage()
 
@@ -66,7 +68,7 @@ export default function JangbiViewPage() {
           <ButtonsOfView
             onEdit={() => navigate(`/jangbi/${id}/edit`)}
             onDelete={handleDelete}
-            onList={() => navigate('/jangbi')}
+            onList={() => navigate('/jangbi' + backSearch)}
             className="shrink-0"
           />
         </div>
@@ -113,7 +115,7 @@ export default function JangbiViewPage() {
         <ButtonsOfView
           onEdit={() => navigate(`/jangbi/${id}/edit`)}
           onDelete={handleDelete}
-          onList={() => navigate('/jangbi')}
+          onList={() => navigate('/jangbi' + backSearch)}
         />
       </main>
     </div>

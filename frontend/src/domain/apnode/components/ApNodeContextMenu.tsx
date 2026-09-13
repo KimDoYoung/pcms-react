@@ -9,10 +9,12 @@
  *   - onClose: 메뉴 닫기 콜백
  *   - onRename/onView/onCut/onCopy/onDownload/onDelete: 노드 액션 콜백 (선택항목 0개면 onDelete 비활성)
  *   - onCreateFolder: 빈 공간 우클릭 시 새 폴더 생성
+ *   - onUpload: 빈 공간 우클릭 시 파일 업로드
  *   - onPaste: 클립보드 붙여넣기
+ *   - onCancelClipboard: 클립보드 취소
  *   - onDownloadSelected: 선택된 파일들 zip 다운로드
  */
-import { ClipboardPaste, Copy, Download, Eye, FolderPlus, Pencil, Scissors, Trash2 } from 'lucide-react'
+import { ClipboardPaste, ClipboardX, Copy, Download, Eye, FolderPlus, Pencil, Scissors, Trash2, Upload } from 'lucide-react'
 import type { ApNode, Clipboard, CtxMenu } from '../types/apnode'
 import { canView } from '../utils/apNodeUtils'
 
@@ -29,7 +31,9 @@ interface ApNodeContextMenuProps {
   onDownload: (node: ApNode) => void
   onDelete: (node: ApNode) => void
   onCreateFolder: () => void
+  onUpload: () => void
   onPaste: () => void
+  onCancelClipboard: () => void
   onDownloadSelected: () => void
 }
 
@@ -46,7 +50,9 @@ export default function ApNodeContextMenu({
   onDownload,
   onDelete,
   onCreateFolder,
+  onUpload,
   onPaste,
+  onCancelClipboard,
   onDownloadSelected,
 }: ApNodeContextMenuProps) {
   if (!ctxMenu.show) return null
@@ -122,14 +128,25 @@ export default function ApNodeContextMenu({
           <button className={itemCls} onClick={() => { onCreateFolder(); onClose() }}>
             <FolderPlus className="w-4 h-4 text-gray-400" /> 새 폴더
           </button>
+          <button className={itemCls} onClick={() => { onUpload(); onClose() }}>
+            <Upload className="w-4 h-4 text-gray-400" /> 업로드
+          </button>
           {clipboard && (
-            <button
-              className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-blue-50 text-blue-700 transition-colors"
-              onClick={() => { onPaste(); onClose() }}
-            >
-              <ClipboardPaste className="w-4 h-4" />
-              붙여넣기{clipboard.items.length > 1 ? ` ${clipboard.items.length}개` : ''} ({clipboard.type === 'cut' ? '이동' : '링크'})
-            </button>
+            <>
+              <button
+                className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-blue-50 text-blue-700 transition-colors"
+                onClick={() => { onPaste(); onClose() }}
+              >
+                <ClipboardPaste className="w-4 h-4" />
+                붙여넣기{clipboard.items.length > 1 ? ` ${clipboard.items.length}개` : ''} ({clipboard.type === 'cut' ? '이동' : '링크'})
+              </button>
+              <button
+                className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-400 transition-colors"
+                onClick={() => { onCancelClipboard(); onClose() }}
+              >
+                <ClipboardX className="w-4 h-4" /> 클립보드 취소
+              </button>
+            </>
           )}
         </>
       )}

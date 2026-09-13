@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { ChevronDown, ChevronRight, ClipboardPaste, Download, FolderPlus, Grid3X3, List, Pencil, Search, Trash2, Upload, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, ClipboardPaste, Download, File, Folder, FolderPlus, Grid3X3, Link, List, Pencil, Search, Trash2, Upload, X } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
 import { Button } from '@/shared/components/ui/button'
@@ -35,6 +36,8 @@ export default function ApNodePage() {
 
   const [filterText, setFilterText] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [searchMode, setSearchMode] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const [createFolderOpen, setCreateFolderOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
@@ -79,12 +82,21 @@ export default function ApNodePage() {
     ? currentItems.filter((n) => n.name.toLowerCase().includes(filterText.toLowerCase()))
     : currentItems
 
+  const { data: searchResults = [], isFetching: isSearching } = useQuery({
+    queryKey: ['apnode-search', searchQuery],
+    queryFn: () => apiClient.get<ApNode[]>(`/apnode/search?q=${encodeURIComponent(searchQuery)}`),
+    enabled: searchMode && searchQuery.length >= 2,
+    staleTime: 30_000,
+  })
+
   // ── 네비게이션 ──
   const navigate = useCallback((id: string | null) => {
     setCurrentFolderId(id)
     setSelectedIds(new Set())
     setCtxMenu((m) => ({ ...m, show: false }))
     setFilterText('')
+    setSearchMode(false)
+    setSearchQuery('')
   }, [])
 
   // ── Mutations ──
@@ -327,14 +339,20 @@ export default function ApNodePage() {
               <input
                 type="text"
                 value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
-                placeholder="현재 폴더 필터..."
-                className="pl-8 pr-7 py-1 text-sm border border-gray-200 rounded-lg w-44 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                onChange={(e) => { setFilterText(e.target.value); if (searchMode) { setSearchMode(false); setSearchQuery('') } }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && filterText.trim().length >= 2) {
+                    setSearchQuery(filterText.trim())
+                    setSearchMode(true)
+                  }
+                }}
+                placeholder="필터... (Enter: 전체 검색)"
+                className="pl-8 pr-7 py-1 text-sm border border-gray-200 rounded-lg w-52 focus:outline-none focus:ring-2 focus:ring-blue-300"
               />
               {filterText && (
                 <button
                   type="button"
-                  onClick={() => setFilterText('')}
+                  onClick={() => { setFilterText(''); setSearchMode(false); setSearchQuery('') }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -423,27 +441,62 @@ export default function ApNodePage() {
             onResizeStart={startResizing}
           />
 
-          <ApNodeFileArea
-            currentItems={displayItems}
-            isLoading={isLoading}
-            viewMode={viewMode}
-            selectedIds={selectedIds}
-            isDragging={isDragging}
-            onDragEnter={onDragEnter}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            onContextMenu={showCtxMenu}
-            onClick={() => setCtxMenu((m) => ({ ...m, show: false }))}
-            onItemClick={handleItemClick}
-            onItemDblClick={handleDblClick}
-            onSelectAll={handleSelectAll}
-            onSetSelectedIds={setSelectedIds}
-            onRename={openRename}
-            onView={handleView}
-            onDownload={handleDownload}
-            onDelete={handleDelete}
-          />
+          {searchMode ? (
+            <div className="flex-1 overflow-y-auto p-4">
+              <p className="text-xs text-gray-400 mb-2">
+                &ldquo;{searchQuery}&rdquo; 전체 검색 결과 {isSearching ? '...' : `${searchResults.length}건`}
+              </p>
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                {isSearching && (
+                  <p className="text-center py-14 text-gray-400 text-sm">검색 중...</p>
+                )}
+                {!isSearching && searchResults.length === 0 && (
+                  <p className="text-center py-14 text-gray-400 text-sm">검색 결과가 없습니다</p>
+                )}
+                {searchResults.map((node) => (
+                  <button
+                    key={node.id}
+                    type="button"
+                    onClick={() => navigate(node.nodeType === 'D' ? node.id : (node.parentId ?? null))}
+                    className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-blue-50 transition-colors text-left"
+                  >
+                    {node.nodeType === 'D'
+                      ? <Folder className="w-4 h-4 text-yellow-500 shrink-0" />
+                      : node.nodeType === 'L'
+                        ? <Link className="w-4 h-4 text-blue-400 shrink-0" />
+                        : <File className="w-4 h-4 text-gray-400 shrink-0" />
+                    }
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{node.name}</p>
+                      {node.pathStr && <p className="text-xs text-gray-400 truncate">{node.pathStr}</p>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <ApNodeFileArea
+              currentItems={displayItems}
+              isLoading={isLoading}
+              viewMode={viewMode}
+              selectedIds={selectedIds}
+              isDragging={isDragging}
+              onDragEnter={onDragEnter}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+              onContextMenu={showCtxMenu}
+              onClick={() => setCtxMenu((m) => ({ ...m, show: false }))}
+              onItemClick={handleItemClick}
+              onItemDblClick={handleDblClick}
+              onSelectAll={handleSelectAll}
+              onSetSelectedIds={setSelectedIds}
+              onRename={openRename}
+              onView={handleView}
+              onDownload={handleDownload}
+              onDelete={handleDelete}
+            />
+          )}
         </div>
       </div>
 
@@ -490,7 +543,9 @@ export default function ApNodePage() {
           else handleDelete(node)
         }}
         onCreateFolder={() => setCreateFolderOpen(true)}
+        onUpload={() => fileInputRef.current?.click()}
         onPaste={handlePaste}
+        onCancelClipboard={() => setClipboard(null)}
       />
 
       <ApNodeSearchModal
