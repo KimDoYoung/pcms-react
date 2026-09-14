@@ -234,6 +234,7 @@ const MovieReviewPage = () => {
           {/* 그리드 영역 */}
           <div className="ag-theme-alpine w-full">
             <AgGridReact
+              theme="legacy"
               columnDefs={columnDefs}
               rowModelType="infinite"
               pagination={true}

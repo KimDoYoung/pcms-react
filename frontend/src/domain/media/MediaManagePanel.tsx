@@ -229,7 +229,7 @@ export default function MediaManagePanel() {
               e.target.value = ''
             }}
           />
-          <Button size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+          <Button size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()} variant="navy">
             <Upload className="w-4 h-4 mr-1" /> {uploading ? '업로드 중...' : '업로드'}
           </Button>
         </div>
@@ -269,7 +269,9 @@ export default function MediaManagePanel() {
       ) : (
         <div className="ag-theme-alpine w-full">
           <AgGridReact
+            theme="legacy"
             rowData={items}
+            getRowId={(params) => String(params.data.fileId)}
             columnDefs={columnDefs}
             quickFilterText={searchTerm}
             rowHeight={48}

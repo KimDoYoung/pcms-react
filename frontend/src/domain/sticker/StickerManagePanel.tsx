@@ -896,7 +896,9 @@ export default function StickerManagePanel() {
         /* AG Grid 목록 뷰 */
         <div className="ag-theme-alpine w-full h-[520px] rounded-lg border overflow-hidden bg-white">
           <AgGridReact
+            theme="legacy"
             rowData={filteredItems}
+            getRowId={(params) => String(params.data.fileId)}
             columnDefs={columnDefs}
             rowHeight={48}
             animateRows
