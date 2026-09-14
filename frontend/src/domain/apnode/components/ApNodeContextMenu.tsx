@@ -13,8 +13,9 @@
  *   - onPaste: 클립보드 붙여넣기
  *   - onCancelClipboard: 클립보드 취소
  *   - onDownloadSelected: 선택된 파일들 zip 다운로드
+ *   - onDeselectAll: 선택된 항목 전체 해제 (selectedCount > 0일 때만 노출)
  */
-import { ClipboardPaste, ClipboardX, Copy, Download, Eye, FolderPlus, Pencil, Scissors, Trash2, Upload } from 'lucide-react'
+import { ClipboardPaste, ClipboardX, Copy, Download, Eye, FolderPlus, Pencil, Scissors, Square, Trash2, Upload } from 'lucide-react'
 import type { ApNode, Clipboard, CtxMenu } from '../types/apnode'
 import { canView } from '../utils/apNodeUtils'
 
@@ -35,6 +36,7 @@ interface ApNodeContextMenuProps {
   onPaste: () => void
   onCancelClipboard: () => void
   onDownloadSelected: () => void
+  onDeselectAll: () => void
 }
 
 export default function ApNodeContextMenu({
@@ -54,6 +56,7 @@ export default function ApNodeContextMenu({
   onPaste,
   onCancelClipboard,
   onDownloadSelected,
+  onDeselectAll,
 }: ApNodeContextMenuProps) {
   if (!ctxMenu.show) return null
 
@@ -76,6 +79,9 @@ export default function ApNodeContextMenu({
             onClick={() => { onDownloadSelected(); onClose() }}
           >
             <Download className="w-4 h-4" /> 선택파일 다운로드 ({selectedCount}개)
+          </button>
+          <button className={itemCls} onClick={() => { onDeselectAll(); onClose() }}>
+            <Square className="w-4 h-4 text-gray-400" /> 선택 해제
           </button>
           <hr className="my-1 border-gray-100" />
         </>

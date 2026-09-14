@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { ChevronDown, ChevronRight, ClipboardPaste, Download, File, Folder, FolderPlus, Grid3X3, Link, List, Pencil, Search, Trash2, Upload, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, ClipboardPaste, Download, File, Folder, FolderPlus, Grid2x2, Grid3X3, Link, List, Pencil, Search, Trash2, Upload, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
@@ -29,7 +29,7 @@ export default function ApNodePage() {
   const isResizing = useRef(false)
 
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [viewMode, setViewMode] = useState<'grid' | 'bigGrid' | 'list'>('grid')
   const [isDragging, setIsDragging] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sidebarWidth, setSidebarWidth] = useState(240)
@@ -415,12 +415,21 @@ export default function ApNodePage() {
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:bg-gray-50'}`}
+                title="썸네일 보기"
               >
                 <Grid3X3 className="w-4 h-4" />
               </button>
               <button
+                onClick={() => setViewMode('bigGrid')}
+                className={`p-2 transition-colors ${viewMode === 'bigGrid' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:bg-gray-50'}`}
+                title="큰 썸네일 보기"
+              >
+                <Grid2x2 className="w-4 h-4" />
+              </button>
+              <button
                 onClick={() => setViewMode('list')}
                 className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:bg-gray-50'}`}
+                title="목록 보기"
               >
                 <List className="w-4 h-4" />
               </button>
@@ -518,6 +527,7 @@ export default function ApNodePage() {
         isMultiSelected={!!(ctxMenu.node && selectedIds.has(ctxMenu.node.id) && selectedIds.size > 1)}
         onClose={() => setCtxMenu((m) => ({ ...m, show: false }))}
         onDownloadSelected={handleDownloadSelected}
+        onDeselectAll={() => setSelectedIds(new Set())}
         onRename={openRename}
         onView={handleView}
         onCut={(node) => {

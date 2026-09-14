@@ -1,10 +1,10 @@
 /**
- * 목적: ApNode 파일/폴더 목록 영역 (그리드/리스트 뷰 + 드래그 앤 드롭)
- * 사용법: ApNodePage 의 메인 콘텐츠 영역으로 사용. viewMode에 따라 그리드/리스트 전환
+ * 목적: ApNode 파일/폴더 목록 영역 (썸네일/큰 썸네일/리스트 뷰 + 드래그 앤 드롭)
+ * 사용법: ApNodePage 의 메인 콘텐츠 영역으로 사용. viewMode에 따라 썸네일/큰 썸네일/리스트 전환
  * props:
  *   - currentItems: 현재 폴더의 노드 목록
  *   - isLoading: 로딩 상태
- *   - viewMode: 'grid' | 'list'
+ *   - viewMode: 'grid'(썸네일) | 'bigGrid'(큰 썸네일) | 'list'
  *   - selectedIds: 선택된 노드 ID Set
  *   - isDragging: 드래그 오버 상태
  *   - onDrag*: 드래그 이벤트 핸들러
@@ -14,7 +14,11 @@
  *   - onSelectAll: 전체 선택 토글
  *   - onSetSelectedIds: 선택 상태 업데이트 (그리드/리스트 체크박스 공통)
  *   - onRename/onView/onDownload/onDelete: 아이템 액션 콜백
+ *
+ * 마우스로 항목을 호버한 상태에서 스페이스바를 누르면 해당 항목의 선택/해제가 토글된다
+ * (입력 필드에 포커스가 있을 때는 동작하지 않음).
  */
+import { useEffect, useState } from 'react'
 import { Download, Eye, Folder, Pencil, Trash2, Upload } from 'lucide-react'
 import { formatDate, formatFileSize } from '@/lib/utils'
 import type { ApNode } from '../types/apnode'
@@ -23,7 +27,7 @@ import { canView, getNodeIcon, isImage } from '../utils/apNodeUtils'
 interface ApNodeFileAreaProps {
   currentItems: ApNode[]
   isLoading: boolean
-  viewMode: 'grid' | 'list'
+  viewMode: 'grid' | 'bigGrid' | 'list'
   selectedIds: Set<string>
   isDragging: boolean
   onDragEnter: (e: React.DragEvent) => void
@@ -63,6 +67,25 @@ export default function ApNodeFileArea({
   onDownload,
   onDelete,
 }: ApNodeFileAreaProps) {
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.code !== 'Space' || !hoveredId) return
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
+      e.preventDefault()
+      onSetSelectedIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(hoveredId)) next.delete(hoveredId)
+        else next.add(hoveredId)
+        return next
+      })
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [hoveredId, onSetSelectedIds])
+
   return (
     <section
       className="flex-1 flex flex-col min-w-0 bg-white relative overflow-hidden"
@@ -93,10 +116,12 @@ export default function ApNodeFileArea({
             <p className="font-medium">이 폴더는 비어 있습니다</p>
             <p className="text-sm mt-1 text-gray-300">파일을 드래그하거나 업로드하세요</p>
           </div>
-        ) : viewMode === 'grid' ? (
+        ) : viewMode === 'grid' || viewMode === 'bigGrid' ? (
           <GridView
+            size={viewMode === 'bigGrid' ? 'lg' : 'sm'}
             items={currentItems}
             selectedIds={selectedIds}
+            onHoverChange={setHoveredId}
             onItemClick={onItemClick}
             onItemDblClick={onItemDblClick}
             onContextMenu={onContextMenu}
@@ -110,6 +135,7 @@ export default function ApNodeFileArea({
           <ListView
             items={currentItems}
             selectedIds={selectedIds}
+            onHoverChange={setHoveredId}
             onItemClick={onItemClick}
             onItemDblClick={onItemDblClick}
             onContextMenu={onContextMenu}
@@ -140,6 +166,8 @@ export default function ApNodeFileArea({
 interface GridViewProps {
   items: ApNode[]
   selectedIds: Set<string>
+  size: 'sm' | 'lg'
+  onHoverChange: (id: string | null) => void
   onItemClick: (e: React.MouseEvent, id: string) => void
   onItemDblClick: (node: ApNode) => void
   onContextMenu: (e: React.MouseEvent, node: ApNode) => void
@@ -150,9 +178,16 @@ interface GridViewProps {
   onDelete: (node: ApNode) => void
 }
 
-function GridView({ items, selectedIds, onItemClick, onItemDblClick, onContextMenu, onSetSelectedIds, onRename, onView, onDownload, onDelete }: GridViewProps) {
+function GridView({ items, selectedIds, size, onHoverChange, onItemClick, onItemDblClick, onContextMenu, onSetSelectedIds, onRename, onView, onDownload, onDelete }: GridViewProps) {
+  const isBig = size === 'lg'
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+    <div
+      className={
+        isBig
+          ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'
+          : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3'
+      }
+    >
       {items.map((item) => {
         const isSelected = selectedIds.has(item.id)
         return (
@@ -161,7 +196,9 @@ function GridView({ items, selectedIds, onItemClick, onItemDblClick, onContextMe
             onDoubleClick={() => onItemDblClick(item)}
             onContextMenu={(e) => onContextMenu(e, item)}
             onClick={(e) => onItemClick(e, item.id)}
-            className={`group relative border rounded-2xl p-4 cursor-pointer hover:shadow-md transition-all flex flex-col items-center gap-2 h-40 ${
+            onMouseEnter={() => onHoverChange(item.id)}
+            onMouseLeave={() => onHoverChange(null)}
+            className={`group relative border rounded-2xl p-4 cursor-pointer hover:shadow-md transition-all flex flex-col items-center gap-2 ${isBig ? 'h-72' : 'h-40'} ${
               isSelected ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200' : 'bg-white border-gray-100 hover:border-gray-200'
             }`}
           >
@@ -217,21 +254,21 @@ function GridView({ items, selectedIds, onItemClick, onItemDblClick, onContextMe
               {item.thumbnailUrl || (item.fileUrl && isImage(item)) ? (
                 <img
                   src={item.thumbnailUrl || item.fileUrl}
-                  className="max-h-20 max-w-full object-contain rounded"
+                  className={`${isBig ? 'max-h-56' : 'max-h-20'} max-w-full object-contain rounded`}
                   loading="lazy"
                 />
               ) : (
-                <div className="scale-100 group-hover:scale-110 transition-transform duration-200">
+                <div className={`scale-100 group-hover:scale-110 transition-transform duration-200 ${isBig ? 'scale-150' : ''}`}>
                   {getNodeIcon(item)}
                 </div>
               )}
             </div>
 
             <div className="w-full text-center px-1">
-              <p className="text-xs font-medium text-gray-700 truncate" title={item.name}>
+              <p className={`font-medium text-gray-700 truncate ${isBig ? 'text-sm' : 'text-xs'}`} title={item.name}>
                 {item.name}
               </p>
-              <p className="text-[10px] text-gray-400 mt-0.5">
+              <p className={`text-gray-400 mt-0.5 ${isBig ? 'text-xs' : 'text-[10px]'}`}>
                 {item.nodeType === 'D' ? `${item.childCount}개 항목` : formatFileSize(item.fileSize ?? 0)}
               </p>
             </div>
@@ -247,6 +284,7 @@ function GridView({ items, selectedIds, onItemClick, onItemDblClick, onContextMe
 interface ListViewProps {
   items: ApNode[]
   selectedIds: Set<string>
+  onHoverChange: (id: string | null) => void
   onItemClick: (e: React.MouseEvent, id: string) => void
   onItemDblClick: (node: ApNode) => void
   onContextMenu: (e: React.MouseEvent, node: ApNode) => void
@@ -258,7 +296,7 @@ interface ListViewProps {
   onDelete: (node: ApNode) => void
 }
 
-function ListView({ items, selectedIds, onItemClick, onItemDblClick, onContextMenu, onSelectAll, onSetSelectedIds, onRename, onView, onDownload, onDelete }: ListViewProps) {
+function ListView({ items, selectedIds, onHoverChange, onItemClick, onItemDblClick, onContextMenu, onSelectAll, onSetSelectedIds, onRename, onView, onDownload, onDelete }: ListViewProps) {
   return (
     <div className="rounded-lg border border-gray-100 overflow-hidden">
       <table className="w-full table-fixed text-sm">
@@ -286,6 +324,8 @@ function ListView({ items, selectedIds, onItemClick, onItemDblClick, onContextMe
                 onDoubleClick={() => onItemDblClick(item)}
                 onContextMenu={(e) => onContextMenu(e, item)}
                 onClick={(e) => onItemClick(e, item.id)}
+                onMouseEnter={() => onHoverChange(item.id)}
+                onMouseLeave={() => onHoverChange(null)}
                 className={`border-b transition-colors group cursor-pointer ${
                   isSelected ? 'bg-blue-50 border-blue-100' : 'border-gray-50 hover:bg-gray-50'
                 }`}
