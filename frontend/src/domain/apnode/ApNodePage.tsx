@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { ChevronDown, ChevronRight, ClipboardPaste, Download, File, Folder, FolderPlus, Grid2x2, Grid3X3, Link, List, Pencil, Search, Trash2, Upload, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, ClipboardPaste, Download, File, Folder, FolderPlus, Grid2x2, Grid3X3, Link, List, Pencil, Search, Square, SquareCheck, Trash2, Upload, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
 import Toolbar from '@/shared/layout/Toolbar'
@@ -268,11 +268,17 @@ export default function ApNodePage() {
     })
   }
 
+  function selectAllItems() {
+    setSelectedIds(new Set(displayItems.map((item) => item.id)))
+  }
+
+  function deselectAllItems() {
+    setSelectedIds(new Set())
+  }
+
   function handleSelectAll() {
-    setSelectedIds((prev) => {
-      if (prev.size === currentItems.length && currentItems.length > 0) return new Set()
-      return new Set(currentItems.map((item) => item.id))
-    })
+    if (selectedIds.size === displayItems.length && displayItems.length > 0) deselectAllItems()
+    else selectAllItems()
   }
 
   async function handleDblClick(node: ApNode) {
@@ -388,6 +394,14 @@ export default function ApNodePage() {
                 <DropdownMenuItem onClick={() => setCreateFolderOpen(true)}>
                   <FolderPlus className="w-4 h-4 mr-2 text-blue-500" /> 새 폴더
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled={displayItems.length === 0} onClick={selectAllItems}>
+                  <SquareCheck className="w-4 h-4 mr-2 text-blue-500" /> 모두 선택
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled={selectedIds.size === 0} onClick={deselectAllItems}>
+                  <Square className="w-4 h-4 mr-2 text-gray-400" /> 모두 해제
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   disabled={selectedIds.size === 0}
                   onClick={handleDownloadSelected}
@@ -524,10 +538,12 @@ export default function ApNodePage() {
         ctxMenu={ctxMenu}
         clipboard={clipboard}
         selectedCount={selectedIds.size}
+        totalCount={displayItems.length}
         isMultiSelected={!!(ctxMenu.node && selectedIds.has(ctxMenu.node.id) && selectedIds.size > 1)}
         onClose={() => setCtxMenu((m) => ({ ...m, show: false }))}
         onDownloadSelected={handleDownloadSelected}
-        onDeselectAll={() => setSelectedIds(new Set())}
+        onSelectAll={selectAllItems}
+        onDeselectAll={deselectAllItems}
         onRename={openRename}
         onView={handleView}
         onCut={(node) => {

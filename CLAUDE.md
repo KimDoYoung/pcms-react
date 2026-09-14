@@ -75,7 +75,7 @@ redis-cli -h jskn.iptime.org -p 6379 -a "kalpa987!"
 | 배포 | `http://jskn.iptime.org/pcms` (Tomcat) | `/pcms` (same-origin) |
 
 ### 배포 방식
-- `deploy/deploy.sh` 실행: 프론트 빌드 → `backend/src/main/resources/static/` 복사 → WAR 빌드 → Tomcat 전송
+- `deploy.sh` 실행: 프론트 빌드 → `backend/src/main/resources/static/` 복사 → WAR 빌드 → Tomcat 전송
 - React `dist/`가 Spring Boot static 리소스로 패키징되어 WAR 하나로 배포됨
 - Tomcat에서 `pcms.war` → context-path `/pcms` 자동 설정
 

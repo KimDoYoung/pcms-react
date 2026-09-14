@@ -89,7 +89,7 @@ export const APP_ROUTES: AppRoute[] = [
   // 자산
   { path: '/assets', label: '🗂️ 자산관리', Component: AssetManagePage, menuGroup: '🗂️ 자산', tabGroup: 'asset-manage' },
   { path: '/videos', label: '🎬 비디오관리', Component: MediaManagePage, menuGroup: '🗂️ 자산', tabGroup: 'media-manage' },
-  { path: '/stickers', label: '🖼️ 스티커관리', Component: StickerManagePage, menuGroup: '🗂️ 자산', tabGroup: 'sticker-manage' },
+  { path: '/stickers', label: '✨ 스티커관리', Component: StickerManagePage, menuGroup: '🗂️ 자산', tabGroup: 'sticker-manage' },
 
 
   // 실습

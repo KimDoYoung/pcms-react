@@ -5,6 +5,7 @@
  *   - ctxMenu: 메뉴 표시 여부, 좌표, 대상 노드
  *   - clipboard: 현재 클립보드 상태 (이동/링크용)
  *   - selectedCount: 현재 선택된 아이템 수
+ *   - totalCount: 현재 폴더(필터 적용된)에 보이는 전체 아이템 수 (모두 선택 활성/비활성 판단용)
  *   - isMultiSelected: 우클릭 노드가 다중 선택에 포함된 경우 true
  *   - onClose: 메뉴 닫기 콜백
  *   - onRename/onView/onCut/onCopy/onDownload/onDelete: 노드 액션 콜백 (선택항목 0개면 onDelete 비활성)
@@ -13,9 +14,10 @@
  *   - onPaste: 클립보드 붙여넣기
  *   - onCancelClipboard: 클립보드 취소
  *   - onDownloadSelected: 선택된 파일들 zip 다운로드
+ *   - onSelectAll: 현재 폴더의 전체 항목 선택 (totalCount === 0이면 비활성)
  *   - onDeselectAll: 선택된 항목 전체 해제 (selectedCount > 0일 때만 노출)
  */
-import { ClipboardPaste, ClipboardX, Copy, Download, Eye, FolderPlus, Pencil, Scissors, Square, Trash2, Upload } from 'lucide-react'
+import { ClipboardPaste, ClipboardX, Copy, Download, Eye, FolderPlus, Pencil, Scissors, Square, SquareCheck, Trash2, Upload } from 'lucide-react'
 import type { ApNode, Clipboard, CtxMenu } from '../types/apnode'
 import { canView } from '../utils/apNodeUtils'
 
@@ -23,6 +25,7 @@ interface ApNodeContextMenuProps {
   ctxMenu: CtxMenu
   clipboard: Clipboard | null
   selectedCount: number
+  totalCount: number
   isMultiSelected: boolean
   onClose: () => void
   onRename: (node: ApNode) => void
@@ -36,6 +39,7 @@ interface ApNodeContextMenuProps {
   onPaste: () => void
   onCancelClipboard: () => void
   onDownloadSelected: () => void
+  onSelectAll: () => void
   onDeselectAll: () => void
 }
 
@@ -43,6 +47,7 @@ export default function ApNodeContextMenu({
   ctxMenu,
   clipboard,
   selectedCount,
+  totalCount,
   isMultiSelected,
   onClose,
   onRename,
@@ -56,6 +61,7 @@ export default function ApNodeContextMenu({
   onPaste,
   onCancelClipboard,
   onDownloadSelected,
+  onSelectAll,
   onDeselectAll,
 }: ApNodeContextMenuProps) {
   if (!ctxMenu.show) return null
@@ -72,6 +78,15 @@ export default function ApNodeContextMenu({
         style={{ top: ctxMenu.y, left: ctxMenu.x }}
         onClick={(e) => e.stopPropagation()}
       >
+      {totalCount === 0 ? (
+        <span className={disabledCls}>
+          <SquareCheck className="w-4 h-4" /> 모두 선택
+        </span>
+      ) : (
+        <button className={itemCls} onClick={() => { onSelectAll(); onClose() }}>
+          <SquareCheck className="w-4 h-4 text-blue-400" /> 모두 선택
+        </button>
+      )}
       {selectedCount > 0 && (
         <>
           <button
@@ -81,11 +96,11 @@ export default function ApNodeContextMenu({
             <Download className="w-4 h-4" /> 선택파일 다운로드 ({selectedCount}개)
           </button>
           <button className={itemCls} onClick={() => { onDeselectAll(); onClose() }}>
-            <Square className="w-4 h-4 text-gray-400" /> 선택 해제
+            <Square className="w-4 h-4 text-gray-400" /> 모두 해제
           </button>
-          <hr className="my-1 border-gray-100" />
         </>
       )}
+      <hr className="my-1 border-gray-100" />
       {ctxMenu.node ? (
         <>
           {isMultiSelected ? (

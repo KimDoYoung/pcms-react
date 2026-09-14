@@ -32,6 +32,8 @@ ModuleRegistry.registerModules([AllCommunityModule])
 
 type Tab = 'video' | 'audio'
 
+const MAX_UPLOAD_SIZE = 300 * 1024 * 1024 // 백엔드 spring.servlet.multipart.max-file-size와 동일
+
 function getExt(filename: string): string {
   const idx = filename.lastIndexOf('.')
   return idx > 0 ? filename.slice(idx) : ''
@@ -54,6 +56,10 @@ export default function MediaManagePanel() {
   })
 
   async function handleUpload(file: File) {
+    if (file.size > MAX_UPLOAD_SIZE) {
+      showMessage(`파일 크기가 너무 큽니다. (${formatFileSize(file.size)} / 최대 ${formatFileSize(MAX_UPLOAD_SIZE)})`, 'error')
+      return
+    }
     setUploading(true)
     try {
       const formData = new FormData()
